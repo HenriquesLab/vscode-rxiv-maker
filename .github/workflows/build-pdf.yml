@@ -148,6 +148,7 @@ jobs:
     - name: Generate PDF
       env:
         R_LIBS_USER: ~/.R/library
+        MERMAID_CLI_OPTIONS: "--no-sandbox"  # Explicitly set the environment variable
       run: |
         echo "✅ Running PDF generation"
 
@@ -171,7 +172,7 @@ jobs:
         make clean
 
         # Run the build
-        make pdf FORCE_FIGURES=true MERMAID_CLI_OPTIONS="--no-sandbox"
+        make pdf FORCE_FIGURES=true
 
     - name: Check PDF generation
       run: |
