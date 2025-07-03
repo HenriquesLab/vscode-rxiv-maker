@@ -58,6 +58,11 @@ jobs:
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
 
     # Install all required LaTeX packages and Python dependencies
+    - name: Install Mermaid CLI
+      run: |
+        echo "Installing Mermaid CLI..."
+        npm install -g @mermaid-js/mermaid-cli
+
     - name: Install LaTeX, R and Python dependencies
       run: |
         echo "Installing TeXLive, Rscript and Python dependencies..."
@@ -85,6 +90,9 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install -e ".[dev]"
 
+        # Set up a writable R library directory
+        mkdir -p ~/.R/library
+        echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
 
     # Cache LaTeX build outputs from previous runs
     - name: Cache LaTeX outputs
@@ -112,6 +120,8 @@ jobs:
           ${{ runner.os }}-figures-
 
     - name: Generate PDF
+      env:
+        R_LIBS_USER: ~/.R/library
       run: |
         echo "✅ Running PDF generation"
 
@@ -122,6 +132,9 @@ jobs:
 
         # Create necessary directories
         mkdir -p /tmp/texmf-var output
+        
+        # Clear previous outputs
+        make clean || echo "No previous outputs to clean"
 
         # Run the build
         make pdf
