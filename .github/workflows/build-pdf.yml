@@ -127,6 +127,14 @@ jobs:
 
         # Set up environment
         export MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}
+        # If .env exists, update MANUSCRIPT_PATH in it
+        if [ -f ".env" ]; then
+          if grep -q '^MANUSCRIPT_PATH=' .env; then
+            sed -i 's|^MANUSCRIPT_PATH=.*|MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}|' .env
+          else
+            echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> .env
+          fi
+        fi
         export TEXMFVAR=/tmp/texmf-var
         export FORCE_FIGURES=false
 
