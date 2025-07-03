@@ -124,10 +124,15 @@ class FigureGenerator:
                 # Generate the figure using Mermaid CLI
                 cmd = ["mmdc", "-i", str(mmd_file), "-o", str(output_file)]
 
-                # Add --no-sandbox if MERMAID_CLI_OPTIONS is set
-                mermaid_cli_options = os.getenv("MERMAID_CLI_OPTIONS", "")
-                if mermaid_cli_options:
-                    cmd.extend(mermaid_cli_options.split())
+                # Add Puppeteer configuration for --no-sandbox if required
+                if os.geteuid() == 0:  # Running as root
+                    if not PUPPETEER_CONFIG_PATH.exists():
+                        PUPPETEER_CONFIG_PATH.write_text(
+                            '{"args": ["--no-sandbox"]}'
+                        )
+                    cmd.extend(
+                        ["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)]
+                    )
 
                 # Add format-specific options
                 if format_type == "pdf":
