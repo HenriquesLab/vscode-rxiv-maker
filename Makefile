@@ -89,7 +89,7 @@ setup:
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
 pdf: _generate_figures validate _build_pdf
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/copy_pdf.py --output-dir $(OUTPUT_DIR)
+	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" MERMAID_CLI_OPTIONS="$(MERMAID_CLI_OPTIONS)" $(PYTHON_CMD) src/py/commands/copy_pdf.py --output-dir $(OUTPUT_DIR)
 	@if [ -f "$(OUTPUT_DIR)/$(OUTPUT_PDF)" ]; then \
 		echo "✅ PDF compilation complete: $(OUTPUT_DIR)/$(OUTPUT_PDF)"; \
 	else \
