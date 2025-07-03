@@ -74,7 +74,7 @@ jobs:
           libfreetype6-dev \
           libharfbuzz-dev \
           libfribidi-dev \
-          pkg-config
+          pkg-config \
           libnss3 \
           libxss1 \
           libasound2t64 \
