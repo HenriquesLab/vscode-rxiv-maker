@@ -70,6 +70,11 @@ jobs:
         # Update and install LaTeX packages and R
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
+          libfontconfig1-dev \
+          libfreetype6-dev \
+          libharfbuzz-dev \
+          libfribidi-dev \
+          pkg-config
           libnss3 \
           libxss1 \
           libasound2t64 \

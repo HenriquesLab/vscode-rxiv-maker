@@ -172,7 +172,7 @@ _generate_figures:
 	fi; \
 	if [ "$$NEED_FIGURES" = "true" ] || [ "$(FORCE_FIGURES)" = "true" ]; then \
 		echo "Generating figures from $(FIGURES_DIR)..."; \
-		MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) $(FIGURE_SCRIPT) --figures-dir $(FIGURES_DIR) --output-dir $(FIGURES_DIR) --format pdf; \
+		MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" MERMAID_CLI_OPTIONS="$(MERMAID_CLI_OPTIONS)" $(PYTHON_CMD) $(FIGURE_SCRIPT) --figures-dir $(FIGURES_DIR) --output-dir $(FIGURES_DIR) --format pdf; \
 	fi
 
 	@echo "Checking if Python figure scripts need to be executed..."
