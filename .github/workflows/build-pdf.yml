@@ -163,7 +163,7 @@ jobs:
         mkdir -p /tmp/texmf-var output
 
         # Run the build
-        make pdf
+        make pdf FORCE_FIGURES=true MERMAID_CLI_OPTIONS="--no-sandbox"
 
     - name: Check PDF generation
       run: |
