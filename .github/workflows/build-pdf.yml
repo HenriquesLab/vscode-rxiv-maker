@@ -70,6 +70,27 @@ jobs:
         # Update and install LaTeX packages and R
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
+          libnss3 \
+          libxss1 \
+          libasound2 \
+          libatk-bridge2.0-0 \
+          libgtk-3-0 \
+          libx11-xcb1 \
+          libxcb-dri3-0 \
+          libxcomposite1 \
+          libxcursor1 \
+          libxdamage1 \
+          libxi6 \
+          libxtst6 \
+          libgbm1 \
+          libxrandr2 \
+          xdg-utils \
+          libu2f-udev \
+          libdrm2 \
+          libatk1.0-0 \
+          libatspi2.0-0 \
+          ca-certificates
+        sudo apt-get install -y --no-install-recommends \
           texlive-latex-base \
           texlive-latex-recommended \
           texlive-latex-extra \
@@ -136,13 +157,10 @@ jobs:
           fi
         fi
         export TEXMFVAR=/tmp/texmf-var
-        export FORCE_FIGURES=false
+        export FORCE_FIGURES=true
 
         # Create necessary directories
         mkdir -p /tmp/texmf-var output
-        
-        # Clear previous outputs
-        make clean || echo "No previous outputs to clean"
 
         # Run the build
         make pdf
