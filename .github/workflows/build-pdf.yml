@@ -140,6 +140,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-figures-
 
+    - name: Create mmdc wrapper to add --no-sandbox
+      run: |
+        echo '#!/bin/bash' > $HOME/mmdc-wrapper.sh
+        echo 'exec mmdc --no-sandbox "$@"' >> $HOME/mmdc-wrapper.sh
+        chmod +x $HOME/mmdc-wrapper.sh
+        # Prepend the wrapper location to PATH
+        echo "$HOME" >> $GITHUB_PATH
+
     - name: Generate PDF
       env:
         R_LIBS_USER: ~/.R/library
