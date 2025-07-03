@@ -162,6 +162,9 @@ jobs:
         # Create necessary directories
         mkdir -p /tmp/texmf-var output
 
+        # Clean the existing files
+        make clean
+
         # Run the build
         make pdf FORCE_FIGURES=true MERMAID_CLI_OPTIONS="--no-sandbox"
 
