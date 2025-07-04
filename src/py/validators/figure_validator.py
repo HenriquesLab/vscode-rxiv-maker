@@ -36,7 +36,9 @@ class FigureValidator(BaseValidator):
     }
 
     # Valid file extensions for figures
-    VALID_EXTENSIONS = {".png", ".jpg", ".jpeg", ".pdf", ".svg", ".eps", ".py", ".mmd"}
+    VALID_EXTENSIONS = {
+        ".png", ".jpg", ".jpeg", ".pdf", ".svg", ".eps", ".py", ".mmd", ".r"
+    }
 
     # Valid width formats
     WIDTH_PATTERNS = {
@@ -464,18 +466,33 @@ class FigureValidator(BaseValidator):
         return any(pattern.match(width) for pattern in self.WIDTH_PATTERNS.values())
 
     def _get_expected_outputs(self, source_file: str) -> list[str]:
-        """Get expected output files for source files (.py, .mmd)."""
+        """Get expected output files for source files (.py, .mmd, .r)."""
         base_name = os.path.splitext(source_file)[0]
         ext = os.path.splitext(source_file)[1].lower()
 
-        if ext == ".py":
-            # Python scripts typically generate PDF and PNG
-            return [f"{base_name}.pdf", f"{base_name}.png"]
-        elif ext == ".mmd":
-            # Mermaid files generate PDF and PNG and SVG
-            return [f"{base_name}.pdf", f"{base_name}.png", f"{base_name}.svg"]
-        else:
-            return []
+        # Map file extensions to their expected output formats
+        extension_outputs = {
+            ".py": [f"{base_name}.pdf", f"{base_name}.png"],  # Python scripts
+            ".mmd": [  # Mermaid files generate multiple formats
+                f"{base_name}.pdf", f"{base_name}.png", f"{base_name}.svg"
+            ],
+            ".r": [  # R scripts generate multiple formats
+                f"{base_name}.pdf", f"{base_name}.png", f"{base_name}.svg"
+            ],
+        }
+
+        expected_outputs = extension_outputs.get(ext, [])
+        
+        # Also check for outputs in subdirectories (common pattern for figure generation)
+        if expected_outputs:
+            subdir_outputs = []
+            for output in expected_outputs:
+                # Add subdirectory version (e.g., SFigure_3/SFigure_3.svg)
+                subdir_path = f"{base_name}/{os.path.basename(output)}"
+                subdir_outputs.append(subdir_path)
+            expected_outputs.extend(subdir_outputs)
+        
+        return expected_outputs
 
     def _check_unused_files(self) -> list:
         """Check for figure files that are not referenced."""
@@ -491,7 +508,7 @@ class FigureValidator(BaseValidator):
 
                 # For source files, also mark expected outputs as referenced
                 _, ext = os.path.splitext(rel_path.lower())
-                if ext in {".py", ".mmd"}:
+                if ext in {".py", ".mmd", ".r"}:
                     expected_outputs = self._get_expected_outputs(rel_path)
                     referenced_files.update(expected_outputs)
 
@@ -502,8 +519,8 @@ class FigureValidator(BaseValidator):
             base_name = os.path.splitext(file_path)[0]
             ext = os.path.splitext(file_path)[1].lower()
 
-            # If we have a source file (.py or .mmd), mark all its potential outputs
-            if ext in {".py", ".mmd"}:
+            # If we have a source file (.py, .mmd, or .r), mark potential outputs
+            if ext in {".py", ".mmd", ".r"}:
                 expected_outputs = self._get_expected_outputs(file_path)
                 pipeline_files.update(expected_outputs)
 
@@ -535,6 +552,7 @@ class FigureValidator(BaseValidator):
                     ".eps",
                     ".py",
                     ".mmd",
+                    ".r",
                 }
             ):
                 # Skip files in DATA/ subdirectory, hidden files, and
