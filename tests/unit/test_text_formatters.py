@@ -204,13 +204,13 @@ class TestCodeSpanEdgeCases:
         """Test that code spans with backslashes don't use seqsplit."""
         input_text = (
             "`This is a very long code span with \\backslashes that should "
-            "not use seqsplit`"
+            "not use the seqsplit command`"
         )
         result = process_code_spans(input_text)
 
         # Should use regular texttt, not seqsplit, because of backslashes
         assert "\\texttt{" in result
-        assert "seqsplit" not in result
+        assert "\\seqsplit" not in result  # Check for LaTeX command, not the word
 
     def test_math_with_backslashes_uses_detokenize(self):
         """Test that math with backslashes still uses detokenize."""

@@ -103,11 +103,50 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
         content = match.group(1)
         return f"\\texttt{{\\detokenize{{{content}}}}}"
 
-    text = re.sub(
-        r"PROTECTED_DETOKENIZE_START\{([^}]+)\}PROTECTED_DETOKENIZE_END",
-        replace_protected_detokenize,
-        text,
-    )
+    # Use a more robust pattern that handles nested braces
+    def find_and_replace_detokenize(text: str) -> str:
+        result = []
+        i = 0
+        while i < len(text):
+            # Look for PROTECTED_DETOKENIZE_START{
+            start_marker = "PROTECTED_DETOKENIZE_START{"
+            if text[i : i + len(start_marker)] == start_marker:
+                # Find the matching closing brace
+                brace_count = 0
+                start = i + len(start_marker)
+                j = start
+                while j < len(text):
+                    if text[j] == "{":
+                        brace_count += 1
+                    elif text[j] == "}":
+                        if brace_count == 0:
+                            # Found the matching closing brace
+                            content = text[start:j]
+                            # Check if this is followed by the end marker
+                            end_marker = "}PROTECTED_DETOKENIZE_END"
+                            if text[j:j+len(end_marker)] == end_marker:
+                                replacement = f"\\texttt{{\\detokenize{{{content}}}}}"
+                                result.append(replacement)
+                                i = j + len(end_marker)
+                                break
+                            else:
+                                # No matching end marker, treat as regular content
+                                result.append(text[i])
+                                i += 1
+                                break
+                        else:
+                            brace_count -= 1
+                    j += 1
+                else:
+                    # No matching brace found, just add the original text
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        return "".join(result)
+
+    text = find_and_replace_detokenize(text)
 
     return text
 
