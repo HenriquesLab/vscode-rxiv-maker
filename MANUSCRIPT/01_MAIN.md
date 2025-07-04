@@ -28,13 +28,15 @@ Present your results here. Include figures and tables:
 
 {#table:example} **Example Table Caption.** Describe what your table contains.
 
+Reference supplementary information, for example @snote:example or @sfig:example or @stable:parameters.
+
 ## Discussion
 
-Discuss your findings here. Reference supplementary information using @snote:example if needed.
+Discuss your findings here. 
 
 ## Methods
 
-Describe your methodology here. Include code blocks when relevant:
+Describe your methodology here. For additional methodological details, see @snote:methods. Include code blocks when relevant:
 
 ```python
 # Example code
