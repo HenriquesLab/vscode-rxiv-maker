@@ -86,7 +86,7 @@ A core feature is programmatic content generation, treating figures and diagrams
 The framework's reliability is ensured by a multi-level validation protocol. Unit tests validate individual components, integration tests verify the end-to-end pipeline, and platform tests validate behavior in deployment environments, such as GitHub Actions. Additionally, a pre-commit pipeline enforces code formatting, linting, and type checking, ensuring high code quality.
 
 ## Data availability
-arXiv monthly submission data used in this article is available at [https://arxiv.org/stats/monthly_submissions](https://arxiv.org/stats/monthly_submissions). The source code and data for the figures in this article are available at [https://github.com/henriques/rxiv-maker](https://github.com/henriques/rxiv-maker).
+arXiv monthly submission data used in this article is available at [https://arxiv.org/stats/monthly_submissions](https://arxiv.org/stats/monthly_submissions). Preprint submissions data across different hosting platforms is available at [https://github.com/esperr/pubmed-by-year](https://github.com/esperr/pubmed-by-year). The source code and data for the figures in this article are available at [https://github.com/henriques/rxiv-maker](https://github.com/henriques/rxiv-maker).
 
 ## Code availability
 The Rxiv-Maker computational framework is available at [https://github.com/henriques/rxiv-maker](https://github.com/henriques/rxiv-maker). All source code is under an MIT License.
