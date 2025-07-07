@@ -8,6 +8,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Enhanced DOI Validation System**: Comprehensive DOI validation with multi-registrar support
+  - CrossRef, DataCite, and JOSS API integration
+  - Support for 10+ DOI registrar types (Zenodo, OSF, bioRxiv, arXiv, etc.)
+  - Intelligent registrar detection with specific guidance for each DOI type
+  - Parallel API calls for improved validation performance
+  - Intelligent caching system with 30-day expiration and automatic cleanup
+- **New Bibliography Management Commands**:
+  - `add_bibliography.py` - Add and manage bibliography entries
+  - `fix_bibliography.py` - Automatically fix common bibliography issues
+- **Streamlined Validation Output**: Concise output showing only warnings and errors
+- **Enhanced Citation Validator**: Configurable DOI validation integration
+- **Comprehensive Testing**: Unit and integration tests for DOI validation workflow
+
+### Fixed
+- **Critical DOI Validation Fix**: Fixed CrossRef API integration that was causing all DOIs to fail validation
+- Resolved false positive DOI warnings (reduced from 17 to 0 for valid manuscripts)
+- Improved network error handling and resilience for API calls
+- Fixed misleading error messages about DataCite when it was already being checked
+
+### Changed
+- **Streamlined Validation Output**: Removed verbose statistics clutter from default validation
+- Default validation now shows only essential warnings and errors
+- Detailed statistics available with `--verbose` flag
+- Updated Makefile validation targets for cleaner output
+- Enhanced error messages with actionable suggestions based on DOI type
+
+### Performance
+- Parallel API calls to multiple DOI registrars for faster validation
+- Intelligent caching reduces repeated API calls
+- Improved validation speed for manuscripts with many DOIs
+
+---
+
+### Previous Changes
+
+### Added
 - Enhanced Makefile with improved MANUSCRIPT_PATH handling and FIGURES directory setup instructions
 - Mermaid CLI support with `--no-sandbox` argument for GitHub Actions compatibility
 - Automatic FIGURES directory creation when missing
