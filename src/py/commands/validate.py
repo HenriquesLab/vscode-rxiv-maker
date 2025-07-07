@@ -23,15 +23,13 @@ from typing import Any
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 try:
-    from validators import (
-        CitationValidator,
-        FigureValidator,
-        LaTeXErrorParser,
-        MathValidator,
-        ReferenceValidator,
-        SyntaxValidator,
-        ValidationLevel,
-    )
+    from validators.citation_validator import CitationValidator
+    from validators.figure_validator import FigureValidator
+    from validators.latex_error_parser import LaTeXErrorParser
+    from validators.math_validator import MathValidator
+    from validators.reference_validator import ReferenceValidator
+    from validators.syntax_validator import SyntaxValidator
+    from validators.base_validator import ValidationLevel
 
     VALIDATORS_AVAILABLE = True
 except ImportError:
@@ -47,6 +45,7 @@ class UnifiedValidator:
         verbose: bool = False,
         include_info: bool = False,
         check_latex: bool = True,
+        enable_doi_validation: bool = True,
     ):
         """Initialize unified validator.
 
@@ -55,11 +54,13 @@ class UnifiedValidator:
             verbose: Show detailed output
             include_info: Include informational messages
             check_latex: Parse LaTeX compilation errors
+            enable_doi_validation: Enable DOI validation against CrossRef API
         """
         self.manuscript_path = manuscript_path
         self.verbose = verbose
         self.include_info = include_info
         self.check_latex = check_latex
+        self.enable_doi_validation = enable_doi_validation
 
         self.all_errors: list[Any] = []
         self.validation_results: dict[str, Any] = {}
@@ -76,8 +77,9 @@ class UnifiedValidator:
             print(f"❌ Manuscript directory not found: {self.manuscript_path}")
             return False
 
-        print(f"🔍 Validating manuscript: {self.manuscript_path}")
-        print()
+        if self.verbose:
+            print(f"🔍 Validating manuscript: {self.manuscript_path}")
+            print()
 
         validators = [
             ("Citations", CitationValidator),
@@ -97,7 +99,14 @@ class UnifiedValidator:
                 print(f"🔄 Running {validator_name} validation...")
 
             try:
-                validator = validator_class(self.manuscript_path)
+                # Pass DOI validation option to CitationValidator
+                if validator_class == CitationValidator:
+                    validator = validator_class(
+                        self.manuscript_path, 
+                        enable_doi_validation=self.enable_doi_validation
+                    )
+                else:
+                    validator = validator_class(self.manuscript_path)
                 result = validator.validate()
                 self.validation_results[validator_name] = result
 
@@ -126,7 +135,8 @@ class UnifiedValidator:
                     print(f"   {status}{count_msg}")
 
             except Exception as e:
-                print(f"   ❌ ERROR: {validator_name} validation failed: {e}")
+                if self.verbose:
+                    print(f"   ❌ ERROR: {validator_name} validation failed: {e}")
                 all_passed = False
 
         return all_passed
@@ -224,8 +234,21 @@ class UnifiedValidator:
                     ("Total citations", "total_citations"),
                     ("Unique citations", "unique_citations"),
                     ("Bibliography entries", "bibliography_keys"),
+                    ("Unused entries", "unused_entries"),
                     ("Undefined citations", "undefined_citations"),
                 ]
+                # Add DOI validation statistics if available
+                if "doi_validation" in metadata:
+                    doi_stats = metadata["doi_validation"]
+                    stats.extend([
+                        ("DOIs found", "total_dois"),
+                        ("DOIs validated", "validated_dois"),
+                        ("DOI format errors", "invalid_format"),
+                        ("API failures", "api_failures"),
+                        ("Metadata mismatches", "mismatched_metadata"),
+                    ])
+                    # Update metadata with doi_validation data for display
+                    metadata.update({f"doi_{k}": v for k, v in doi_stats.items()})
             elif validator_name == "Cross-references":
                 stats = [
                     ("Labels defined", "total_labels_defined"),
@@ -258,7 +281,7 @@ class UnifiedValidator:
     def print_summary(self) -> None:
         """Print brief validation summary."""
         if not self.all_errors:
-            print("✅ Validation completed successfully - no issues found!")
+            print("✅ Validation passed!")
             return
 
         error_count = sum(
@@ -269,15 +292,55 @@ class UnifiedValidator:
         )
         info_count = sum(1 for e in self.all_errors if e.level == ValidationLevel.INFO)
 
+        # Print status
         if error_count > 0:
             print(f"❌ Validation failed with {error_count} error(s)")
-        else:
+            if warning_count > 0:
+                print(f"   {warning_count} warning(s) found")
+        elif warning_count > 0:
             print("⚠️  Validation passed with warnings")
-
-        if warning_count > 0:
             print(f"   {warning_count} warning(s) found")
+        else:
+            print("✅ Validation passed!")
+
+        # Show errors
+        if error_count > 0:
+            print("\n🚨 ERRORS:")
+            errors = [e for e in self.all_errors if e.level == ValidationLevel.ERROR]
+            for i, error in enumerate(errors, 1):
+                location = ""
+                if error.file_path:
+                    location = f" ({error.file_path}"
+                    if error.line_number:
+                        location += f":{error.line_number}"
+                    location += ")"
+                print(f"  {i}. {error.message}{location}")
+
+        # Show warnings
+        if warning_count > 0:
+            print("\n⚠️  WARNINGS:")
+            warnings = [e for e in self.all_errors if e.level == ValidationLevel.WARNING]
+            for i, warning in enumerate(warnings, 1):
+                location = ""
+                if warning.file_path:
+                    location = f" ({warning.file_path}"
+                    if warning.line_number:
+                        location += f":{warning.line_number}"
+                    location += ")"
+                print(f"  {i}. {warning.message}{location}")
+                
+        # Show info messages only in verbose or include-info mode
         if info_count > 0 and self.include_info:
-            print(f"   {info_count} info message(s)")
+            print(f"\n💡 INFO ({info_count}):")
+            info_messages = [e for e in self.all_errors if e.level == ValidationLevel.INFO]
+            for i, info in enumerate(info_messages, 1):
+                location = ""
+                if info.file_path:
+                    location = f" ({info.file_path}"
+                    if info.line_number:
+                        location += f":{info.line_number}"
+                    location += ")"
+                print(f"  {i}. {info.message}{location}")
 
 
 def main():
@@ -291,6 +354,7 @@ Examples:
   %(prog)s MANUSCRIPT --verbose          # Detailed output
   %(prog)s MANUSCRIPT --include-info     # Include informational messages
   %(prog)s MANUSCRIPT --no-latex         # Skip LaTeX error parsing
+  %(prog)s MANUSCRIPT --no-doi           # Skip DOI validation
   %(prog)s MANUSCRIPT --detailed         # Full detailed report
         """,
     )
@@ -320,6 +384,12 @@ Examples:
         help="Show detailed error report with context and suggestions",
     )
 
+    parser.add_argument(
+        "--no-doi",
+        action="store_true",
+        help="Skip DOI validation against CrossRef API",
+    )
+
     args = parser.parse_args()
 
     # Create and run validator
@@ -328,6 +398,7 @@ Examples:
         verbose=args.verbose,
         include_info=args.include_info,
         check_latex=not args.no_latex,
+        enable_doi_validation=not args.no_doi,
     )
 
     validation_passed = validator.validate_all()

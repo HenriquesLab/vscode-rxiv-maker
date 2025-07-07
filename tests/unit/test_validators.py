@@ -165,6 +165,109 @@ This citation does not exist @nonexistent2023.
         error_messages = [error.message for error in result.errors]
         self.assertTrue(any("nonexistent2023" in msg for msg in error_messages))
 
+    def test_citation_validation_unused_references(self):
+        """Test detection of unused bibliography entries as warnings."""
+        # Create main manuscript with only one citation
+        main_content = """
+# Test Manuscript
+
+This text only cites one reference @smith2023.
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        validator = CitationValidator(self.manuscript_dir, enable_doi_validation=False)
+        result = validator.validate()
+
+        # Should have warnings for unused bibliography entries
+        self.assertTrue(result.has_warnings)
+        warning_messages = [error.message for error in result.errors if error.level.value == "warning"]
+        
+        # Should warn about unused jones2022 entry
+        self.assertTrue(any("jones2022" in msg and "Unused bibliography entry" in msg for msg in warning_messages))
+        
+        # Check metadata
+        self.assertEqual(result.metadata.get("unused_entries"), 1)
+        self.assertEqual(result.metadata.get("unique_citations"), 1)
+
+    def test_citation_validation_checks_both_main_and_supplementary(self):
+        """Test that citations in both main and supplementary files are considered."""
+        # Create main manuscript with one citation
+        main_content = """
+# Test Manuscript
+
+This text cites @smith2023.
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        # Create supplementary with the other citation
+        supp_content = """
+# Supplementary Information
+
+Additional details with reference to @jones2022.
+"""
+        with open(os.path.join(self.manuscript_dir, "02_SUPPLEMENTARY_INFO.md"), "w") as f:
+            f.write(supp_content)
+
+        validator = CitationValidator(self.manuscript_dir, enable_doi_validation=False)
+        result = validator.validate()
+
+        # Should NOT have warnings for unused entries since both are cited
+        self.assertFalse(result.has_warnings)
+        
+        # Check metadata shows both citations found and no unused entries
+        self.assertEqual(result.metadata.get("unused_entries"), 0)
+        self.assertEqual(result.metadata.get("unique_citations"), 2)
+
+    def test_citation_validation_excludes_system_entries(self):
+        """Test that system entries like saraiva_2025_rxivmaker are not flagged as unused."""
+        # Create bibliography with system entry and regular entry
+        bib_content_with_system = """
+@article{smith2023,
+    title = {Test Article},
+    author = {Smith, John},
+    year = {2023}
+}
+
+@article{saraiva_2025_rxivmaker,
+    title = {Rxiv-Maker: Automated LaTeX Article Generation},
+    author = {Saraiva, Paulo},
+    year = {2025}
+}
+
+@article{unused_entry,
+    title = {Unused Article},
+    author = {Nobody},
+    year = {2023}
+}
+"""
+        with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
+            f.write(bib_content_with_system)
+
+        # Create main manuscript with only one citation (not citing system entry or unused entry)
+        main_content = """
+# Test Manuscript
+
+This text only cites @smith2023.
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        validator = CitationValidator(self.manuscript_dir, enable_doi_validation=False)
+        result = validator.validate()
+
+        # Should have warnings for unused_entry but NOT for saraiva_2025_rxivmaker
+        warning_messages = [error.message for error in result.errors if error.level.value == "warning"]
+        
+        # Should warn about unused_entry but not saraiva_2025_rxivmaker
+        self.assertTrue(any("unused_entry" in msg and "Unused bibliography entry" in msg for msg in warning_messages))
+        self.assertFalse(any("saraiva_2025_rxivmaker" in msg for msg in warning_messages))
+        
+        # Check metadata shows only 1 unused entry (not counting system entry)
+        self.assertEqual(result.metadata.get("unused_entries"), 1)
+        self.assertEqual(result.metadata.get("unique_citations"), 1)
+
 
 @pytest.mark.validation
 @unittest.skipUnless(VALIDATORS_AVAILABLE, "Validators not available")

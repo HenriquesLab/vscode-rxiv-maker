@@ -25,6 +25,7 @@
 # Load environment variables from .env file if it exists
 -include .env
 export
+.EXPORT_ALL_VARIABLES:
 
 # Export MANUSCRIPT_PATH explicitly
 export MANUSCRIPT_PATH
@@ -36,16 +37,23 @@ ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
 PYTHON_CMD := $(shell if [ -f ".venv/bin/python" ]; then echo "$(PWD)/.venv/bin/python"; else echo "python3"; fi)
 
 OUTPUT_DIR := output
-# Get MANUSCRIPT_PATH from .env file, then environment, default to MANUSCRIPT if not set
-# Handle cases where .env file doesn't exist or doesn't contain MANUSCRIPT_PATH
-MANUSCRIPT_PATH := $(shell \
+# Default manuscript path if not provided via environment or .env
+DEFAULT_MANUSCRIPT_PATH := $(shell \
 	if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
 		grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
-	elif [ -n "$$MANUSCRIPT_PATH" ]; then \
-		echo "$$MANUSCRIPT_PATH"; \
 	else \
 		echo "MANUSCRIPT"; \
 	fi)
+
+# Use environment variable if set, otherwise use default
+# This handles both MANUSCRIPT_PATH=value make target and make target MANUSCRIPT_PATH=value
+ifeq ($(origin MANUSCRIPT_PATH), undefined)
+MANUSCRIPT_PATH = $(DEFAULT_MANUSCRIPT_PATH)
+else ifeq ($(origin MANUSCRIPT_PATH), environment)
+# Environment variable takes precedence
+else ifeq ($(origin MANUSCRIPT_PATH), command line)
+# Command line variable takes precedence
+endif
 ARTICLE_DIR = $(MANUSCRIPT_PATH)
 FIGURES_DIR = $(ARTICLE_DIR)/FIGURES
 STYLE_DIR := src/tex/style
@@ -88,7 +96,7 @@ setup:
 
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
-pdf: _generate_figures validate _build_pdf
+pdf: _generate_figures _validate_quiet _build_pdf
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" MERMAID_CLI_OPTIONS="$(MERMAID_CLI_OPTIONS)" $(PYTHON_CMD) src/py/commands/copy_pdf.py --output-dir $(OUTPUT_DIR)
 	@if [ -f "$(OUTPUT_DIR)/$(OUTPUT_PDF)" ]; then \
 		echo "✅ PDF compilation complete: $(OUTPUT_DIR)/$(OUTPUT_PDF)"; \
@@ -128,11 +136,12 @@ arxiv: _generate_files
 # 🔍 VALIDATION COMMANDS
 # ======================================================================
 
-# Validate manuscript structure and content
+# Validate manuscript structure and content (with detailed report)
 .PHONY: validate
 validate:
 	@echo "🔍 Running manuscript validation..."
-	@$(PYTHON_CMD) src/py/scripts/validate_manuscript.py "$(MANUSCRIPT_PATH)" || { \
+	@# Use command line variable or make variable with detailed and verbose output
+	@$(PYTHON_CMD) src/py/commands/validate.py "$(MANUSCRIPT_PATH)" --detailed || { \
 		echo ""; \
 		echo "❌ Validation failed! Please fix the issues above before building PDF."; \
 		echo "💡 Run 'make validate --help' for validation options"; \
@@ -140,6 +149,62 @@ validate:
 		exit 1; \
 	}
 	@echo "✅ Validation passed!"
+
+# Internal validation target for PDF build (quiet mode)
+.PHONY: _validate_quiet
+_validate_quiet:
+	@echo "🔍 Validating manuscript: $(MANUSCRIPT_PATH)"
+	@$(PYTHON_CMD) src/py/commands/validate.py "$(MANUSCRIPT_PATH)" || { \
+		echo ""; \
+		echo "❌ Validation failed! Please fix the issues above before building PDF."; \
+		echo "💡 Run 'make validate' for detailed error analysis"; \
+		echo "💡 Use 'make pdf-no-validate' to skip validation and build anyway."; \
+		exit 1; \
+	}
+
+# Fix bibliography issues automatically by searching CrossRef
+.PHONY: fix-bibliography
+fix-bibliography:
+	@echo "🔧 Attempting to fix bibliography issues..."
+	@$(PYTHON_CMD) src/py/commands/fix_bibliography.py "$(MANUSCRIPT_PATH)" || { \
+		echo ""; \
+		echo "❌ Bibliography fixing failed!"; \
+		echo "💡 Run with --dry-run to see potential fixes first"; \
+		echo "💡 Use --verbose for detailed logging"; \
+		exit 1; \
+	}
+
+# Preview bibliography fixes without applying them
+.PHONY: fix-bibliography-dry-run
+fix-bibliography-dry-run:
+	@echo "🔍 Checking potential bibliography fixes..."
+	@$(PYTHON_CMD) src/py/commands/fix_bibliography.py "$(MANUSCRIPT_PATH)" --dry-run
+
+# Add bibliography entries from DOI
+.PHONY: add-bibliography
+add-bibliography:
+	@# Extract DOI arguments from command line
+	@DOI_ARGS=""; \
+	for arg in $(MAKECMDGOALS); do \
+		if echo "$$arg" | grep -E '^10\.[0-9]{4}.*' >/dev/null 2>&1; then \
+			DOI_ARGS="$$DOI_ARGS $$arg"; \
+		fi; \
+	done; \
+	if [ -z "$$DOI_ARGS" ]; then \
+		echo "❌ Error: No DOI(s) provided"; \
+		echo "💡 Usage: make add-bibliography 10.1000/example"; \
+		echo "💡 Multiple: make add-bibliography 10.1000/ex1 10.1000/ex2"; \
+		exit 1; \
+	fi; \
+	echo "📚 Adding bibliography entries from DOI(s):$$DOI_ARGS"; \
+	$(PYTHON_CMD) src/py/commands/add_bibliography.py "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose); \
+	exit 0
+
+# Allow DOI patterns as pseudo-targets
+.PHONY: $(shell echo 10.*)
+10.%: ;
+	@# DOI patterns are handled by add-bibliography target
+
 # ======================================================================
 # 🔨 INTERNAL BUILD TARGETS
 # ======================================================================
@@ -278,6 +343,8 @@ help:
 	echo "  make setup          - Install Python dependencies"; \
 	echo "  make pdf            - Generate PDF with validation (auto-runs Python figure scripts)"; \
 	echo "  make validate       - Check manuscript for issues"; \
+	echo "  make fix-bibliography - Automatically fix bibliography issues using CrossRef"; \
+	echo "  make add-bibliography - Add bibliography entries from DOI(s)"; \
 	echo "  make arxiv          - Prepare arXiv submission package"; \
 	echo "  make clean          - Remove output directory"; \
 	echo "  make help           - Show this help message"; \
@@ -303,7 +370,10 @@ help:
 	echo "💡 ADVANCED OPTIONS:"; \
 	echo "   - Skip validation: make pdf-no-validate"; \
 	echo "   - Force figure regeneration: make pdf FORCE_FIGURES=true (re-runs all Python/Mermaid scripts)"; \
-	echo "   - Use different manuscript folder: make pdf MANUSCRIPT_PATH=path/to/folder"; \
-	echo "   - Validation options: python3 src/py/scripts/validate_manuscript.py --help"; \
+	echo "   - Use different manuscript folder: MANUSCRIPT_PATH=path/to/folder make -e pdf"; \
+	echo "   - Preview bibliography fixes: make fix-bibliography-dry-run"; \
+	echo "   - Add bibliography: make add-bibliography 10.1000/example"; \
+	echo "   - Multiple DOIs: make add-bibliography 10.1000/ex1 10.1000/ex2"; \
+	echo "   - Validation options: python3 src/py/commands/validate.py --help"; \
 	echo "   - arXiv files created in: $(OUTPUT_DIR)/arxiv_submission/"; \
 	echo "   - arXiv ZIP file: $(OUTPUT_DIR)/for_arxiv.zip"
