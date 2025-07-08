@@ -1,8 +1,8 @@
 {
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
-  "description": "VS Code extension for scientific manuscript authoring with rxiv-maker",
-  "version": "0.0.1",
+  "description": "Toolkit for scientific manuscript authoring with rxiv-maker",
+  "version": "0.0.2",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -82,13 +82,6 @@
         "settings": {
           "foreground": "#569CD6"
         }
-      }
-    ],
-    "themes": [
-      {
-        "label": "Rxiv-Maker Syntax Highlighting",
-        "uiTheme": "vs-dark",
-        "path": "./themes/rxiv-syntax-theme.json"
       }
     ],
     "jsonValidation": [

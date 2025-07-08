@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15752358.svg)](https://doi.org/10.5281/zenodo.15752358)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.15752358-blue)](https://doi.org/10.5281/zenodo.15752358)
 [![License](https://img.shields.io/github/license/henriqueslab/vscode-rxiv-maker?color=Green)](https://github.com/henriqueslab/vscode-rxiv-maker/blob/main/LICENSE)
 [![Contributors](https://img.shields.io/github/contributors-anon/henriqueslab/vscode-rxiv-maker)](https://github.com/henriqueslab/vscode-rxiv-maker/graphs/contributors)
 [![GitHub stars](https://img.shields.io/github/stars/henriqueslab/vscode-rxiv-maker?style=social)](https://github.com/HenriquesLab/vscode-rxiv-maker/stargazers)
