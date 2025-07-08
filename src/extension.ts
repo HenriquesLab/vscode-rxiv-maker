@@ -175,113 +175,103 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	const validateProjectCommand = vscode.commands.registerCommand('rxiv-maker.validateProject', async () => {
-		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-		if (!workspaceFolder) {
-			vscode.window.showErrorMessage('No workspace folder found');
-			return;
+
+
+	// Shared terminal management
+	let rxivMakerTerminal: vscode.Terminal | undefined;
+
+	const getRxivMakerTerminal = (cwd: string): vscode.Terminal => {
+		// Check if existing terminal is still alive
+		if (rxivMakerTerminal && rxivMakerTerminal.exitStatus === undefined) {
+			return rxivMakerTerminal;
 		}
 
-		const requiredFiles = ['00_CONFIG.yml', '01_MAIN.rxm', '03_REFERENCES.bib'];
-		const optionalFiles = ['02_SUPPLEMENTARY_INFO.rxm'];
-		const messages: string[] = [];
+		// Create new terminal
+		rxivMakerTerminal = vscode.window.createTerminal({
+			name: 'rxiv-maker',
+			cwd: cwd
+		});
 
-		for (const file of requiredFiles) {
-			const filePath = path.join(workspaceFolder.uri.fsPath, file);
-			if (!fs.existsSync(filePath)) {
-				messages.push(`[MISSING] Required file: ${file}`);
-			} else {
-				messages.push(`[OK] Found: ${file}`);
+		// Clean up reference when terminal is closed
+		vscode.window.onDidCloseTerminal((terminal) => {
+			if (terminal === rxivMakerTerminal) {
+				rxivMakerTerminal = undefined;
 			}
-		}
+		});
 
-		for (const file of optionalFiles) {
-			const filePath = path.join(workspaceFolder.uri.fsPath, file);
-			if (fs.existsSync(filePath)) {
-				messages.push(`[OK] Found: ${file}`);
-			} else {
-				messages.push(`[INFO] Optional file not found: ${file}`);
-			}
-		}
-
-		const figuresDir = path.join(workspaceFolder.uri.fsPath, 'FIGURES');
-		if (fs.existsSync(figuresDir)) {
-			messages.push(`[OK] Found: FIGURES/ directory`);
-		} else {
-			messages.push(`[INFO] FIGURES/ directory not found`);
-		}
-
-		vscode.window.showInformationMessage(`Project validation complete:\n${messages.join('\n')}`);
-	});
-
-	const debugLanguageCommand = vscode.commands.registerCommand('rxiv-maker.debugLanguage', async () => {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			vscode.window.showErrorMessage('No active editor found');
-			return;
-		}
-
-		const document = editor.document;
-		const languageId = document.languageId;
-		const fileName = document.fileName;
-		const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
-		
-		let isRxivProject = false;
-		if (workspaceFolder) {
-			isRxivProject = await isRxivMakerProject(workspaceFolder.uri.fsPath);
-		}
-
-		const debugInfo = [
-			`File: ${fileName}`,
-			`Language ID: ${languageId}`,
-			`Expected: rxiv-markdown`,
-			`Is Rxiv Project: ${isRxivProject}`,
-			`Workspace: ${workspaceFolder?.name || 'None'}`
-		];
-
-		vscode.window.showInformationMessage(`Debug Info:\n${debugInfo.join('\n')}`);
-		
-		if (languageId !== 'rxiv-markdown') {
-			const setLanguage = await vscode.window.showQuickPick(['Yes', 'No'], {
-				placeHolder: 'Set language to rxiv-markdown?'
-			});
-			
-			if (setLanguage === 'Yes') {
-				await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
-			}
-		}
-	});
+		return rxivMakerTerminal;
+	};
 
 	const makeValidateCommand = vscode.commands.registerCommand('rxiv-maker.makeValidate', async () => {
 		const result = await findManuscriptFolder();
-		if (!result.success) {
+		if (!result.success || !result.rxivMakerRoot) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = vscode.window.createTerminal({
-			name: 'Rxiv-Maker Validate',
-			cwd: result.rxivMakerRoot
-		});
-		
+		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
 		terminal.show();
 		terminal.sendText(`make validate MANUSCRIPT_PATH="${result.manuscriptPath}"`);
 	});
 
 	const makePdfCommand = vscode.commands.registerCommand('rxiv-maker.makePdf', async () => {
 		const result = await findManuscriptFolder();
-		if (!result.success) {
+		if (!result.success || !result.rxivMakerRoot) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = vscode.window.createTerminal({
-			name: 'Rxiv-Maker PDF',
-			cwd: result.rxivMakerRoot
-		});
-		
+		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
 		terminal.show();
 		terminal.sendText(`make pdf MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+	});
+
+	const makeCleanCommand = vscode.commands.registerCommand('rxiv-maker.makeClean', async () => {
+		const result = await findManuscriptFolder();
+		if (!result.success || !result.rxivMakerRoot) {
+			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
+			return;
+		}
+
+		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		terminal.show();
+		terminal.sendText(`make clean MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+	});
+
+	const makeAddBibliographyCommand = vscode.commands.registerCommand('rxiv-maker.makeAddBibliography', async () => {
+		const result = await findManuscriptFolder();
+		if (!result.success || !result.rxivMakerRoot) {
+			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
+			return;
+		}
+
+		// Prompt user for DOI
+		const doi = await vscode.window.showInputBox({
+			prompt: 'Enter DOI to add to bibliography',
+			placeHolder: 'e.g., 10.1000/example or https://doi.org/10.1000/example',
+			validateInput: (value) => {
+				if (!value) {
+					return 'DOI is required';
+				}
+				// Basic DOI validation - should start with 10. or be a full DOI URL
+				const doiPattern = /^(https?:\/\/)?(dx\.)?doi\.org\/10\.|^10\./;
+				if (!doiPattern.test(value)) {
+					return 'Please enter a valid DOI (e.g., 10.1000/example)';
+				}
+				return undefined;
+			}
+		});
+
+		if (!doi) {
+			return; // User cancelled
+		}
+
+		// Clean up DOI - remove URL parts if present
+		const cleanDoi = doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, '');
+
+		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		terminal.show();
+		terminal.sendText(`make add-bibliography ${cleanDoi} MANUSCRIPT_PATH="${result.manuscriptPath}"`);
 	});
 
 	context.subscriptions.push(
@@ -290,10 +280,10 @@ export function activate(context: vscode.ExtensionContext) {
 		referenceProvider,
 		insertCitationCommand,
 		insertFigureReferenceCommand,
-		validateProjectCommand,
-		debugLanguageCommand,
 		makeValidateCommand,
-		makePdfCommand
+		makePdfCommand,
+		makeCleanCommand,
+		makeAddBibliographyCommand
 	);
 }
 

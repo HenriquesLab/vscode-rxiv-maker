@@ -94,7 +94,7 @@
     "commands": [
       {
         "command": "rxiv-maker.insertCitation",
-        "title": "Insert Citation",
+        "title": "Insert citation",
         "category": "Rxiv-Maker"
       },
       {
@@ -103,23 +103,23 @@
         "category": "Rxiv-Maker"
       },
       {
-        "command": "rxiv-maker.validateProject",
-        "title": "Validate Project Structure",
-        "category": "Rxiv-Maker"
-      },
-      {
-        "command": "rxiv-maker.debugLanguage",
-        "title": "Debug Language Detection",
-        "category": "Rxiv-Maker"
-      },
-      {
         "command": "rxiv-maker.makeValidate",
-        "title": "Make Validate",
+        "title": "Validate",
         "category": "Rxiv-Maker"
       },
       {
         "command": "rxiv-maker.makePdf",
-        "title": "Make PDF",
+        "title": "Build PDF",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.makeClean",
+        "title": "Clean",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.makeAddBibliography",
+        "title": "Add bibliography entry by DOI",
         "category": "Rxiv-Maker"
       }
     ]
