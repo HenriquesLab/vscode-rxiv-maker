@@ -10,6 +10,7 @@
 ![Citations](https://img.shields.io/badge/citations-bibtex-blue?labelColor=white&color=gray)
 ![LaTeX Output](https://img.shields.io/badge/output-professional_pdf-blue?labelColor=white&color=gray)
 ![GitHub Actions](https://img.shields.io/badge/deployment-cloud_&_local-blue?labelColor=white&color=gray)
+![VS Code Extension](https://img.shields.io/badge/VS_Code-extension_available-blue?labelColor=white&color=gray)
 
 # Rxiv-Maker
 
@@ -30,6 +31,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 - **Professional LaTeX Templates** - Various citation styles and academic formatting
 - **Version Control Friendly** - Git-based workflows and reproducible builds
 - **Multi-Environment Support** - Local, Google Colab, and GitHub Actions
+- **VS Code Integration** - Dedicated extension with syntax highlighting, IntelliSense, and project commands
 
 <details>
 <summary><strong>📋 Complete Rxiv-Markdown Feature List</strong></summary>
@@ -100,6 +102,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 | **📚 New to coding** | Google Colab | Google account | 2 minutes |
 | **⚡ Want automation** | GitHub Actions | GitHub account | 5 minutes |
 | **🔧 Full control** | Local Install | Python 3.11+, LaTeX, Make | 10-30 minutes |
+| **📝 VS Code users** | VS Code Extension | VS Code + Rxiv-Maker | 5 minutes |
 
 ### Google Colab (Easiest - No Installation Required)
 **Perfect for beginners and quick experiments without any local setup.**
@@ -149,6 +152,20 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 - Offline work environments
 - Integration with local development tools
 
+### VS Code Extension (Enhanced Writing Experience)
+**Intelligent editing with syntax highlighting, autocompletion, and project integration.**
+
+1. **Install** the [Rxiv-Maker VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)
+2. **Open** your rxiv-maker project in VS Code
+3. **Enjoy** enhanced editing with IntelliSense for citations and cross-references
+4. **Use** integrated commands for validation and PDF generation
+
+**✅ Perfect for:**
+- VS Code users wanting enhanced editing experience
+- Teams standardizing on VS Code workflows
+- Writers who prefer IDE-like features
+- Projects requiring citation and reference management
+
 </details>
 
 ## Core Workflow
@@ -168,6 +185,9 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 - **[GitHub Actions Guide](docs/github-actions-guide.md)** – Complete cloud PDF generation tutorial
 - **[User Guide](docs/user_guide.md)** – Comprehensive usage instructions and troubleshooting
 - **[Architecture Overview](docs/architecture.md)** – System design and technical details
+
+### Editor Integration
+- **[VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)** – Enhanced editing with syntax highlighting and IntelliSense
 
 ### Platform-Specific Setup
 - **[Windows/macOS/Linux Setup](docs/platforms/LOCAL_DEVELOPMENT.md)** – Complete installation guides for all platforms
@@ -235,6 +255,10 @@ If you use Rxiv-Maker in your research, please cite our work:
 
 **APA Style:**
 Saraiva, B. M., Jacquemet, G., & Henriques, R. (2025). Rxiv-Maker: an automated template engine for streamlined scientific publications. *Zenodo*. https://doi.org/10.5281/zenodo.15753534
+
+## Related Projects
+
+- **[Rxiv-Maker VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)** - Enhanced editing experience with syntax highlighting, IntelliSense, and project integration
 
 ## Acknowledgments
 
