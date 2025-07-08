@@ -35,18 +35,6 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             # Manual trigger: use user-provided path
             MANUSCRIPT_PATH="${{ github.event.inputs.manuscript_path }}"
-            
-            # Update .env file in the workflow environment (not committed)
-            if [ -f ".env" ]; then
-              # Remove existing MANUSCRIPT_PATH line and add new one
-              sed -i '/^MANUSCRIPT_PATH=/d' .env
-              echo "MANUSCRIPT_PATH=${MANUSCRIPT_PATH}" >> .env
-            else
-              # Create .env file if it doesn't exist
-              echo "MANUSCRIPT_PATH=${MANUSCRIPT_PATH}" > .env
-            fi
-            
-            echo "Updated .env file in workflow with MANUSCRIPT_PATH=${MANUSCRIPT_PATH}"
           else
             # Tag trigger: use .env file value or fallback to EXAMPLE_MANUSCRIPT
             MANUSCRIPT_PATH="${MANUSCRIPT_PATH:-EXAMPLE_MANUSCRIPT}"
