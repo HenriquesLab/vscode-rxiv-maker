@@ -4,6 +4,12 @@
   "description": "VS Code extension for scientific manuscript authoring with rxiv-maker",
   "version": "0.0.1",
   "publisher": "HenriquesLab",
+  "icon": "icon.png",
+  "license": "MIT",
+  "homepage": "https://github.com/HenriquesLab/vscode-rxiv-maker#readme",
+  "bugs": {
+    "url": "https://github.com/HenriquesLab/vscode-rxiv-maker/issues"
+  },
   "engines": {
     "vscode": "^1.101.0"
   },
