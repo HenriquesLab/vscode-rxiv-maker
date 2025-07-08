@@ -22,12 +22,35 @@
 # ⚙️  CONFIGURATION VARIABLES
 # ======================================================================
 
-# Load environment variables from .env file if it exists
--include .env
+# Export all variables but handle MANUSCRIPT_PATH specially
 export
 .EXPORT_ALL_VARIABLES:
 
-# Export MANUSCRIPT_PATH explicitly
+# Check if .env file exists
+ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
+
+# Python command selection (use venv if available, otherwise system python)
+PYTHON_CMD := $(shell if [ -f ".venv/bin/python" ]; then echo "$(PWD)/.venv/bin/python"; else echo "python3"; fi)
+
+OUTPUT_DIR := output
+
+# Handle MANUSCRIPT_PATH with proper precedence: command line > environment > .env > default
+ifeq ($(origin MANUSCRIPT_PATH), command line)
+    # Command line takes highest precedence - keep the value as is
+else ifeq ($(origin MANUSCRIPT_PATH), environment)
+    # Environment variable (like MANUSCRIPT_PATH=value make pdf) takes precedence
+else
+    # Load from .env file or use default
+    -include .env
+    MANUSCRIPT_PATH ?= $(shell \
+        if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
+            grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
+        else \
+            echo "MANUSCRIPT"; \
+        fi)
+endif
+
+# Export MANUSCRIPT_PATH explicitly after determining its value
 export MANUSCRIPT_PATH
 
 # Check if .env file exists
@@ -45,15 +68,9 @@ DEFAULT_MANUSCRIPT_PATH := $(shell \
 		echo "MANUSCRIPT"; \
 	fi)
 
-# Variable precedence: command line > environment > .env file > default
-# Check if MANUSCRIPT_PATH was set via command line (environment at make invocation)
-ifneq ($(origin MANUSCRIPT_PATH), undefined)
-  # Use the value that was passed (command line or environment)
-  # Don't override it with .env
-else
-  # Not set via command line, use .env value or default
-  MANUSCRIPT_PATH = $(DEFAULT_MANUSCRIPT_PATH)
-endif
+# Simple variable precedence: Use MANUSCRIPT_PATH if defined, otherwise use default
+# This handles both command-line (MANUSCRIPT_PATH=value make target) and environment variables
+MANUSCRIPT_PATH ?= $(DEFAULT_MANUSCRIPT_PATH)
 
 ARTICLE_DIR = $(MANUSCRIPT_PATH)
 FIGURES_DIR = $(ARTICLE_DIR)/FIGURES
