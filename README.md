@@ -1,71 +1,41 @@
-# rxiv-maker README
+# Rxiv-Maker VS Code Extension
 
-This is the README for your extension "rxiv-maker". After writing up a brief description, we recommend including the following sections.
+A VS Code extension for scientific manuscript authoring with rxiv-maker framework.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Syntax Highlighting**: Custom syntax highlighting for rxiv-maker markdown files (.rxm)
+- **Citation Completion**: IntelliSense for bibliography entries from 03_REFERENCES.bib
+- **Cross-reference Completion**: Autocompletion for @fig:, @table:, @eq:, @snote: references
+- **YAML Validation**: Schema validation for 00_CONFIG.yml configuration files
+- **Project Commands**: Insert citations, figure references, and validate project structure
 
-For example if there is an image subfolder under your extension project workspace:
+## Supported Syntax
 
-\!\[feature X\]\(images/feature-x.png\)
+- Cross-references: `@fig:label`, `@sfig:label`, `@table:label`, `@stable:label`, `@eq:label`, `@snote:label`
+- Citations: `@citation`, `[@cite1;@cite2]`
+- Math expressions: `$inline$`, `$$block$$`, `$$equation$$ {#eq:label}`
+- Scientific notation: `~subscript~`, `^superscript^`
+- Document control: `<newpage>`, `<clearpage>`
+- Figure metadata: `{#fig:label width="50%" tex_position="t"}`
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Usage
+
+1. Open a workspace containing rxiv-maker files
+2. Files with `.rxm` extension will automatically use rxiv-markdown language mode
+3. Use Ctrl+Space for autocompletion of citations and references
+4. Use Command Palette commands for inserting citations and references
+
+## Commands
+
+- `Rxiv-Maker: Insert Citation` - Insert bibliography citation
+- `Rxiv-Maker: Insert Figure Reference` - Insert figure reference
+- `Rxiv-Maker: Validate Project Structure` - Check project files
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+This extension works with rxiv-maker project structure:
+- `00_CONFIG.yml` - Project configuration
+- `01_MAIN.rxm` - Main manuscript file
+- `03_REFERENCES.bib` - Bibliography file
+- `FIGURES/` - Figure directory (optional)

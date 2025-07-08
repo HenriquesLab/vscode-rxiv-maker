@@ -1,248 +1,270 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "Rxiv Markdown",
-  "scopeName": "text.html.markdown.rxiv",
+  "name": "Rxiv-Markdown",
+  "scopeName": "source.rxiv-markdown",
+  "fileTypes": ["rxm"],
   "patterns": [
     {
-      "include": "#rxiv-cross-references"
-    },
-    {
-      "include": "#rxiv-citations"
-    },
-    {
-      "include": "#rxiv-math"
-    },
-    {
-      "include": "#rxiv-subscript"
-    },
-    {
-      "include": "#rxiv-superscript"
-    },
-    {
-      "include": "#rxiv-document-control"
-    },
-    {
-      "include": "#rxiv-figure-metadata"
-    },
-    {
-      "include": "text.html.markdown"
-    }
-  ],
-  "repository": {
-    "rxiv-cross-references": {
-      "patterns": [
-        {
-          "name": "markup.underline.link.rxiv.figure-reference",
-          "match": "@(s?)fig:[a-zA-Z0-9_-]+",
-          "captures": {
-            "0": {
-              "name": "entity.name.tag.rxiv.reference"
-            }
-          }
-        },
-        {
-          "name": "markup.underline.link.rxiv.table-reference",
-          "match": "@(s?)table:[a-zA-Z0-9_-]+",
-          "captures": {
-            "0": {
-              "name": "entity.name.tag.rxiv.reference"
-            }
-          }
-        },
-        {
-          "name": "markup.underline.link.rxiv.equation-reference",
-          "match": "@eq:[a-zA-Z0-9_-]+",
-          "captures": {
-            "0": {
-              "name": "entity.name.tag.rxiv.reference"
-            }
-          }
-        },
-        {
-          "name": "markup.underline.link.rxiv.note-reference",
-          "match": "@snote:[a-zA-Z0-9_-]+",
-          "captures": {
-            "0": {
-              "name": "entity.name.tag.rxiv.reference"
-            }
-          }
-        }
-      ]
-    },
-    "rxiv-citations": {
-      "patterns": [
-        {
-          "name": "markup.underline.link.rxiv.citation-multiple",
-          "begin": "\\[",
-          "end": "\\]",
-          "captures": {
-            "0": {
-              "name": "punctuation.definition.string.begin.rxiv.citation"
-            }
-          },
-          "patterns": [
-            {
-              "name": "entity.name.tag.rxiv.citation",
-              "match": "@[a-zA-Z0-9_:-]+",
-              "captures": {
-                "0": {
-                  "name": "markup.underline.link.rxiv.citation"
-                }
-              }
-            },
-            {
-              "name": "punctuation.separator.rxiv.citation",
-              "match": ";"
-            }
-          ]
-        },
-        {
-          "name": "markup.underline.link.rxiv.citation-single",
-          "match": "@[a-zA-Z0-9_:-]+",
-          "captures": {
-            "0": {
-              "name": "entity.name.tag.rxiv.citation"
-            }
-          }
-        }
-      ]
-    },
-    "rxiv-math": {
-      "patterns": [
-        {
-          "name": "markup.math.block.rxiv",
-          "begin": "\\$\\$",
-          "end": "\\$\\$",
-          "captures": {
-            "0": {
-              "name": "punctuation.definition.string.begin.rxiv.math"
-            }
-          },
-          "patterns": [
-            {
-              "name": "markup.math.latex.rxiv",
-              "match": ".*"
-            }
-          ]
-        },
-        {
-          "name": "markup.math.block.rxiv.labeled",
-          "begin": "\\$\\$",
-          "end": "\\$\\$\\s*\\{#eq:[a-zA-Z0-9_-]+\\}",
-          "captures": {
-            "0": {
-              "name": "punctuation.definition.string.begin.rxiv.math"
-            }
-          },
-          "patterns": [
-            {
-              "name": "markup.math.latex.rxiv",
-              "match": ".*"
-            }
-          ]
-        },
-        {
-          "name": "markup.math.inline.rxiv",
-          "begin": "\\$",
-          "end": "\\$",
-          "captures": {
-            "0": {
-              "name": "punctuation.definition.string.begin.rxiv.math"
-            }
-          },
-          "patterns": [
-            {
-              "name": "markup.math.latex.rxiv",
-              "match": ".*"
-            }
-          ]
-        }
-      ]
-    },
-    "rxiv-subscript": {
-      "name": "markup.other.rxiv.subscript",
-      "begin": "~",
-      "end": "~",
-      "captures": {
-        "0": {
-          "name": "punctuation.definition.string.begin.rxiv.subscript"
-        }
+      "name": "comment.block.html",
+      "begin": "<!--",
+      "end": "-->",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.comment.begin.html"}
       },
-      "patterns": [
-        {
-          "name": "markup.subscript.rxiv",
-          "match": ".*"
-        }
-      ]
-    },
-    "rxiv-superscript": {
-      "name": "markup.other.rxiv.superscript",
-      "begin": "\\^",
-      "end": "\\^",
-      "captures": {
-        "0": {
-          "name": "punctuation.definition.string.begin.rxiv.superscript"
-        }
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.comment.end.html"}
       },
-      "patterns": [
-        {
-          "name": "markup.superscript.rxiv",
-          "match": ".*"
-        }
-      ]
+      "comment": "HTML-style comments"
     },
-    "rxiv-document-control": {
-      "patterns": [
-        {
-          "name": "keyword.control.rxiv.newpage",
-          "match": "<newpage>",
-          "captures": {
-            "0": {
-              "name": "entity.name.tag.rxiv.control"
-            }
-          }
-        },
-        {
-          "name": "keyword.control.rxiv.clearpage",
-          "match": "<clearpage>",
-          "captures": {
-            "0": {
-              "name": "entity.name.tag.rxiv.control"
-            }
-          }
-        }
-      ]
+    {
+      "name": "markup.heading.1.markdown",
+      "match": "^(#{1})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 1"
     },
-    "rxiv-figure-metadata": {
-      "name": "markup.other.rxiv.figure-metadata",
-      "begin": "\\{#(fig|table|eq):",
+    {
+      "name": "markup.heading.2.markdown",
+      "match": "^(#{2})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 2"
+    },
+    {
+      "name": "markup.heading.3.markdown",
+      "match": "^(#{3})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 3"
+    },
+    {
+      "name": "markup.heading.4.markdown",
+      "match": "^(#{4})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 4"
+    },
+    {
+      "name": "markup.heading.5.markdown",
+      "match": "^(#{5})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 5"
+    },
+    {
+      "name": "markup.heading.6.markdown",
+      "match": "^(#{6})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 6"
+    },
+    {
+      "name": "markup.fenced_code.block.markdown",
+      "begin": "^\\s*```\\s*([a-zA-Z0-9_+-]*)",
+      "end": "^\\s*```\\s*$",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.markdown"},
+        "1": {"name": "fenced_code.block.language.markdown"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.markdown"}
+      },
+      "name": "markup.fenced_code.block.markdown",
+      "comment": "Fenced code blocks"
+    },
+    {
+      "name": "markup.inline.raw.string.markdown",
+      "begin": "`",
+      "end": "`",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.raw.markdown"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.raw.markdown"}
+      },
+      "contentName": "markup.inline.raw.string.markdown",
+      "comment": "Inline code"
+    },
+    {
+      "name": "markup.bold.markdown",
+      "match": "(\\*\\*|__)([^*_]+)(\\*\\*|__)",
+      "captures": {
+        "1": {"name": "punctuation.definition.bold.markdown"},
+        "2": {"name": "markup.bold.markdown"},
+        "3": {"name": "punctuation.definition.bold.markdown"}
+      },
+      "comment": "Bold text"
+    },
+    {
+      "name": "markup.italic.markdown",
+      "match": "(\\*|_)([^*_]+)(\\*|_)",
+      "captures": {
+        "1": {"name": "punctuation.definition.italic.markdown"},
+        "2": {"name": "markup.italic.markdown"},
+        "3": {"name": "punctuation.definition.italic.markdown"}
+      },
+      "comment": "Italic text"
+    },
+    {
+      "name": "markup.underline.link.markdown",
+      "match": "!?\\[([^\\]]*?)\\]\\(([^)]+)\\)",
+      "captures": {
+        "1": {"name": "string.other.link.title.markdown"},
+        "2": {"name": "markup.underline.link.markdown"}
+      },
+      "comment": "Links and images"
+    },
+    {
+      "name": "markup.list.unnumbered.markdown",
+      "match": "^\\s*([*+-])\\s+",
+      "captures": {
+        "1": {"name": "punctuation.definition.list.markdown"}
+      },
+      "comment": "Unordered lists"
+    },
+    {
+      "name": "markup.list.numbered.markdown",
+      "match": "^\\s*([0-9]+\\.)\\s+",
+      "captures": {
+        "1": {"name": "punctuation.definition.list.markdown"}
+      },
+      "comment": "Ordered lists"
+    },
+    {
+      "name": "markup.quote.markdown",
+      "match": "^\\s*(>)\\s*(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.quote.markdown"},
+        "2": {"name": "markup.quote.markdown"}
+      },
+      "comment": "Blockquotes"
+    },
+    {
+      "name": "meta.separator.markdown",
+      "match": "^\\s*(-{3,}|\\*{3,}|_{3,})\\s*$",
+      "comment": "Horizontal rules"
+    },
+    {
+      "name": "constant.numeric.subscript.rxiv",
+      "match": "~[^~]+~",
+      "comment": "Subscript notation with tilde syntax"
+    },
+    {
+      "name": "constant.numeric.subscript.rxiv",
+      "match": "<del>[^<>]+</del>",
+      "comment": "Subscript notation with del tag syntax"
+    },
+    {
+      "name": "keyword.operator.superscript.rxiv", 
+      "match": "\\^[^\\^]+\\^",
+      "comment": "Superscript notation - supports x^2^ syntax"
+    },
+    {
+      "name": "keyword.control.newpage.rxiv",
+      "match": "<newpage>|<clearpage>",
+      "comment": "New page and clear page directives"
+    },
+    {
+      "name": "meta.figure.metadata.rxiv",
+      "begin": "\\{#",
       "end": "\\}",
-      "captures": {
-        "0": {
-          "name": "punctuation.definition.string.begin.rxiv.metadata"
-        }
+      "comment": "Figure metadata block",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.metadata.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.metadata.end.rxiv"}
       },
       "patterns": [
+        {
+          "name": "variable.other.constant.rxiv",
+          "match": "(fig|sfig|table|stable|eq|snote):[a-zA-Z0-9_-]+",
+          "comment": "Reference labels like fig:test"
+        },
         {
           "name": "entity.other.attribute-name.rxiv",
-          "match": "\\b(width|height|tex_position|caption)\\b"
+          "match": "\\b(width|height|tex_position)\\b",
+          "comment": "Attribute names"
         },
         {
           "name": "string.quoted.double.rxiv",
-          "begin": "\"",
-          "end": "\"",
-          "patterns": [
-            {
-              "name": "constant.character.escape.rxiv",
-              "match": "\\\\."
-            }
-          ]
+          "match": "\"[^\"]*\"",
+          "comment": "Double quoted values"
         },
         {
-          "name": "constant.numeric.rxiv",
-          "match": "\\b\\d+(\\.\\d+)?%?\\b"
+          "name": "string.quoted.single.rxiv",
+          "match": "'[^']*'",
+          "comment": "Single quoted values"
+        },
+        {
+          "name": "keyword.operator.assignment.rxiv",
+          "match": "=",
+          "comment": "Assignment operator"
         }
       ]
+    },
+    {
+      "name": "keyword.control.rxiv",
+      "match": "@eq:[a-zA-Z0-9_-]+",
+      "comment": "Equation references"
+    },
+    {
+      "name": "entity.name.function.rxiv",
+      "match": "@snote:[a-zA-Z0-9_-]+",
+      "comment": "Supplementary note references"
+    },
+    {
+      "name": "constant.numeric.rxiv",
+      "match": "@s?fig:[a-zA-Z0-9_-]+",
+      "comment": "Figure references"
+    },
+    {
+      "name": "variable.other.rxiv",
+      "match": "@s?table:[a-zA-Z0-9_-]+",
+      "comment": "Table references"
+    },
+    {
+      "name": "string.quoted.double.rxiv",
+      "match": "@[a-zA-Z0-9_]+",
+      "comment": "Citations"
+    },
+    {
+      "name": "string.other.math.block.rxiv",
+      "begin": "\\$\\$",
+      "end": "\\$\\$",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.math.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.math.end.rxiv"}
+      },
+      "contentName": "markup.math.block.rxiv",
+      "comment": "Block math expressions $$...$$"
+    },
+    {
+      "name": "string.other.math.inline.rxiv",
+      "begin": "(?<!\\$)\\$(?!\\$)",
+      "end": "(?<!\\$)\\$(?!\\$)",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.math.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.math.end.rxiv"}
+      },
+      "contentName": "markup.math.inline.rxiv",
+      "comment": "Inline math expressions $...$"
     }
-  }
+  ]
 }

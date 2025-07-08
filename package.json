@@ -3,6 +3,7 @@
   "displayName": "Rxiv-Maker",
   "description": "VS Code extension for scientific manuscript authoring with rxiv-maker",
   "version": "0.0.1",
+  "publisher": "HenriquesLab",
   "engines": {
     "vscode": "^1.101.0"
   },
@@ -20,11 +21,14 @@
     "citations",
     "bibliography"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HenriquesLab/vscode-rxiv-maker.git"
+  },
   "activationEvents": [
-    "onLanguage:rxiv-markdown",
-    "workspaceContains:**/00_CONFIG.yml",
+    "workspaceContains:**/*.rxm",
     "workspaceContains:**/01_MAIN.md",
-    "workspaceContains:**/03_REFERENCES.bib"
+    "workspaceContains:**/02_SUPPLEMENTARY_INFO.md"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -32,20 +36,53 @@
       {
         "id": "rxiv-markdown",
         "aliases": [
-          "Rxiv Markdown",
+          "Rxiv-Markdown",
           "rxiv-markdown"
         ],
         "extensions": [
-          ".md"
+          ".rxm"
+        ],
+        "filenames": [
+          "01_MAIN.md",
+          "02_SUPPLEMENTARY_INFO.md"
         ],
         "configuration": "./language-configuration.json"
       }
     ],
+    "configurationDefaults": {
+      "[rxiv-markdown]": {
+        "editor.wordWrap": "on"
+      }
+    },
     "grammars": [
       {
         "language": "rxiv-markdown",
-        "scopeName": "text.html.markdown.rxiv",
+        "scopeName": "source.rxiv-markdown",
         "path": "./syntaxes/rxiv-markdown.tmLanguage.json"
+      }
+    ],
+    "tokenColors": [
+      {
+        "scope": [
+          "markup.subscript",
+          "markup.superscript"
+        ],
+        "settings": {
+          "foreground": "#A0A0A0"
+        }
+      },
+      {
+        "scope": "keyword.control.newpage.rxiv",
+        "settings": {
+          "foreground": "#569CD6"
+        }
+      }
+    ],
+    "themes": [
+      {
+        "label": "Rxiv-Maker Syntax Highlighting",
+        "uiTheme": "vs-dark",
+        "path": "./themes/rxiv-syntax-theme.json"
       }
     ],
     "jsonValidation": [
@@ -69,6 +106,21 @@
         "command": "rxiv-maker.validateProject",
         "title": "Validate Project Structure",
         "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.debugLanguage",
+        "title": "Debug Language Detection",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.makeValidate",
+        "title": "Make Validate",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.makePdf",
+        "title": "Make PDF",
+        "category": "Rxiv-Maker"
       }
     ]
   },
@@ -84,19 +136,25 @@
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "NODE_NO_WARNINGS=1 vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.101.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.101.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
-    "esbuild": "^0.25.3",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "punycode": "npm:punycode@^2.3.1"
+  },
+  "dependencies": {
+    "vsce": "^2.15.0"
   }
 }

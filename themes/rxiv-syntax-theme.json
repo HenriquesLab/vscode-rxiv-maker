@@ -1,0 +1,22 @@
+{
+  "name": "Rxiv-Maker Syntax Highlighting",
+  "type": "dark",
+  "tokenColors": [
+    {
+      "scope": ["markup.subscript"],
+      "settings": { "foreground": "#A0A0A0" }
+    },
+    {
+      "scope": ["markup.superscript"],
+      "settings": { "foreground": "#A0A0A0" }
+    },
+    {
+      "scope": ["keyword.control.newpage.rxiv"],
+      "settings": { "foreground": "#569CD6" }
+    },
+    {
+      "scope": ["meta.figure.metadata.rxiv"],
+      "settings": { "foreground": "#CE9178" }
+    }
+  ]
+}

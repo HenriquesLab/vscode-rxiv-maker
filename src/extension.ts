@@ -17,28 +17,70 @@ interface ReferenceLabel {
 	supplementary?: boolean;
 }
 
+interface ManuscriptFolderResult {
+	success: boolean;
+	manuscriptPath?: string;
+	rxivMakerRoot?: string;
+	error?: string;
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Rxiv-Maker extension is now active!');
 
+	// Cached project detection
+	const projectCache = new Map<string, boolean>();
+
 	// Automatically detect and set language mode for rxiv-maker files
 	const fileDetector = vscode.workspace.onDidOpenTextDocument(async (document) => {
-		if (document.fileName.endsWith('.md')) {
+		const fileName = path.basename(document.fileName);
+		const isRxivFile = document.fileName.endsWith('.rxm') || 
+			fileName === '01_MAIN.md' || 
+			fileName === '02_SUPPLEMENTARY_INFO.md';
+			
+		if (isRxivFile) {
 			const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
-			if (workspaceFolder && await isRxivMakerProject(workspaceFolder.uri.fsPath)) {
-				await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
+			if (workspaceFolder) {
+				const workspacePath = workspaceFolder.uri.fsPath;
+				let isRxivProject = projectCache.get(workspacePath);
+				
+				if (isRxivProject === undefined) {
+					isRxivProject = await isRxivMakerProject(workspacePath);
+					projectCache.set(workspacePath, isRxivProject);
+				}
+				
+				if (isRxivProject) {
+					await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
+				}
 			}
 		}
 	});
 
-	// Check already open documents
-	vscode.workspace.textDocuments.forEach(async (document) => {
-		if (document.fileName.endsWith('.md')) {
-			const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
-			if (workspaceFolder && await isRxivMakerProject(workspaceFolder.uri.fsPath)) {
-				await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
+	// Check already open documents (non-blocking)
+	setTimeout(async () => {
+		for (const document of vscode.workspace.textDocuments) {
+			const fileName = path.basename(document.fileName);
+			const isRxivFile = document.fileName.endsWith('.rxm') || 
+				fileName === '01_MAIN.md' || 
+				fileName === '02_SUPPLEMENTARY_INFO.md';
+				
+			if (isRxivFile) {
+				const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+				if (workspaceFolder) {
+					const workspacePath = workspaceFolder.uri.fsPath;
+					let isRxivProject = projectCache.get(workspacePath);
+					
+					if (isRxivProject === undefined) {
+						isRxivProject = await isRxivMakerProject(workspacePath);
+						projectCache.set(workspacePath, isRxivProject);
+					}
+					
+					if (isRxivProject) {
+						await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
+					}
+				}
 			}
 		}
-	});
+	}, 500);
 
 	// Register completion provider for citations
 	const citationProvider = vscode.languages.registerCompletionItemProvider(
@@ -58,7 +100,26 @@ export function activate(context: vscode.ExtensionContext) {
 	const insertCitationCommand = vscode.commands.registerCommand('rxiv-maker.insertCitation', async () => {
 		const bibEntries = await getBibEntries();
 		if (bibEntries.length === 0) {
-			vscode.window.showWarningMessage('No bibliography file found. Please create 03_REFERENCES.bib');
+			// Build the same search paths as getBibEntries() to show user exactly where we looked
+			const searchPaths: string[] = [];
+			const activeEditor = vscode.window.activeTextEditor;
+			
+			if (activeEditor) {
+				const currentDir = path.dirname(activeEditor.document.fileName);
+				searchPaths.push(path.join(currentDir, '03_REFERENCES.bib'));
+			}
+			
+			if (vscode.workspace.workspaceFolders) {
+				for (const folder of vscode.workspace.workspaceFolders) {
+					const workspaceBib = path.join(folder.uri.fsPath, '03_REFERENCES.bib');
+					if (!searchPaths.includes(workspaceBib)) {
+						searchPaths.push(workspaceBib);
+					}
+				}
+			}
+			
+			const message = `No bibliography file (03_REFERENCES.bib) found.\n\nSearched in:\n${searchPaths.join('\n')}\n\nPlease create 03_REFERENCES.bib in the same directory as your document.`;
+			vscode.window.showWarningMessage(message);
 			return;
 		}
 
@@ -121,36 +182,106 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const requiredFiles = ['00_CONFIG.yml', '01_MAIN.md', '03_REFERENCES.bib'];
-		const optionalFiles = ['02_SUPPLEMENTARY_INFO.md'];
+		const requiredFiles = ['00_CONFIG.yml', '01_MAIN.rxm', '03_REFERENCES.bib'];
+		const optionalFiles = ['02_SUPPLEMENTARY_INFO.rxm'];
 		const messages: string[] = [];
 
 		for (const file of requiredFiles) {
 			const filePath = path.join(workspaceFolder.uri.fsPath, file);
 			if (!fs.existsSync(filePath)) {
-				messages.push(`❌ Missing required file: ${file}`);
+				messages.push(`[MISSING] Required file: ${file}`);
 			} else {
-				messages.push(`✅ Found: ${file}`);
+				messages.push(`[OK] Found: ${file}`);
 			}
 		}
 
 		for (const file of optionalFiles) {
 			const filePath = path.join(workspaceFolder.uri.fsPath, file);
 			if (fs.existsSync(filePath)) {
-				messages.push(`✅ Found: ${file}`);
+				messages.push(`[OK] Found: ${file}`);
 			} else {
-				messages.push(`ℹ️ Optional file not found: ${file}`);
+				messages.push(`[INFO] Optional file not found: ${file}`);
 			}
 		}
 
 		const figuresDir = path.join(workspaceFolder.uri.fsPath, 'FIGURES');
 		if (fs.existsSync(figuresDir)) {
-			messages.push(`✅ Found: FIGURES/ directory`);
+			messages.push(`[OK] Found: FIGURES/ directory`);
 		} else {
-			messages.push(`ℹ️ FIGURES/ directory not found`);
+			messages.push(`[INFO] FIGURES/ directory not found`);
 		}
 
 		vscode.window.showInformationMessage(`Project validation complete:\n${messages.join('\n')}`);
+	});
+
+	const debugLanguageCommand = vscode.commands.registerCommand('rxiv-maker.debugLanguage', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage('No active editor found');
+			return;
+		}
+
+		const document = editor.document;
+		const languageId = document.languageId;
+		const fileName = document.fileName;
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+		
+		let isRxivProject = false;
+		if (workspaceFolder) {
+			isRxivProject = await isRxivMakerProject(workspaceFolder.uri.fsPath);
+		}
+
+		const debugInfo = [
+			`File: ${fileName}`,
+			`Language ID: ${languageId}`,
+			`Expected: rxiv-markdown`,
+			`Is Rxiv Project: ${isRxivProject}`,
+			`Workspace: ${workspaceFolder?.name || 'None'}`
+		];
+
+		vscode.window.showInformationMessage(`Debug Info:\n${debugInfo.join('\n')}`);
+		
+		if (languageId !== 'rxiv-markdown') {
+			const setLanguage = await vscode.window.showQuickPick(['Yes', 'No'], {
+				placeHolder: 'Set language to rxiv-markdown?'
+			});
+			
+			if (setLanguage === 'Yes') {
+				await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
+			}
+		}
+	});
+
+	const makeValidateCommand = vscode.commands.registerCommand('rxiv-maker.makeValidate', async () => {
+		const result = await findManuscriptFolder();
+		if (!result.success) {
+			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
+			return;
+		}
+
+		const terminal = vscode.window.createTerminal({
+			name: 'Rxiv-Maker Validate',
+			cwd: result.rxivMakerRoot
+		});
+		
+		terminal.show();
+		terminal.sendText(`make validate MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+	});
+
+	const makePdfCommand = vscode.commands.registerCommand('rxiv-maker.makePdf', async () => {
+		const result = await findManuscriptFolder();
+		if (!result.success) {
+			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
+			return;
+		}
+
+		const terminal = vscode.window.createTerminal({
+			name: 'Rxiv-Maker PDF',
+			cwd: result.rxivMakerRoot
+		});
+		
+		terminal.show();
+		terminal.sendText(`make pdf MANUSCRIPT_PATH="${result.manuscriptPath}"`);
 	});
 
 	context.subscriptions.push(
@@ -159,7 +290,10 @@ export function activate(context: vscode.ExtensionContext) {
 		referenceProvider,
 		insertCitationCommand,
 		insertFigureReferenceCommand,
-		validateProjectCommand
+		validateProjectCommand,
+		debugLanguageCommand,
+		makeValidateCommand,
+		makePdfCommand
 	);
 }
 
@@ -173,7 +307,8 @@ class CitationCompletionProvider implements vscode.CompletionItemProvider {
 		const lineText = document.lineAt(position).text;
 		const beforeCursor = lineText.substring(0, position.character);
 		
-		if (!beforeCursor.endsWith('@')) {
+		// Check for @ at cursor position or after [ for citations like [@citation]
+		if (!beforeCursor.endsWith('@') && !beforeCursor.match(/\[@$/)) {
 			return [];
 		}
 
@@ -198,7 +333,8 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 		const lineText = document.lineAt(position).text;
 		const beforeCursor = lineText.substring(0, position.character);
 		
-		if (!beforeCursor.match(/@(s?)fig:$|@(s?)table:$|@eq:$|@snote:$/)) {
+		// Only provide reference completions for specific patterns, not general citations
+		if (!beforeCursor.match(/@s?fig:$|@s?table:$|@eq:$|@snote:$/)) {
 			return [];
 		}
 
@@ -226,18 +362,51 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 }
 
 async function getBibEntries(): Promise<BibEntry[]> {
-	const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-	if (!workspaceFolder) {
+	// Try to find bibliography file in multiple locations
+	const searchPaths: string[] = [];
+	
+	// 1. Try current document's directory first (highest priority)
+	const activeEditor = vscode.window.activeTextEditor;
+	if (activeEditor) {
+		const currentDir = path.dirname(activeEditor.document.fileName);
+		const currentDirBib = path.join(currentDir, '03_REFERENCES.bib');
+		searchPaths.push(currentDirBib);
+		console.log('Rxiv-Maker: Searching for bibliography in current document directory:', currentDirBib);
+	}
+	
+	// 2. Try workspace folders as fallback
+	if (vscode.workspace.workspaceFolders) {
+		for (const folder of vscode.workspace.workspaceFolders) {
+			const workspaceBib = path.join(folder.uri.fsPath, '03_REFERENCES.bib');
+			// Avoid duplicates
+			if (!searchPaths.includes(workspaceBib)) {
+				searchPaths.push(workspaceBib);
+				console.log('Rxiv-Maker: Searching for bibliography in workspace folder:', workspaceBib);
+			}
+		}
+	}
+	
+	// Find the first existing bibliography file
+	let bibPath: string | null = null;
+	for (const searchPath of searchPaths) {
+		try {
+			await fs.promises.access(searchPath, fs.constants.F_OK | fs.constants.R_OK);
+			bibPath = searchPath;
+			console.log('Rxiv-Maker: Found bibliography file at:', bibPath);
+			break;
+		} catch (error) {
+			console.log('Rxiv-Maker: Bibliography not found at:', searchPath);
+			// Continue searching
+		}
+	}
+	
+	if (!bibPath) {
+		console.log('Rxiv-Maker: No bibliography file found in any search location');
 		return [];
 	}
-
-	const bibPath = path.join(workspaceFolder.uri.fsPath, '03_REFERENCES.bib');
-	if (!fs.existsSync(bibPath)) {
-		return [];
-	}
-
+	
 	try {
-		const content = fs.readFileSync(bibPath, 'utf8');
+		const content = await fs.promises.readFile(bibPath, 'utf8');
 		const entries: BibEntry[] = [];
 		
 		const entryRegex = /@(\w+)\s*\{\s*([^,\s]+)\s*,/g;
@@ -266,6 +435,10 @@ async function getBibEntries(): Promise<BibEntry[]> {
 		
 		return entries;
 	} catch (error) {
+		// Silently handle missing bibliography file - this is normal for non-rxiv-maker projects
+		if ((error as any).code === 'ENOENT') {
+			return [];
+		}
 		console.error('Error parsing bibliography:', error);
 		return [];
 	}
@@ -335,13 +508,137 @@ function findMatchingBrace(content: string, start: number): number {
 }
 
 async function isRxivMakerProject(workspacePath: string): Promise<boolean> {
-	const requiredFiles = ['00_CONFIG.yml', '01_MAIN.md', '03_REFERENCES.bib'];
-	const detectedFiles = requiredFiles.filter(file => 
-		fs.existsSync(path.join(workspacePath, file))
-	);
+	try {
+		const requiredFiles = ['00_CONFIG.yml', '01_MAIN.rxm', '01_MAIN.md', '03_REFERENCES.bib'];
+		const optionalFiles = ['02_SUPPLEMENTARY_INFO.rxm', '02_SUPPLEMENTARY_INFO.md'];
+		
+		const detectedFiles = await Promise.all(
+			requiredFiles.map(async (file) => {
+				try {
+					await fs.promises.access(path.join(workspacePath, file));
+					return true;
+				} catch {
+					return false;
+				}
+			})
+		);
+		
+		const foundCount = detectedFiles.filter(Boolean).length;
+		// Consider it an rxiv-maker project if at least 2 out of 4 required files are present
+		// This accounts for either .rxm or .md versions of main files
+		return foundCount >= 2;
+	} catch (error) {
+		console.error('Error checking rxiv-maker project:', error);
+		return false;
+	}
+}
+
+async function findManuscriptFolder(): Promise<ManuscriptFolderResult> {
+	// Get current active document
+	const activeEditor = vscode.window.activeTextEditor;
+	if (!activeEditor) {
+		return {
+			success: false,
+			error: 'No active document. Please open a file in your manuscript folder.'
+		};
+	}
+
+	const currentFile = activeEditor.document.fileName;
+	const currentDir = path.dirname(currentFile);
 	
-	// Consider it an rxiv-maker project if at least 2 out of 3 required files are present
-	return detectedFiles.length >= 2;
+	// Check if current directory contains manuscript files
+	const manuscriptFiles = ['00_CONFIG.yml', '01_MAIN.md', '01_MAIN.rxm', '03_REFERENCES.bib'];
+	const hasManuscriptFiles = await Promise.all(
+		manuscriptFiles.map(async (file) => {
+			try {
+				await fs.promises.access(path.join(currentDir, file));
+				return true;
+			} catch {
+				return false;
+			}
+		})
+	);
+
+	let manuscriptPath: string;
+	if (hasManuscriptFiles.some(exists => exists)) {
+		// Current directory is a manuscript folder
+		manuscriptPath = currentDir;
+	} else {
+		// Try to find manuscript folder in workspace
+		const workspaceFolders = vscode.workspace.workspaceFolders;
+		if (!workspaceFolders) {
+			return {
+				success: false,
+				error: 'No workspace folder found. Please open the manuscript folder in VS Code.'
+			};
+		}
+
+		// Look for manuscript folders in workspace
+		let foundManuscriptPath: string | null = null;
+		for (const folder of workspaceFolders) {
+			const folderPath = folder.uri.fsPath;
+			const hasFiles = await Promise.all(
+				manuscriptFiles.map(async (file) => {
+					try {
+						await fs.promises.access(path.join(folderPath, file));
+						return true;
+					} catch {
+						return false;
+					}
+				})
+			);
+			
+			if (hasFiles.some(exists => exists)) {
+				foundManuscriptPath = folderPath;
+				break;
+			}
+		}
+
+		if (!foundManuscriptPath) {
+			return {
+				success: false,
+				error: 'No manuscript folder found. Please ensure your workspace contains a folder with rxiv-maker files (00_CONFIG.yml, 01_MAIN.md, etc.)'
+			};
+		}
+
+		manuscriptPath = foundManuscriptPath;
+	}
+
+	// Now find the rxiv-maker root directory (where Makefile is located)
+	let rxivMakerRoot: string | null = null;
+	let searchDir = manuscriptPath;
+	
+	// Search up the directory tree for Makefile
+	while (searchDir !== path.dirname(searchDir)) { // Stop at filesystem root
+		try {
+			await fs.promises.access(path.join(searchDir, 'Makefile'));
+			// Check if this Makefile contains rxiv-maker content
+			const makefileContent = await fs.promises.readFile(path.join(searchDir, 'Makefile'), 'utf8');
+			if (makefileContent.includes('Rxiv-Maker') || makefileContent.includes('MANUSCRIPT_PATH')) {
+				rxivMakerRoot = searchDir;
+				break;
+			}
+		} catch {
+			// Makefile not found in this directory, continue searching
+		}
+		searchDir = path.dirname(searchDir);
+	}
+
+	if (!rxivMakerRoot) {
+		return {
+			success: false,
+			error: 'Could not find rxiv-maker root directory (no Makefile found). Please ensure you have the rxiv-maker repository cloned and accessible.'
+		};
+	}
+
+	// Convert manuscript path to relative path from rxiv-maker root
+	const relativePath = path.relative(rxivMakerRoot, manuscriptPath);
+
+	return {
+		success: true,
+		manuscriptPath: relativePath || '.',
+		rxivMakerRoot: rxivMakerRoot
+	};
 }
 
 export function deactivate() {}
