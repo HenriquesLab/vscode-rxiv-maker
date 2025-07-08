@@ -58,43 +58,12 @@ jobs:
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
 
     # Install all required LaTeX packages and Python dependencies
-    - name: Install Mermaid CLI
+    - name: Install LaTeX and Python dependencies
       run: |
-        echo "Installing Mermaid CLI..."
-        npm install -g @mermaid-js/mermaid-cli
+        echo "Installing TeXLive and Python dependencies..."
 
-    - name: Install LaTeX, R and Python dependencies
-      run: |
-        echo "Installing TeXLive, Rscript and Python dependencies..."
-
-        # Update and install LaTeX packages and R
+        # Update and install LaTeX packages
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
-          libfontconfig1-dev \
-          libfreetype6-dev \
-          libharfbuzz-dev \
-          libfribidi-dev \
-          pkg-config \
-          libnss3 \
-          libxss1 \
-          libasound2t64 \
-          libatk-bridge2.0-0 \
-          libgtk-3-0 \
-          libx11-xcb1 \
-          libxcb-dri3-0 \
-          libxcomposite1 \
-          libxcursor1 \
-          libxdamage1 \
-          libxi6 \
-          libxtst6 \
-          libgbm1 \
-          libxrandr2 \
-          xdg-utils \
-          libu2f-udev \
-          libdrm2 \
-          libatk1.0-0 \
-          libatspi2.0-0 \
-          ca-certificates
         sudo apt-get install -y --no-install-recommends \
           texlive-latex-base \
           texlive-latex-recommended \
@@ -109,16 +78,13 @@ jobs:
           python3-pip \
           python3-venv \
           make \
-          curl \
-          r-base
+          curl
 
         # Install Python dependencies
         python3 -m pip install --upgrade pip
         python3 -m pip install -e ".[dev]"
 
-        # Set up a writable R library directory
-        mkdir -p ~/.R/library
-        echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
+
 
     # Cache LaTeX build outputs from previous runs
     - name: Cache LaTeX outputs
@@ -146,33 +112,19 @@ jobs:
           ${{ runner.os }}-figures-
 
     - name: Generate PDF
-      env:
-        R_LIBS_USER: ~/.R/library
-        MERMAID_CLI_OPTIONS: "--no-sandbox"  # Explicitly set the environment variable
       run: |
         echo "✅ Running PDF generation"
 
         # Set up environment
         export MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}
-        # If .env exists, update MANUSCRIPT_PATH in it
-        if [ -f ".env" ]; then
-          if grep -q '^MANUSCRIPT_PATH=' .env; then
-            sed -i 's|^MANUSCRIPT_PATH=.*|MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}|' .env
-          else
-            echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> .env
-          fi
-        fi
         export TEXMFVAR=/tmp/texmf-var
-        export FORCE_FIGURES=true
+        export FORCE_FIGURES=false
 
         # Create necessary directories
         mkdir -p /tmp/texmf-var output
 
-        # Clean the existing files
-        make clean
-
-        # Run the build with MERMAID_CLI_OPTIONS explicitly passed
-        make pdf FORCE_FIGURES=true MERMAID_CLI_OPTIONS="--no-sandbox"
+        # Run the build
+        make pdf
 
     - name: Check PDF generation
       run: |
@@ -243,60 +195,57 @@ jobs:
     - name: Get most recent tag
       id: get-tag
       run: |
-        # Fetch all tags
-        git fetch --tags
-        # Get the most recent tag (sorted by version, fallback to latest commit tag)
-        TAG=$(git tag --sort=-creatordate | head -n 1)
+        # For tag-triggered builds, use the triggering tag directly
+        if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+          TAG="${{ github.ref_name }}"
+          echo "Using triggering tag: $TAG"
+        else
+          # For manual triggers, fetch all tags and get the most recent one
+          git fetch --tags
+          TAG=$(git tag --sort=-creatordate | head -n 1)
+          echo "Using most recent tag: $TAG"
+        fi
+        
         echo "MOST_RECENT_TAG=$TAG" >> $GITHUB_ENV
         echo "MOST_RECENT_TAG=$TAG" >> $GITHUB_OUTPUT
 
     - name: Determine release existence for MOST_RECENT_TAG
       id: tag-check
       run: |
-        echo "Checking if tag '$MOST_RECENT_TAG' exists locally or remotely..."
-
-        git fetch --tags
-
-        LOCAL_EXISTS=$(git tag | grep -Fx "$MOST_RECENT_TAG" || true)
-        REMOTE_EXISTS=$(git ls-remote --tags origin "refs/tags/${MOST_RECENT_TAG}" || true)
-
-        if [ -z "$LOCAL_EXISTS" ] && [ -z "$REMOTE_EXISTS" ]; then
-          echo "❌ Tag '$MOST_RECENT_TAG' does not exist."
-          echo "tag_exists=false" >> $GITHUB_OUTPUT
-          echo "release_exists=false" >> $GITHUB_OUTPUT
-        else
-          echo "✅ Tag '$MOST_RECENT_TAG' exists."
-
-          # Now check if a GitHub release exists for the tag
+        # Use the MOST_RECENT_TAG from environment
+        echo "Checking release existence for tag: $MOST_RECENT_TAG"
+        if [ -n "$MOST_RECENT_TAG" ]; then
           RELEASE_JSON=$(gh release view "$MOST_RECENT_TAG" --json tagName --jq '.tagName' 2>/dev/null || echo "")
           if [ "$RELEASE_JSON" = "$MOST_RECENT_TAG" ]; then
-            echo "✅ GitHub release exists for tag '$MOST_RECENT_TAG'."
-            echo "tag_exists=true" >> $GITHUB_OUTPUT
             echo "release_exists=true" >> $GITHUB_OUTPUT
           else
-            echo "ℹ️ Tag exists but release does not."
-            echo "tag_exists=true" >> $GITHUB_OUTPUT
             echo "release_exists=false" >> $GITHUB_OUTPUT
           fi
+        else
+          echo "release_exists=false" >> $GITHUB_OUTPUT
         fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MOST_RECENT_TAG: ${{ env.MOST_RECENT_TAG }}
 
-    - name: Create v0.0.1 tag if no tag exists
-      if: env.MOST_RECENT_TAG == '' && github.event.repository.fork == false
+    - name: Create v0.0.1 tag if no tag exists (manual triggers only)
+      if: env.MOST_RECENT_TAG == '' && github.event_name == 'workflow_dispatch' && github.event.repository.fork == false
       run: |
+        echo "No tags found in manual trigger, creating initial v0.0.1 tag"
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
-        # Only create the tag if it does not exist locally or remotely
-        if ! git tag | grep -q "^v0.0.1$" && ! git ls-remote --tags origin | grep -q "refs/tags/v0.0.1$"; then
-          git tag v0.0.1
-          git push origin v0.0.1
-          echo "MOST_RECENT_TAG=v0.0.1" >> $GITHUB_ENV
-        else
-          echo "Tag v0.0.1 already exists, skipping creation."
-          echo "MOST_RECENT_TAG=v0.0.1" >> $GITHUB_ENV
-        fi
+        git tag v0.0.1
+        git push origin v0.0.1
+        echo "MOST_RECENT_TAG=v0.0.1" >> $GITHUB_ENV
+
+    - name: Set fallback tag for manual triggers without tags
+      if: env.MOST_RECENT_TAG == '' && github.event_name == 'workflow_dispatch'
+      run: |
+        echo "Manual trigger with no existing tags"
+        TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+        FALLBACK_TAG="manual-build-${TIMESTAMP}"
+        echo "Using fallback identifier: ${FALLBACK_TAG}"
+        echo "MOST_RECENT_TAG=${FALLBACK_TAG}" >> $GITHUB_ENV
 
     - name: Set fallback tag for forks
       if: env.MOST_RECENT_TAG == '' && github.event.repository.fork == true
