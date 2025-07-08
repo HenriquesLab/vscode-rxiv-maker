@@ -58,11 +58,21 @@ jobs:
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
 
     # Install all required LaTeX packages and Python dependencies
-    - name: Install LaTeX and Python dependencies
-      run: |
-        echo "Installing TeXLive and Python dependencies..."
+    - name: Install Node.js for Mermaid CLI
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
 
-        # Update and install LaTeX packages
+    - name: Install Mermaid CLI
+      run: |
+        echo "Installing Mermaid CLI..."
+        npm install -g @mermaid-js/mermaid-cli
+
+    - name: Install LaTeX, R and Python dependencies
+      run: |
+        echo "Installing TeXLive, R and Python dependencies..."
+
+        # Update and install LaTeX packages and R
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
           texlive-latex-base \
@@ -78,11 +88,16 @@ jobs:
           python3-pip \
           python3-venv \
           make \
-          curl
+          curl \
+          r-base
 
         # Install Python dependencies
         python3 -m pip install --upgrade pip
         python3 -m pip install -e ".[dev]"
+
+        # Set up a writable R library directory
+        mkdir -p ~/.R/library
+        echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
 
 
 
@@ -112,13 +127,15 @@ jobs:
           ${{ runner.os }}-figures-
 
     - name: Generate PDF
+      env:
+        R_LIBS_USER: ~/.R/library
       run: |
         echo "✅ Running PDF generation"
 
         # Set up environment
         export MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}
         export TEXMFVAR=/tmp/texmf-var
-        export FORCE_FIGURES=false
+        export FORCE_FIGURES=true
 
         # Create necessary directories
         mkdir -p /tmp/texmf-var output
