@@ -45,15 +45,16 @@ DEFAULT_MANUSCRIPT_PATH := $(shell \
 		echo "MANUSCRIPT"; \
 	fi)
 
-# Use environment variable if set, otherwise use default
-# This handles both MANUSCRIPT_PATH=value make target and make target MANUSCRIPT_PATH=value
-ifeq ($(origin MANUSCRIPT_PATH), undefined)
-MANUSCRIPT_PATH = $(DEFAULT_MANUSCRIPT_PATH)
-else ifeq ($(origin MANUSCRIPT_PATH), environment)
-# Environment variable takes precedence
-else ifeq ($(origin MANUSCRIPT_PATH), command line)
-# Command line variable takes precedence
+# Variable precedence: command line > environment > .env file > default
+# Check if MANUSCRIPT_PATH was set via command line (environment at make invocation)
+ifneq ($(origin MANUSCRIPT_PATH), undefined)
+  # Use the value that was passed (command line or environment)
+  # Don't override it with .env
+else
+  # Not set via command line, use .env value or default
+  MANUSCRIPT_PATH = $(DEFAULT_MANUSCRIPT_PATH)
 endif
+
 ARTICLE_DIR = $(MANUSCRIPT_PATH)
 FIGURES_DIR = $(ARTICLE_DIR)/FIGURES
 STYLE_DIR := src/tex/style
