@@ -36,6 +36,6 @@ A VS Code extension for scientific manuscript authoring with rxiv-maker framewor
 
 This extension works with rxiv-maker project structure:
 - `00_CONFIG.yml` - Project configuration
-- `01_MAIN.rxm` - Main manuscript file
+- `01_MAIN.md` - Main manuscript file
 - `03_REFERENCES.bib` - Bibliography file
 - `FIGURES/` - Figure directory (optional)
