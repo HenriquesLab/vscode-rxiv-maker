@@ -124,6 +124,7 @@ jobs:
         mkdir -p /tmp/texmf-var output
 
         # Run the build
+        make clean
         make pdf
 
     - name: Check PDF generation
