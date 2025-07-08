@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.2.0] - 2025-07-08
+
+### Added
+- **Visual Studio Code Extension Integration**: Enhanced documentation and support for the companion VS Code extension
+  - Detailed installation instructions and feature descriptions
+  - Integration with rxiv-markdown language support
+  - Improved user experience for scientific manuscript preparation
+- **Rxiv-Markdown Language Support**: Updated documentation to reflect the introduction of rxiv-markdown
+  - Enhanced clarity on processing pipeline
+  - Better integration with VS Code extension ecosystem
+- **Enhanced Testing Infrastructure**: Added lazydocs dependency for improved documentation generation
+  - Updated DOI validation tests for better CrossRef integration
+  - Improved test coverage and reliability
+
+### Changed
+- **Documentation Improvements**: Comprehensive updates to README and example manuscripts
+  - Enhanced Visual Studio Code extension descriptions
+  - Clearer processing pipeline documentation
+  - Improved accessibility for scientific manuscript preparation
+- **Text Formatting Enhancements**: Refactored text formatting logic for better handling of nested braces
+  - Updated unit tests for edge cases
+  - Improved robustness of markdown processing
+
+### Fixed
+- **Reference Management**: Updated references and citations in manuscript files for accuracy and consistency
+- **Dependency Management**: Added crossref-commons dependency in pyproject.toml for better DOI validation
+
+## [v1.1.1] - 2025-07-02
+
 ### Added
 - **Enhanced DOI Validation System**: Comprehensive DOI validation with multi-registrar support
   - CrossRef, DataCite, and JOSS API integration
