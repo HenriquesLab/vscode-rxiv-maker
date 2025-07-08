@@ -72,9 +72,14 @@ jobs:
       run: |
         echo "Installing TeXLive, R and Python dependencies..."
 
-        # Update and install LaTeX packages and R
+        # Update and install LaTeX packages and R with required system dependencies
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
+          libfontconfig1-dev \
+          libfreetype6-dev \
+          libharfbuzz-dev \
+          libfribidi-dev \
+          pkg-config \
           texlive-latex-base \
           texlive-latex-recommended \
           texlive-latex-extra \
