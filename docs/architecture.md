@@ -6,7 +6,7 @@ Rxiv-Maker converts Markdown manuscripts into publication-ready PDFs through a m
 
 1. **Configuration Loading** - Parse YAML metadata (`00_CONFIG.yml`)
 2. **Figure Generation** - Execute Python/Mermaid scripts  
-3. **Markdown to LaTeX** - Convert enhanced Markdown with content protection
+3. **Markdown to LaTeX** - Convert Enhanced Markdown (rxiv-markdown) with content protection
 4. **LaTeX Compilation** - Generate final PDF with bibliography
 
 ## Key Components
