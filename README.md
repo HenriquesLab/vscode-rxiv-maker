@@ -4,7 +4,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/henriqueslab/rxiv-maker?style=social)](https://github.com/HenriquesLab/rxiv-maker/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/henriqueslab/rxiv-maker?style=social)](https://github.com/henriqueslab/rxiv-maker/forks)
 
-![Enhanced Markdown](https://img.shields.io/badge/enhanced_markdown-20+_features-blue?labelColor=white&color=gray)
+![Enhanced Markdown (rxiv-markdown)](https://img.shields.io/badge/rxiv_markdown-20+_features-blue?labelColor=white&color=gray)
 ![Figure Generation](https://img.shields.io/badge/figures-python_&_R_&_mermaid-blue?labelColor=white&color=gray)
 ![Cross References](https://img.shields.io/badge/cross_refs-automated-blue?labelColor=white&color=gray)
 ![Citations](https://img.shields.io/badge/citations-bibtex-blue?labelColor=white&color=gray)
@@ -23,7 +23,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 
 ## Key Features
 
-- **20+ Enhanced Markdown Features** - Scientific cross-references, citations, subscript/superscript, and programmatic figure generation
+- **20+ Enhanced Markdown Features** - Scientific cross-references, citations, subscript/superscript, and programmatic figure generation. A new standard for scientific Markdown writing dubbed **rxiv-markdown**.
 - **Intelligent Validation System** - Pre-build validation catches errors with actionable feedback and suggestions
 - **Automated Figure Generation** - Python scripts, R scripts, and Mermaid diagrams with smart caching
 - **GitHub Actions Integration** - Cloud-based PDF generation with manual triggers
@@ -32,7 +32,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 - **Multi-Environment Support** - Local, Google Colab, and GitHub Actions
 
 <details>
-<summary><strong>📋 Complete Markdown Feature List</strong></summary>
+<summary><strong>📋 Complete Rxiv-Markdown Feature List</strong></summary>
 
 | **Markdown Element** | **LaTeX Equivalent** | **Description** |
 |------------------|------------------|-------------|
