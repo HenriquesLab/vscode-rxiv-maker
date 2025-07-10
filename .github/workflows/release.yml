@@ -1,0 +1,109 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Package extension
+      run: npm run package
+      
+    - name: Create VSIX
+      run: npx vsce package
+      
+    - name: Get version from package.json
+      id: package_version
+      run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      
+    - name: Extract release notes
+      id: extract_notes
+      run: |
+        # Extract release notes for the current version from CHANGELOG.md
+        VERSION="v${{ steps.package_version.outputs.version }}"
+        
+        # Use awk to extract content between version headers
+        NOTES=$(awk -v version="## \\[${VERSION#v}\\]" '
+          $0 ~ version { found=1; next }
+          found && /^## \[/ { found=0 }
+          found && !/^## \[/ { print }
+        ' CHANGELOG.md | sed '/^$/d' | head -50)
+        
+        # If no specific notes found, use a default message
+        if [ -z "$NOTES" ]; then
+          NOTES="Release $VERSION of the Rxiv-Maker VS Code extension."
+        fi
+        
+        # Save to output (escape newlines for GitHub Actions)
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        body: |
+          # Rxiv-Maker VS Code Extension ${{ github.ref_name }}
+          
+          ${{ steps.extract_notes.outputs.notes }}
+          
+          ## Installation
+          
+          Install from VS Code Marketplace: [Rxiv-Maker](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker)
+          
+          Or install the VSIX file directly:
+          ```bash
+          code --install-extension rxiv-maker-${{ steps.package_version.outputs.version }}.vsix
+          ```
+          
+          ## Links
+          - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker)
+          - [GitHub Repository](https://github.com/HenriquesLab/vscode-rxiv-maker)
+          - [Main Rxiv-Maker Framework](https://github.com/HenriquesLab/rxiv-maker)
+        draft: false
+        prerelease: false
+        
+    - name: Upload VSIX to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./rxiv-maker-${{ steps.package_version.outputs.version }}.vsix
+        asset_name: rxiv-maker-${{ steps.package_version.outputs.version }}.vsix
+        asset_content_type: application/zip
+        
+    - name: Publish to VS Code Marketplace
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      run: |
+        if [ -n "$VSCE_PAT" ]; then
+          echo "Publishing to VS Code Marketplace..."
+          npx vsce publish --pat $VSCE_PAT
+        else
+          echo "VSCE_PAT not set, skipping marketplace publication"
+        fi
