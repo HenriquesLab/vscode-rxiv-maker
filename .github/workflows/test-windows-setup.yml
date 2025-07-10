@@ -1,0 +1,285 @@
+name: Test Windows Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Enable debug mode'
+        required: false
+        default: false
+        type: boolean
+      manuscript_path:
+        description: 'Path to manuscript directory'
+        required: false
+        default: 'EXAMPLE_MANUSCRIPT'
+        type: string
+
+jobs:
+  test-windows-setup:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set manuscript path
+      run: |
+        $manuscriptPath = "${{ github.event.inputs.manuscript_path }}"
+        if ([string]::IsNullOrEmpty($manuscriptPath)) {
+          $manuscriptPath = "EXAMPLE_MANUSCRIPT"
+        }
+        Write-Host "Using manuscript path: $manuscriptPath"
+        echo "MANUSCRIPT_PATH=$manuscriptPath" >> $env:GITHUB_ENV
+      shell: pwsh
+
+    - name: Install Make (Windows)
+      run: |
+        Write-Host "Installing Make for Windows..."
+        choco install make --no-progress
+        Write-Host "Make installation completed"
+      shell: pwsh
+
+    - name: Install LaTeX (Windows)
+      run: |
+        Write-Host "Installing MiKTeX with extended timeout..."
+        choco install miktex --no-progress --timeout=1200
+        
+        Write-Host "Refreshing PATH environment..."
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+        
+        Write-Host "Waiting for MiKTeX installation to complete..."
+        Start-Sleep 45
+        
+        Write-Host "Attempting to verify MiKTeX installation..."
+        try {
+          & miktex --version
+          Write-Host "✅ MiKTeX installation verified successfully"
+        } catch {
+          Write-Host "⚠️ MiKTeX not immediately available in PATH, checking installation directory..."
+          $miktexPath = "$env:ProgramFiles\MiKTeX\miktex\bin\x64"
+          if (Test-Path $miktexPath) {
+            Write-Host "Found MiKTeX at: $miktexPath"
+            $env:PATH = "$miktexPath;$env:PATH"
+            & miktex --version
+          } else {
+            Write-Host "❌ MiKTeX installation may have failed"
+          }
+        }
+      shell: pwsh
+
+    - name: Install Node.js for Mermaid CLI
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install Mermaid CLI
+      run: |
+        Write-Host "Installing Mermaid CLI..."
+        npm install -g @mermaid-js/mermaid-cli
+        Write-Host "Mermaid CLI installation completed"
+      shell: pwsh
+
+    - name: Debug - Show platform info
+      if: ${{ github.event.inputs.debug_enabled == 'true' }}
+      run: |
+        Write-Host "=== Platform Information ==="
+        Write-Host "Platform: Windows"
+        Write-Host "OS: windows-latest"
+        Write-Host "Working directory: $(Get-Location)"
+        Write-Host "Manuscript path: $env:MANUSCRIPT_PATH"
+        Write-Host "=== Directory Contents ==="
+        Get-ChildItem -Force | Format-Table -AutoSize
+        Write-Host "=== PATH Environment ==="
+        $env:PATH -split ';' | ForEach-Object { Write-Host $_ }
+      shell: pwsh
+
+    - name: Install uv (Windows)
+      run: |
+        Write-Host "Installing uv package manager..."
+        powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"
+        $uvPath = "$env:USERPROFILE\.cargo\bin"
+        Write-Host "Adding uv to PATH: $uvPath"
+        echo "$uvPath" >> $env:GITHUB_PATH
+      shell: pwsh
+
+    - name: Verify uv installation
+      run: |
+        Write-Host "Verifying uv installation..."
+        $uvPath = "$env:USERPROFILE\.cargo\bin\uv.exe"
+        if (Test-Path $uvPath) {
+          Write-Host "✅ uv found at: $uvPath"
+          & $uvPath --version
+        } else {
+          Write-Host "❌ uv not found, checking PATH..."
+          Get-Command uv -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found uv at: $($_.Source)" }
+          try {
+            & uv --version
+            Write-Host "✅ uv command successful"
+          } catch {
+            Write-Host "❌ uv command failed: $_"
+          }
+        }
+      shell: pwsh
+
+    # Cache virtual environment and dependencies
+    - name: Cache virtual environment
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: ${{ runner.os }}-venv-${{ hashFiles('pyproject.toml', 'requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-venv-
+
+    - name: Test make setup
+      run: |
+        Write-Host "Running make setup..."
+        $env:UV_SYSTEM_PYTHON = "1"
+        make setup
+        Write-Host "✅ Make setup completed successfully"
+      shell: pwsh
+
+    - name: Verify virtual environment creation
+      run: |
+        Write-Host "Verifying virtual environment creation..."
+        $venvPython = ".venv\Scripts\python.exe"
+        if (Test-Path $venvPython) {
+          Write-Host "✅ Virtual environment created successfully on Windows"
+          Write-Host "Python version in venv:"
+          & $venvPython --version
+          Write-Host "Installed packages:"
+          & $venvPython -m pip list
+        } else {
+          Write-Host "❌ Virtual environment not found on Windows"
+          Write-Host "Contents of .venv directory:"
+          if (Test-Path ".venv") {
+            Get-ChildItem -Path ".venv" -Recurse | Format-Table -AutoSize
+          } else {
+            Write-Host "❌ .venv directory does not exist"
+          }
+          exit 1
+        }
+      shell: pwsh
+
+    # Cache LaTeX outputs
+    - name: Cache LaTeX outputs
+      uses: actions/cache@v4
+      with:
+        path: |
+          output/*.aux
+          output/*.bbl
+          output/*.blg
+          output/*.toc
+          output/*.out
+        key: ${{ runner.os }}-latex-${{ hashFiles('${{ env.MANUSCRIPT_PATH }}/**/*.md', '${{ env.MANUSCRIPT_PATH }}/**/*.bib', '${{ env.MANUSCRIPT_PATH }}/**/*.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-latex-
+
+    # Cache processed figures
+    - name: Cache processed figures
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.MANUSCRIPT_PATH }}/FIGURES/*/
+          cache/figures
+        key: ${{ runner.os }}-figures-${{ hashFiles('${{ env.MANUSCRIPT_PATH }}/FIGURES/**/*') }}
+        restore-keys: |
+          ${{ runner.os }}-figures-
+
+    - name: Test make pdf with clean build
+      run: |
+        Write-Host "Running clean build process..."
+        Write-Host "Cleaning previous outputs..."
+        make clean
+        
+        Write-Host "Creating necessary directories..."
+        if (!(Test-Path "output")) {
+          New-Item -ItemType Directory -Path "output" -Force
+        }
+        
+        Write-Host "Generating PDF for: $env:MANUSCRIPT_PATH"
+        $env:FORCE_FIGURES = "true"
+        make pdf MANUSCRIPT_PATH=$env:MANUSCRIPT_PATH
+        Write-Host "✅ PDF generation completed"
+      shell: pwsh
+
+    - name: Verify PDF generation
+      run: |
+        Write-Host "Verifying PDF generation..."
+        $pdfPath = "output\$env:MANUSCRIPT_PATH.pdf"
+        Write-Host "Looking for PDF at: $pdfPath"
+        
+        if (Test-Path $pdfPath) {
+          Write-Host "✅ PDF generated successfully: $pdfPath"
+          $pdfInfo = Get-Item $pdfPath
+          Write-Host "File size: $($pdfInfo.Length) bytes"
+          Write-Host "Created: $($pdfInfo.CreationTime)"
+          Write-Host "Modified: $($pdfInfo.LastWriteTime)"
+        } else {
+          Write-Host "❌ ERROR: PDF not found at $pdfPath"
+          Write-Host "Contents of output directory:"
+          if (Test-Path "output") {
+            Get-ChildItem -Path "output" -Recurse | Format-Table -AutoSize
+          } else {
+            Write-Host "❌ Output directory not found"
+          }
+          
+          Write-Host "Checking for LaTeX log files:"
+          Get-ChildItem -Path "output" -Filter "*.log" -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "=== $($_.Name) ==="
+            Get-Content $_.FullName -Tail 50
+          }
+          exit 1
+        }
+      shell: pwsh
+
+    - name: Check output directory structure
+      run: |
+        Write-Host "=== Output Directory Structure ==="
+        if (Test-Path "output") {
+          Get-ChildItem -Path "output" -Recurse | Format-Table -AutoSize
+        } else {
+          Write-Host "❌ Output directory not found"
+        }
+        
+        Write-Host "=== Generated Files Summary ==="
+        Get-ChildItem -Path "output" -Include "*.pdf", "*.tex", "*.log" -Recurse -ErrorAction SilentlyContinue | 
+          ForEach-Object {
+            Write-Host "$($_.Extension.ToUpper()) file: $($_.Name) ($($_.Length) bytes)"
+          }
+      shell: pwsh
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: windows-output-${{ github.run_number }}
+        path: |
+          output/
+          .venv/
+        retention-days: 7
+
+    - name: Test cleanup
+      if: always()
+      run: |
+        Write-Host "Running cleanup..."
+        make clean
+        Write-Host "✅ Cleanup completed"
+      shell: pwsh
+
+    - name: Final status report
+      if: always()
+      run: |
+        Write-Host "=== Windows Setup Test Summary ==="
+        Write-Host "Manuscript: $env:MANUSCRIPT_PATH"
+        Write-Host "Workflow: ${{ github.workflow }}"
+        Write-Host "Run ID: ${{ github.run_id }}"
+        Write-Host "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+        
+        $pdfPath = "output\$env:MANUSCRIPT_PATH.pdf"
+        if (Test-Path $pdfPath) {
+          Write-Host "Status: ✅ SUCCESS - PDF generated successfully"
+        } else {
+          Write-Host "Status: ❌ FAILURE - PDF not generated"
+        }
+        Write-Host "================================="
+      shell: pwsh
