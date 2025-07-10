@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { exec } from 'child_process';
+import * as os from 'os';
 
 interface BibEntry {
 	key: string;
@@ -175,7 +177,66 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	const insertTableReferenceCommand = vscode.commands.registerCommand('rxiv-maker.insertTableReference', async () => {
+		const references = await getDocumentReferences();
+		const tableRefs = references.filter(ref => ref.type === 'table');
 
+		if (tableRefs.length === 0) {
+			vscode.window.showWarningMessage('No table labels found in the document');
+			return;
+		}
+
+		const items = tableRefs.map(ref => ({
+			label: ref.label,
+			description: ref.supplementary ? 'Supplementary Table' : 'Table',
+			detail: `Line ${ref.line + 1}`
+		}));
+
+		const selected = await vscode.window.showQuickPick(items, {
+			placeHolder: 'Select table reference to insert'
+		});
+
+		if (selected) {
+			const editor = vscode.window.activeTextEditor;
+			if (editor) {
+				const position = editor.selection.active;
+				const prefix = tableRefs.find(ref => ref.label === selected.label)?.supplementary ? '@stable:' : '@table:';
+				await editor.edit(editBuilder => {
+					editBuilder.insert(position, `${prefix}${selected.label}`);
+				});
+			}
+		}
+	});
+
+	const insertEquationReferenceCommand = vscode.commands.registerCommand('rxiv-maker.insertEquationReference', async () => {
+		const references = await getDocumentReferences();
+		const equationRefs = references.filter(ref => ref.type === 'eq');
+
+		if (equationRefs.length === 0) {
+			vscode.window.showWarningMessage('No equation labels found in the document');
+			return;
+		}
+
+		const items = equationRefs.map(ref => ({
+			label: ref.label,
+			description: 'Equation',
+			detail: `Line ${ref.line + 1}`
+		}));
+
+		const selected = await vscode.window.showQuickPick(items, {
+			placeHolder: 'Select equation reference to insert'
+		});
+
+		if (selected) {
+			const editor = vscode.window.activeTextEditor;
+			if (editor) {
+				const position = editor.selection.active;
+				await editor.edit(editBuilder => {
+					editBuilder.insert(position, `@eq:${selected.label}`);
+				});
+			}
+		}
+	});
 
 	// Shared terminal management
 	let rxivMakerTerminal: vscode.Terminal | undefined;
@@ -238,6 +299,207 @@ export function activate(context: vscode.ExtensionContext) {
 		terminal.sendText(`make clean MANUSCRIPT_PATH="${result.manuscriptPath}"`);
 	});
 
+	const installRxivMakerCommand = vscode.commands.registerCommand('rxiv-maker.installRxivMaker', async () => {
+		// Show progress while checking dependencies
+		await vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: "Checking dependencies...",
+			cancellable: false
+		}, async (progress) => {
+			const dependencies = [
+				{ name: 'git', command: 'git --version' },
+				{ name: 'make', command: 'make --version' },
+				{ name: 'python', command: os.platform() === 'win32' ? 'python --version' : 'python3 --version' },
+				{ name: 'latex', command: 'pdflatex --version' }
+			];
+
+			const missingDeps: string[] = [];
+			let completed = 0;
+
+			// Check each dependency
+			for (const dep of dependencies) {
+				progress.report({ 
+					increment: 25, 
+					message: `Checking ${dep.name}...` 
+				});
+
+				try {
+					await new Promise<void>((resolve, reject) => {
+						exec(dep.command, { timeout: 5000 }, (error, stdout, stderr) => {
+							if (error) {
+								missingDeps.push(dep.name);
+							}
+							resolve();
+						});
+					});
+				} catch {
+					missingDeps.push(dep.name);
+				}
+				completed++;
+			}
+
+			if (missingDeps.length > 0) {
+				const installInstructions = {
+					git: 'Install Git from https://git-scm.com/',
+					make: os.platform() === 'win32' 
+						? 'Install Visual Studio Build Tools or Git Bash' 
+						: os.platform() === 'darwin' 
+						? 'Run: xcode-select --install' 
+						: 'Run: sudo apt install build-essential',
+					python: 'Install Python from https://python.org/',
+					latex: os.platform() === 'win32' 
+						? 'Install MiKTeX from https://miktex.org/' 
+						: os.platform() === 'darwin' 
+						? 'Install MacTeX from https://tug.org/mactex/' 
+						: 'Run: sudo apt install texlive-full'
+				};
+
+				const message = `Missing dependencies: ${missingDeps.join(', ')}\n\nInstallation instructions:\n${missingDeps.map(dep => `• ${dep}: ${installInstructions[dep as keyof typeof installInstructions]}`).join('\n')}`;
+				
+				const choice = await vscode.window.showErrorMessage(
+					`Cannot install rxiv-maker. Missing dependencies: ${missingDeps.join(', ')}`,
+					'Show Instructions',
+					'Cancel'
+				);
+
+				if (choice === 'Show Instructions') {
+					const doc = await vscode.workspace.openTextDocument({
+						content: message,
+						language: 'markdown'
+					});
+					await vscode.window.showTextDocument(doc);
+				}
+				return;
+			}
+
+			// All dependencies are available, proceed with installation
+			const warningMessage = 'All required dependencies are installed. Would you like to clone the rxiv-maker repository and run setup?\n\nNote: The setup process will automatically create a Python virtual environment (.venv) if needed.';
+			
+			const choice = await vscode.window.showInformationMessage(
+				warningMessage,
+				{ modal: true },
+				'Yes, install rxiv-maker',
+				'No, cancel'
+			);
+
+			if (choice !== 'Yes, install rxiv-maker') {
+				return;
+			}
+
+			// Build installation directory options
+			const installOptions: vscode.QuickPickItem[] = [];
+			
+			// Add workspace folders as options
+			if (vscode.workspace.workspaceFolders) {
+				for (const folder of vscode.workspace.workspaceFolders) {
+					installOptions.push({
+						label: `$(folder) ${path.basename(folder.uri.fsPath)}`,
+						description: folder.uri.fsPath,
+						detail: 'Install in this workspace folder'
+					});
+				}
+			}
+			
+			// Add common directories
+			const homeDir = os.homedir();
+			const commonPaths = [
+				{ path: path.join(homeDir, 'Documents', 'GitHub'), label: 'Documents/GitHub' },
+				{ path: path.join(homeDir, 'Documents'), label: 'Documents' },
+				{ path: path.join(homeDir, 'Desktop'), label: 'Desktop' },
+				{ path: homeDir, label: 'Home directory' }
+			];
+			
+			for (const commonPath of commonPaths) {
+				// Only add if not already present from workspaces
+				if (!installOptions.some(opt => opt.description === commonPath.path)) {
+					installOptions.push({
+						label: `$(home) ${commonPath.label}`,
+						description: commonPath.path,
+						detail: 'Common installation location'
+					});
+				}
+			}
+			
+			// Add custom option
+			installOptions.push({
+				label: '$(edit) Custom path...',
+				description: 'custom',
+				detail: 'Enter a custom installation path'
+			});
+
+			const selectedOption = await vscode.window.showQuickPick(installOptions, {
+				placeHolder: 'Select where to install rxiv-maker',
+				matchOnDescription: true
+			});
+
+			if (!selectedOption) {
+				return;
+			}
+
+			let installDir: string;
+			if (selectedOption.description === 'custom') {
+				const customDir = await vscode.window.showInputBox({
+					prompt: 'Enter custom directory where you want to install rxiv-maker',
+					value: path.join(homeDir, 'Documents', 'GitHub'),
+					validateInput: (value) => {
+						if (!value) {
+							return 'Installation directory is required';
+						}
+						return undefined;
+					}
+				});
+				
+				if (!customDir) {
+					return;
+				}
+				installDir = customDir;
+			} else {
+				installDir = selectedOption.description!;
+			}
+
+			if (!installDir) {
+				return;
+			}
+
+			// Expand home directory if needed
+			const expandedDir = installDir.startsWith('~') 
+				? path.join(os.homedir(), installDir.slice(1))
+				: installDir;
+
+			// Ensure the installation directory exists
+			try {
+				await fs.promises.mkdir(expandedDir, { recursive: true });
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to create installation directory: ${expandedDir}\n${error}`);
+				return;
+			}
+
+			// Create installation terminal
+			const installTerminal = vscode.window.createTerminal({
+				name: 'rxiv-maker-install',
+				cwd: expandedDir
+			});
+
+			installTerminal.show();
+			
+			// Simple installation commands - Makefile handles virtual environment automatically
+			if (os.platform() === 'win32') {
+				installTerminal.sendText('echo Installing rxiv-maker...');
+				installTerminal.sendText('git clone https://github.com/HenriquesLab/rxiv-maker.git');
+				installTerminal.sendText('cd rxiv-maker');
+				installTerminal.sendText('make setup');
+				installTerminal.sendText('echo rxiv-maker installation complete!');
+			} else {
+				installTerminal.sendText('echo "Installing rxiv-maker..."');
+				installTerminal.sendText('git clone https://github.com/HenriquesLab/rxiv-maker.git');
+				installTerminal.sendText('cd rxiv-maker');
+				installTerminal.sendText('make setup');
+				installTerminal.sendText('echo "rxiv-maker installation complete!"');
+				installTerminal.sendText('echo "You can now create manuscripts using the rxiv-maker framework."');
+			}
+		});
+	});
+
 	const makeAddBibliographyCommand = vscode.commands.registerCommand('rxiv-maker.makeAddBibliography', async () => {
 		const result = await findManuscriptFolder();
 		if (!result.success || !result.rxivMakerRoot) {
@@ -280,6 +542,9 @@ export function activate(context: vscode.ExtensionContext) {
 		referenceProvider,
 		insertCitationCommand,
 		insertFigureReferenceCommand,
+		insertTableReferenceCommand,
+		insertEquationReferenceCommand,
+		installRxivMakerCommand,
 		makeValidateCommand,
 		makePdfCommand,
 		makeCleanCommand,
@@ -435,32 +700,62 @@ async function getBibEntries(): Promise<BibEntry[]> {
 }
 
 async function getDocumentReferences(): Promise<ReferenceLabel[]> {
-	const editor = vscode.window.activeTextEditor;
-	if (!editor) {
-		return [];
-	}
-
-	const document = editor.document;
 	const references: ReferenceLabel[] = [];
 	
-	for (let i = 0; i < document.lineCount; i++) {
-		const line = document.lineAt(i);
-		const text = line.text;
-		
-		const labelRegex = /\{#(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)\}/g;
-		let match;
-		
-		while ((match = labelRegex.exec(text)) !== null) {
-			const supplementary = match[1] === 's';
-			const type = match[2] as 'fig' | 'table' | 'eq' | 'snote';
-			const label = match[4];
+	// Get search paths for manuscript files
+	const searchPaths: string[] = [];
+	
+	// 1. Try current document's directory first (highest priority)
+	const activeEditor = vscode.window.activeTextEditor;
+	if (activeEditor) {
+		const currentDir = path.dirname(activeEditor.document.fileName);
+		searchPaths.push(path.join(currentDir, '01_MAIN.md'));
+		searchPaths.push(path.join(currentDir, '02_SUPPLEMENTARY_INFO.md'));
+	}
+	
+	// 2. Try workspace folders as fallback
+	if (vscode.workspace.workspaceFolders) {
+		for (const folder of vscode.workspace.workspaceFolders) {
+			const workspaceMain = path.join(folder.uri.fsPath, '01_MAIN.md');
+			const workspaceSupp = path.join(folder.uri.fsPath, '02_SUPPLEMENTARY_INFO.md');
 			
-			references.push({
-				type,
-				label,
-				line: i,
-				supplementary
-			});
+			if (!searchPaths.includes(workspaceMain)) {
+				searchPaths.push(workspaceMain);
+			}
+			if (!searchPaths.includes(workspaceSupp)) {
+				searchPaths.push(workspaceSupp);
+			}
+		}
+	}
+	
+	// Search for references in each file
+	for (const filePath of searchPaths) {
+		try {
+			const content = await fs.promises.readFile(filePath, 'utf8');
+			const lines = content.split('\n');
+			const isSupplementary = filePath.includes('02_SUPPLEMENTARY_INFO');
+			
+			for (let i = 0; i < lines.length; i++) {
+				const text = lines[i];
+				const labelRegex = /\{#(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)(?:\s[^}]*)?\}/g;
+				let match;
+				
+				while ((match = labelRegex.exec(text)) !== null) {
+					const supplementary = match[1] === 's' || isSupplementary;
+					const type = match[2] as 'fig' | 'table' | 'eq' | 'snote';
+					const label = match[4];
+					
+					references.push({
+						type,
+						label,
+						line: i,
+						supplementary
+					});
+				}
+			}
+		} catch (error) {
+			// File doesn't exist or can't be read, continue with next file
+			continue;
 		}
 	}
 	

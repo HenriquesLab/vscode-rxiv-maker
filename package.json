@@ -98,7 +98,22 @@
       },
       {
         "command": "rxiv-maker.insertFigureReference",
-        "title": "Insert Figure Reference",
+        "title": "Insert figure reference",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertTableReference",
+        "title": "Insert table reference",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertEquationReference",
+        "title": "Insert equation reference",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.installRxivMaker",
+        "title": "Install rxiv-maker framework",
         "category": "Rxiv-Maker"
       },
       {
