@@ -12,9 +12,15 @@ Usage:
 """
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from utils.platform import platform_detector
 
 PUPPETEER_CONFIG_PATH = Path(__file__).parent / "puppeteer-config.json"
 
@@ -23,7 +29,7 @@ class FigureGenerator:
     """Main class for generating figures from various source formats."""
 
     def __init__(
-        self, figures_dir="FIGURES", output_dir="FIGURES", output_format="png"
+        self, figures_dir="FIGURES", output_dir="FIGURES", output_format="png", r_only=False
     ):
         """Initialize the figure generator.
 
@@ -31,11 +37,14 @@ class FigureGenerator:
             figures_dir: Directory containing source figure files
             output_dir: Directory for generated output files
             output_format: Default output format for figures
+            r_only: Only process R files if True
         """
         self.figures_dir = Path(figures_dir)
         self.output_dir = Path(output_dir)
         self.output_format = output_format.lower()
+        self.r_only = r_only
         self.supported_formats = ["png", "svg", "pdf", "eps"]
+        self.platform = platform_detector
 
         if self.output_format not in self.supported_formats:
             raise ValueError(
@@ -60,23 +69,31 @@ class FigureGenerator:
         print("-" * 50)
 
         # Find all figure files
-        mermaid_files = list(self.figures_dir.glob("*.mmd"))
-        python_files = list(self.figures_dir.glob("*.py"))
-        r_files = list(self.figures_dir.glob("*.R"))  # Add support for R files
+        if self.r_only:
+            mermaid_files = []
+            python_files = []
+            r_files = list(self.figures_dir.glob("*.R"))
+        else:
+            mermaid_files = list(self.figures_dir.glob("*.mmd"))
+            python_files = list(self.figures_dir.glob("*.py"))
+            r_files = list(self.figures_dir.glob("*.R"))  # Add support for R files
 
         if not mermaid_files and not python_files and not r_files:
-            print("No figure files found (.mmd, .py, or .R)")
+            if self.r_only:
+                print("No R files found (.R)")
+            else:
+                print("No figure files found (.mmd, .py, or .R)")
             return
 
         # Process Mermaid files
-        if mermaid_files:
+        if mermaid_files and not self.r_only:
             print(f"Found {len(mermaid_files)} Mermaid file(s):")
             for mmd_file in mermaid_files:
                 print(f"  - {mmd_file.name}")
                 self.generate_mermaid_figure(mmd_file)
 
         # Process Python files
-        if python_files:
+        if python_files and not self.r_only:
             print(f"\nFound {len(python_files)} Python file(s):")
             for py_file in python_files:
                 print(f"  - {py_file.name}")
@@ -121,30 +138,33 @@ class FigureGenerator:
                 output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
 
                 # Generate the figure using Mermaid CLI
-                cmd = ["mmdc", "-i", str(mmd_file), "-o", str(output_file)]
+                cmd_parts = ["mmdc", "-i", str(mmd_file), "-o", str(output_file)]
 
                 # Add Puppeteer configuration for --no-sandbox if required
                 if not PUPPETEER_CONFIG_PATH.exists():
                     PUPPETEER_CONFIG_PATH.write_text(
                         '{"args": ["--no-sandbox"]}'
                     )
-                cmd.extend(
+                cmd_parts.extend(
                     ["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)]
                 )
 
                 # Add format-specific options
                 if format_type == "pdf":
-                    cmd.extend(["--backgroundColor", "transparent"])
+                    cmd_parts.extend(["--backgroundColor", "transparent"])
                 elif format_type == "png":
-                    cmd.extend(["--width", "1200", "--height", "800"])
+                    cmd_parts.extend(["--width", "1200", "--height", "800"])
                 # No extra options needed for svg
 
                 print(
                     f"  🎨 Generating {figure_dir.name}/{output_file.name}..."
                 )
-                result = subprocess.run(
+                
+                # Use platform-appropriate command execution
+                cmd = " ".join(cmd_parts)
+                result = self.platform.run_command(
                     cmd, capture_output=True, text=True
-                )  # nosec B603
+                )
 
                 if result.returncode == 0:
                     success_msg = f"Successfully generated {figure_dir.name}/"
@@ -177,8 +197,15 @@ class FigureGenerator:
             print(f"  🐍 Executing {py_file.name}...")
 
             # Execute the Python script in the figure-specific subdirectory
-            result = subprocess.run(  # nosec B603 B607
-                [sys.executable, str(py_file.absolute())],
+            # Use platform-appropriate Python command
+            python_cmd = self.platform.python_cmd
+            if "uv run" in python_cmd:
+                cmd = ["uv", "run", "python", str(py_file.absolute())]
+            else:
+                cmd = [python_cmd, str(py_file.absolute())]
+            
+            result = self.platform.run_command(
+                " ".join(cmd),
                 capture_output=True,
                 text=True,
                 cwd=str(figure_dir.absolute()),
@@ -242,8 +269,10 @@ class FigureGenerator:
             print(f"  📊 Executing {r_file.name}...")
 
             # Execute the R script in the figure-specific subdirectory
-            result = subprocess.run(  # nosec B603 B607
-                ["Rscript", str(r_file.absolute())],
+            # Use platform-appropriate command execution
+            cmd = f"Rscript {str(r_file.absolute())}"
+            result = self.platform.run_command(
+                cmd,
                 capture_output=True,
                 text=True,
                 cwd=str(figure_dir.absolute()),
@@ -290,13 +319,7 @@ class FigureGenerator:
 
     def _check_mermaid_cli(self):
         """Check if Mermaid CLI (mmdc) is available."""
-        try:
-            subprocess.run(
-                ["mmdc", "--version"], capture_output=True, check=True
-            )  # nosec B603 B607
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return False
+        return self.platform.check_command_exists("mmdc")
 
     def _import_matplotlib(self):
         """Safely import matplotlib."""
@@ -342,13 +365,7 @@ class FigureGenerator:
 
     def _check_rscript(self):
         """Check if Rscript is available."""
-        try:
-            subprocess.run(
-                ["Rscript", "--version"], capture_output=True, check=True
-            )  # nosec B603 B607
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return False
+        return self.platform.check_command_exists("Rscript")
 
 
 def main():
@@ -378,6 +395,9 @@ def main():
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
+    parser.add_argument(
+        "--r-only", action="store_true", help="Only process R files"
+    )
 
     args = parser.parse_args()
 
@@ -386,6 +406,7 @@ def main():
             figures_dir=args.figures_dir,
             output_dir=args.output_dir,
             output_format=args.format,
+            r_only=args.r_only,
         )
         generator.generate_all_figures()
 
