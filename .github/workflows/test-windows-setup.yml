@@ -36,7 +36,7 @@ jobs:
 
     # Setup TeXLive on Windows - reliable LaTeX installation
     - name: Setup TeXLive
-      uses: teatimeguest/setup-texlive-action@v3
+      uses: teatimeguest/setup-texlive-action@v4
       with:
         packages: |
           scheme-basic
@@ -48,6 +48,70 @@ jobs:
           amssymb
           hyperref
           graphicx
+          xcolor
+          tikz
+          natbib
+          cleveref
+          nameref
+          tabularx
+          longtable
+          rotating
+          caption
+          sidecap
+          placeins
+          listings
+          babel-english
+          fontenc
+          inputenc
+          times
+          helvet
+          fontawesome
+          textcomp
+          gensymb
+          fancyhdr
+          lastpage
+          titlesec
+          chapterbib
+          url
+          scalerel
+          siunitx
+          textgreek
+          mhchem
+          lettrine
+          ifsym
+          bbding
+          pdfpages
+          seqsplit
+          verbatim
+          mathptmx
+
+    # Fallback: Install MiKTeX if TeXLive fails
+    - name: Install MiKTeX (fallback)
+      if: failure()
+      run: |
+        Write-Host "TeXLive installation failed, trying MiKTeX fallback..."
+        try {
+          choco install miktex -y --timeout=3600
+          Write-Host "✅ MiKTeX installed successfully"
+          
+          # Add MiKTeX to PATH
+          $miktexPath = "${env:ProgramFiles}\MiKTeX\miktex\bin\x64"
+          if (Test-Path $miktexPath) {
+            echo "$miktexPath" >> $env:GITHUB_PATH
+            Write-Host "✅ MiKTeX added to PATH: $miktexPath"
+          }
+          
+          # Initialize MiKTeX package database
+          Write-Host "Initializing MiKTeX package database..."
+          miktex --admin --configure
+          Write-Host "✅ MiKTeX configured"
+          
+        } catch {
+          Write-Host "❌ MiKTeX installation failed: $_"
+          Write-Host "Continuing with system LaTeX if available..."
+        }
+      shell: pwsh
+      continue-on-error: true
 
     # Cache uv installation for Python package management
     - name: Cache uv installation
@@ -92,30 +156,76 @@ jobs:
         
         # Test uv
         try {
-          uv --version
-          Write-Host "✅ uv is available"
+          $uvVersion = uv --version
+          Write-Host "✅ uv is available: $uvVersion"
         } catch {
-          Write-Host "⚠️ uv not found"
+          Write-Host "⚠️ uv not found: $_"
         }
         
-        # Test LaTeX
+        # Test LaTeX - comprehensive verification
         $latexFound = $false
-        $latexCommands = @("pdflatex", "latex")
+        $latexCommands = @("pdflatex", "latex", "xelatex", "lualatex")
         foreach ($cmd in $latexCommands) {
           try {
             $result = & $cmd --version 2>&1
             if ($LASTEXITCODE -eq 0) {
               Write-Host "✅ $cmd is available"
               $latexFound = $true
-              break
+              # Show version info for main LaTeX command
+              if ($cmd -eq "pdflatex") {
+                Write-Host "   Version: $($result[0])"
+              }
             }
           } catch {
-            Write-Host "⚠️ $cmd not found"
+            Write-Host "⚠️ $cmd not found: $_"
+          }
+        }
+        
+        # Test critical LaTeX packages
+        if ($latexFound) {
+          Write-Host "=== Testing Critical LaTeX Packages ==="
+          $testPackages = @("amsmath", "graphicx", "hyperref", "geometry", "authblk")
+          foreach ($pkg in $testPackages) {
+            try {
+              $testLatex = @"
+\documentclass{article}
+\usepackage{$pkg}
+\begin{document}
+Test
+\end{document}
+"@
+              $testLatex | Out-File -FilePath "test_$pkg.tex" -Encoding utf8
+              $result = pdflatex -interaction=nonstopmode "test_$pkg.tex" 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "✅ Package $pkg works"
+              } else {
+                Write-Host "⚠️ Package $pkg may have issues"
+              }
+              Remove-Item "test_$pkg.*" -Force -ErrorAction SilentlyContinue
+            } catch {
+              Write-Host "⚠️ Could not test package $pkg: $_"
+            }
+          }
+        }
+        
+        # Test bibliography tools
+        $bibTools = @("bibtex", "biber")
+        foreach ($tool in $bibTools) {
+          try {
+            $result = & $tool --version 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ $tool is available"
+            }
+          } catch {
+            Write-Host "⚠️ $tool not found: $_"
           }
         }
         
         if (-not $latexFound) {
-          Write-Host "⚠️ LaTeX installation could not be verified"
+          Write-Host "❌ ERROR: LaTeX installation could not be verified"
+          Write-Host "Available PATH entries:"
+          $env:PATH -split ';' | ForEach-Object { Write-Host "  $_" }
+          exit 1
         }
         
         Write-Host "=== Tool Verification Complete ==="
@@ -148,19 +258,71 @@ jobs:
         $env:PATH -split ';' | ForEach-Object { Write-Host $_ }
       shell: pwsh
 
-    # Test PDF generation without figure regeneration or cleanup
+    # Test PDF generation with comprehensive error handling
     - name: Test PDF generation
       run: |
         Write-Host "Testing PDF generation for: $env:MANUSCRIPT_PATH"
+        
+        # Pre-flight checks
+        Write-Host "=== Pre-flight Checks ==="
+        if (!(Test-Path $env:MANUSCRIPT_PATH)) {
+          Write-Host "❌ ERROR: Manuscript directory not found: $env:MANUSCRIPT_PATH"
+          Write-Host "Available directories:"
+          Get-ChildItem -Directory | ForEach-Object { Write-Host "  $($_.Name)" }
+          exit 1
+        }
+        
+        Write-Host "✅ Manuscript directory exists: $env:MANUSCRIPT_PATH"
+        
+        # Check for required manuscript files
+        $requiredFiles = @("00_CONFIG.yml", "01_MAIN.md", "03_REFERENCES.bib")
+        foreach ($file in $requiredFiles) {
+          $filePath = Join-Path $env:MANUSCRIPT_PATH $file
+          if (Test-Path $filePath) {
+            Write-Host "✅ Found required file: $file"
+          } else {
+            Write-Host "⚠️ Missing file: $file"
+          }
+        }
         
         Write-Host "Creating output directory..."
         if (!(Test-Path "output")) {
           New-Item -ItemType Directory -Path "output" -Force
         }
         
-        Write-Host "Generating PDF (skipping figure regeneration)..."
-        make pdf MANUSCRIPT_PATH=$env:MANUSCRIPT_PATH
-        Write-Host "✅ PDF generation completed"
+        Write-Host "=== PDF Generation ==="
+        try {
+          Write-Host "Generating PDF (skipping figure regeneration)..."
+          $makeResult = make pdf MANUSCRIPT_PATH=$env:MANUSCRIPT_PATH 2>&1
+          
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ PDF generation completed successfully"
+            Write-Host "Make output:"
+            Write-Host $makeResult
+          } else {
+            Write-Host "❌ PDF generation failed with exit code: $LASTEXITCODE"
+            Write-Host "Make output:"
+            Write-Host $makeResult
+            
+            # Check for LaTeX log files with errors
+            Write-Host "=== LaTeX Error Analysis ==="
+            $logFiles = Get-ChildItem -Path "output" -Filter "*.log" -ErrorAction SilentlyContinue
+            foreach ($logFile in $logFiles) {
+              Write-Host "--- Checking $($logFile.Name) ---"
+              $logContent = Get-Content $logFile.FullName
+              $errorLines = $logContent | Where-Object { $_ -match "^!" -or $_ -match "Error" -or $_ -match "Fatal" }
+              if ($errorLines) {
+                Write-Host "LaTeX Errors found:"
+                $errorLines | ForEach-Object { Write-Host "  $_" }
+              }
+            }
+            
+            exit 1
+          }
+        } catch {
+          Write-Host "❌ PDF generation failed with exception: $_"
+          exit 1
+        }
       shell: pwsh
 
     # Verify PDF generation
