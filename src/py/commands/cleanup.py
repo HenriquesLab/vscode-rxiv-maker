@@ -42,16 +42,28 @@ class CleanupManager:
     
     def log(self, message: str, level: str = "INFO"):
         """Log a message with appropriate formatting."""
-        if level == "INFO":
-            print(f"✅ {message}")
-        elif level == "WARNING":
-            print(f"⚠️  {message}")
-        elif level == "ERROR":
-            print(f"❌ {message}")
-        elif level == "STEP":
-            print(f"🧹 {message}")
-        else:
-            print(message)
+        # Use safe printing to handle Windows console encoding issues
+        try:
+            if level == "INFO":
+                print(f"✅ {message}")
+            elif level == "WARNING":
+                print(f"⚠️  {message}")
+            elif level == "ERROR":
+                print(f"❌ {message}")
+            elif level == "STEP":
+                print(f"🧹 {message}")
+            else:
+                print(message)
+        except UnicodeEncodeError:
+            # Fallback to ASCII characters for Windows console compatibility
+            level_chars = {
+                "INFO": "[OK]",
+                "WARNING": "[WARN]",
+                "ERROR": "[ERROR]",
+                "STEP": "[CLEAN]"
+            }
+            char = level_chars.get(level, "")
+            print(f"{char} {message}")
     
     def clean_output_directory(self) -> bool:
         """Clean the output directory."""

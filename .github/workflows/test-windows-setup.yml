@@ -34,6 +34,50 @@ jobs:
         echo "MANUSCRIPT_PATH=$manuscriptPath" >> $env:GITHUB_ENV
       shell: pwsh
 
+    # Cache Chocolatey packages to speed up installations
+    - name: Cache Chocolatey packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          C:\ProgramData\chocolatey\lib
+          C:\ProgramData\chocolatey\cache
+        key: ${{ runner.os }}-chocolatey-${{ hashFiles('.github/workflows/test-windows-setup.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-chocolatey-
+
+    # Cache Node.js global modules
+    - name: Cache Node.js global modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~\AppData\Roaming\npm
+          ~\AppData\Roaming\npm-cache
+        key: ${{ runner.os }}-npm-global-${{ hashFiles('.github/workflows/test-windows-setup.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-global-
+
+    # Cache uv installation
+    - name: Cache uv installation
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~\.local\bin
+          ~\.cargo\bin
+        key: ${{ runner.os }}-uv-${{ hashFiles('.github/workflows/test-windows-setup.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+
+    # Cache TinyTeX download
+    - name: Cache TinyTeX download
+      uses: actions/cache@v4
+      with:
+        path: |
+          C:\TinyTeX
+          ${{ runner.temp }}\TinyTeX.zip
+        key: ${{ runner.os }}-tinytex-2024.01
+        restore-keys: |
+          ${{ runner.os }}-tinytex-
+
     # Install tools sequentially (background jobs don't work in GitHub Actions)
     - name: Install Make
       run: |
@@ -57,9 +101,9 @@ jobs:
       run: |
         Write-Host "Installing uv..."
         powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"
-        $uvPath = "$env:USERPROFILE\.cargo\bin"
+        $uvPath = "$env:USERPROFILE\.local\bin"
         echo "$uvPath" >> $env:GITHUB_PATH
-        Write-Host "✅ uv installation completed"
+        Write-Host "✅ uv installation completed at: $uvPath"
       shell: pwsh
 
     - name: Install LaTeX with multiple fallback strategies
@@ -67,7 +111,16 @@ jobs:
         Write-Host "=== Installing LaTeX with Fallback Strategies ==="
         $latexInstalled = $false
         
-        # Strategy 1: TinyTeX (more reliable for CI) - Try this first
+        # Check if TinyTeX is already cached and working
+        $tinyTexBin = "C:\TinyTeX\TinyTeX\bin\windows"
+        if (Test-Path "$tinyTexBin\pdflatex.exe") {
+          Write-Host "✅ TinyTeX found in cache and verified"
+          $env:PATH = "$tinyTexBin;$env:PATH"
+          echo "$tinyTexBin" >> $env:GITHUB_PATH
+          $latexInstalled = $true
+        }
+        
+        # Strategy 1: TinyTeX (more reliable for CI) - Try this if not cached
         if (-not $latexInstalled) {
           try {
             Write-Host "Attempting TinyTeX installation (primary method)..."
@@ -75,14 +128,40 @@ jobs:
             $tinyTexZip = "$env:TEMP\TinyTeX.zip"
             $tinyTexDir = "C:\TinyTeX"
             
-            Write-Host "Downloading TinyTeX (approximately 200MB)..."
-            Invoke-WebRequest -Uri $tinyTexUrl -OutFile $tinyTexZip -UseBasicParsing -TimeoutSec 600
+            # Check if ZIP is already cached
+            if (Test-Path $tinyTexZip) {
+              Write-Host "TinyTeX ZIP found in cache, skipping download"
+            } else {
+              Write-Host "Downloading TinyTeX (approximately 200MB)..."
+              # Use shorter timeout and retry logic
+              $retryCount = 0
+              $maxRetries = 3
+              $downloadSuccess = $false
+              
+              while (-not $downloadSuccess -and $retryCount -lt $maxRetries) {
+                try {
+                  Invoke-WebRequest -Uri $tinyTexUrl -OutFile $tinyTexZip -UseBasicParsing -TimeoutSec 300
+                  $downloadSuccess = $true
+                  Write-Host "Download completed successfully"
+                } catch {
+                  $retryCount++
+                  Write-Host "Download attempt $retryCount failed: $_"
+                  if ($retryCount -lt $maxRetries) {
+                    Write-Host "Retrying in 10 seconds..."
+                    Start-Sleep 10
+                  }
+                }
+              }
+              
+              if (-not $downloadSuccess) {
+                throw "Failed to download TinyTeX after $maxRetries attempts"
+              }
+            }
             
             Write-Host "Extracting TinyTeX..."
             Expand-Archive -Path $tinyTexZip -DestinationPath $tinyTexDir -Force
             
             # Add to PATH
-            $tinyTexBin = "$tinyTexDir\TinyTeX\bin\windows"
             $env:PATH = "$tinyTexBin;$env:PATH"
             echo "$tinyTexBin" >> $env:GITHUB_PATH
             
@@ -147,6 +226,80 @@ jobs:
         }
         
         echo "LATEX_INSTALLED=$latexInstalled" >> $env:GITHUB_ENV
+      shell: pwsh
+
+    # Force Unix shell detection for Makefile in GitHub Actions
+    - name: Setup Makefile environment for GitHub Actions
+      run: |
+        Write-Host "Setting up Makefile environment variables for GitHub Actions..."
+        # GitHub Actions uses bash even on Windows, so force Unix-style detection
+        echo "MAKEFILE_FORCE_UNIX=1" >> $env:GITHUB_ENV
+        echo "SHELL=/bin/bash" >> $env:GITHUB_ENV
+        Write-Host "✅ Makefile environment configured for GitHub Actions"
+      shell: pwsh
+
+    - name: Verify all tools installation
+      run: |
+        Write-Host "=== Verifying All Tools Installation ==="
+        
+        # Test Make
+        try {
+          make --version
+          Write-Host "✅ Make is available"
+        } catch {
+          Write-Host "⚠️ Make not found"
+        }
+        
+        # Test Node.js and Mermaid
+        try {
+          node --version
+          Write-Host "✅ Node.js is available"
+          mmdc --version
+          Write-Host "✅ Mermaid CLI is available"
+        } catch {
+          Write-Host "⚠️ Node.js or Mermaid CLI not found"
+        }
+        
+        # Test uv
+        try {
+          uv --version
+          Write-Host "✅ uv is available"
+        } catch {
+          Write-Host "⚠️ uv not found"
+        }
+        
+        # Test LaTeX
+        $latexFound = $false
+        $latexCommands = @("pdflatex", "latex")
+        foreach ($cmd in $latexCommands) {
+          try {
+            $result = & $cmd --version 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ $cmd is available"
+              $latexFound = $true
+              break
+            }
+          } catch {
+            Write-Host "⚠️ $cmd not found"
+          }
+        }
+        
+        if (-not $latexFound -and $env:LATEX_INSTALLED -eq "True") {
+          Write-Host "⚠️ LaTeX reported as installed but commands not accessible"
+        }
+        
+        Write-Host "=== Tool Verification Complete ==="
+      shell: pwsh
+
+    - name: Test Python environment setup
+      run: |
+        Write-Host "Testing Python environment setup..."
+        try {
+          make setup
+          Write-Host "✅ Python environment setup completed"
+        } catch {
+          Write-Host "⚠️ Python environment setup failed: $_"
+        }
       shell: pwsh
 
     - name: Debug - Show platform info

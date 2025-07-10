@@ -30,8 +30,17 @@ export
 # 🌐 CROSS-PLATFORM COMPATIBILITY
 # ======================================================================
 
-# Detect operating system
-ifeq ($(OS),Windows_NT)
+# Detect operating system with GitHub Actions override
+ifdef MAKEFILE_FORCE_UNIX
+    # GitHub Actions environment - force Unix-style even on Windows runners
+    DETECTED_OS := GitHub-Actions-Unix
+    PATH_SEP := /
+    SHELL_NULL := /dev/null
+    PYTHON_EXEC := python3
+    VENV_PYTHON := .venv/bin/python
+    VENV_ACTIVATE := .venv/bin/activate
+    FORCE_UNIX_SHELL := true
+else ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
     PATH_SEP := \\
     SHELL_NULL := nul
@@ -54,14 +63,18 @@ else
 endif
 
 # Check if .env file exists (cross-platform)
-ifeq ($(OS),Windows_NT)
+ifdef MAKEFILE_FORCE_UNIX
+    ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
+else ifeq ($(OS),Windows_NT)
     ENV_FILE_EXISTS := $(shell if exist ".env" (echo true) else (echo false))
 else
     ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
 endif
 
 # Cross-platform Python command selection (prefer uv, then venv, then system python)
-ifeq ($(OS),Windows_NT)
+ifdef MAKEFILE_FORCE_UNIX
+    PYTHON_CMD := $(shell if command -v uv >$(SHELL_NULL) 2>&1; then echo "uv run python"; elif [ -f "$(VENV_PYTHON)" ]; then echo "$(PWD)/$(VENV_PYTHON)"; else echo "$(PYTHON_EXEC)"; fi)
+else ifeq ($(OS),Windows_NT)
     # Windows detection
     PYTHON_CMD := $(shell where uv >nul 2>&1 && echo uv run python || (if exist "$(VENV_PYTHON)" (echo $(PWD)\$(VENV_PYTHON)) else (echo $(PYTHON_EXEC))))
 else
@@ -91,7 +104,14 @@ endif
 export MANUSCRIPT_PATH
 
 # Default manuscript path if not provided via environment or .env (cross-platform)
-ifeq ($(OS),Windows_NT)
+ifdef MAKEFILE_FORCE_UNIX
+    DEFAULT_MANUSCRIPT_PATH := $(shell \
+        if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
+            grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
+        else \
+            echo "MANUSCRIPT"; \
+        fi)
+else ifeq ($(OS),Windows_NT)
     DEFAULT_MANUSCRIPT_PATH := $(shell if exist ".env" (for /f "tokens=2 delims==" %i in ('findstr /b "MANUSCRIPT_PATH=" .env 2^>nul') do @echo %i) else (echo MANUSCRIPT))
 else
     DEFAULT_MANUSCRIPT_PATH := $(shell \
