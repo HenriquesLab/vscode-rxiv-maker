@@ -64,12 +64,18 @@ jobs:
     - name: Install LaTeX (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        # Install MiKTeX
-        choco install miktex --no-progress
+        # Install MiKTeX with longer timeout and retries
+        choco install miktex --no-progress --timeout=600
         # Refresh PATH
         $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
-        # Wait for installation to complete
-        Start-Sleep 10
+        # Wait for installation to complete and verify
+        Start-Sleep 30
+        # Try to initialize MiKTeX
+        try {
+          & miktex --version
+        } catch {
+          Write-Host "MiKTeX not found in PATH, attempting manual refresh..."
+        }
 
     - name: Install Node.js (for Mermaid)
       uses: actions/setup-node@v4
@@ -87,8 +93,30 @@ jobs:
         echo "Working directory: $(pwd)"
         ls -la
 
+    - name: Install uv (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"
+        echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
+      shell: pwsh
+
+    - name: Install uv (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      shell: bash
+
+    - name: Verify uv installation
+      run: |
+        which uv || echo "uv not found in PATH"
+        uv --version || echo "uv command failed"
+      shell: bash
+
     - name: Test make setup
       run: make setup
+      env:
+        UV_SYSTEM_PYTHON: 1
 
     - name: Verify virtual environment creation
       shell: bash
