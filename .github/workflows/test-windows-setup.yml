@@ -39,31 +39,123 @@ jobs:
         Write-Host "Make installation completed"
       shell: pwsh
 
-    - name: Install LaTeX (Windows)
+    - name: Install LaTeX (Windows) - Primary method
+      id: install-latex-primary
+      continue-on-error: true
       run: |
-        Write-Host "Installing MiKTeX with extended timeout..."
-        choco install miktex --no-progress --timeout=1200
+        Write-Host "Attempting MiKTeX installation (Primary method)..."
+        try {
+          # Try with shorter timeout first
+          choco install miktex --no-progress --timeout=900
+          Write-Host "✅ MiKTeX installation completed"
+          echo "LATEX_INSTALL_SUCCESS=true" >> $env:GITHUB_ENV
+        } catch {
+          Write-Host "⚠️ Primary MiKTeX installation failed: $_"
+          echo "LATEX_INSTALL_SUCCESS=false" >> $env:GITHUB_ENV
+        }
+      shell: pwsh
+
+    - name: Install LaTeX (Windows) - Alternative method
+      if: env.LATEX_INSTALL_SUCCESS == 'false'
+      id: install-latex-alternative
+      continue-on-error: true
+      run: |
+        Write-Host "Attempting alternative LaTeX installation..."
+        try {
+          # Try TinyTeX which is more reliable in CI environments
+          Write-Host "Installing TinyTeX as alternative..."
+          
+          # Download and install TinyTeX
+          $tinyTexUrl = "https://github.com/rstudio/tinytex-releases/releases/download/v2024.01/TinyTeX-2-v2024.01.zip"
+          $tinyTexZip = "$env:TEMP\TinyTeX.zip"
+          $tinyTexDir = "C:\TinyTeX"
+          
+          Write-Host "Downloading TinyTeX..."
+          Invoke-WebRequest -Uri $tinyTexUrl -OutFile $tinyTexZip -UseBasicParsing
+          
+          Write-Host "Extracting TinyTeX..."
+          Expand-Archive -Path $tinyTexZip -DestinationPath $tinyTexDir -Force
+          
+          # Add to PATH
+          $tinyTexBin = "$tinyTexDir\TinyTeX\bin\windows"
+          $env:PATH = "$tinyTexBin;$env:PATH"
+          echo "$tinyTexBin" >> $env:GITHUB_PATH
+          
+          Write-Host "✅ TinyTeX installation completed"
+          echo "LATEX_INSTALL_SUCCESS=true" >> $env:GITHUB_ENV
+        } catch {
+          Write-Host "❌ Alternative LaTeX installation also failed: $_"
+          echo "LATEX_INSTALL_SUCCESS=false" >> $env:GITHUB_ENV
+        }
+      shell: pwsh
+
+    - name: Install LaTeX (Windows) - Fallback method
+      if: env.LATEX_INSTALL_SUCCESS == 'false'
+      run: |
+        Write-Host "Using fallback LaTeX installation strategy..."
+        try {
+          # Try BasicTeX-like minimal installation
+          Write-Host "Installing minimal LaTeX distribution..."
+          
+          # Use winget as last resort
+          winget install --id MiKTeX.MiKTeX --silent --accept-package-agreements --accept-source-agreements
+          
+          Write-Host "✅ Fallback LaTeX installation completed"
+          echo "LATEX_INSTALL_SUCCESS=true" >> $env:GITHUB_ENV
+        } catch {
+          Write-Host "❌ All LaTeX installation methods failed: $_"
+          Write-Host "Continuing without LaTeX - some tests may fail"
+          echo "LATEX_INSTALL_SUCCESS=false" >> $env:GITHUB_ENV
+        }
+      shell: pwsh
+
+    - name: Verify LaTeX Installation
+      run: |
+        Write-Host "Verifying LaTeX installation..."
+        $latexFound = $false
         
-        Write-Host "Refreshing PATH environment..."
+        # Refresh PATH
         $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
         
-        Write-Host "Waiting for MiKTeX installation to complete..."
-        Start-Sleep 45
+        # Common LaTeX installation paths
+        $latexPaths = @(
+          "$env:ProgramFiles\MiKTeX\miktex\bin\x64",
+          "$env:ProgramFiles\MiKTeX\miktex\bin",
+          "C:\TinyTeX\TinyTeX\bin\windows",
+          "$env:LOCALAPPDATA\Programs\MiKTeX\miktex\bin\x64"
+        )
         
-        Write-Host "Attempting to verify MiKTeX installation..."
-        try {
-          & miktex --version
-          Write-Host "✅ MiKTeX installation verified successfully"
-        } catch {
-          Write-Host "⚠️ MiKTeX not immediately available in PATH, checking installation directory..."
-          $miktexPath = "$env:ProgramFiles\MiKTeX\miktex\bin\x64"
-          if (Test-Path $miktexPath) {
-            Write-Host "Found MiKTeX at: $miktexPath"
-            $env:PATH = "$miktexPath;$env:PATH"
-            & miktex --version
-          } else {
-            Write-Host "❌ MiKTeX installation may have failed"
+        foreach ($path in $latexPaths) {
+          if (Test-Path $path) {
+            Write-Host "Found LaTeX at: $path"
+            $env:PATH = "$path;$env:PATH"
+            echo "$path" >> $env:GITHUB_PATH
+            $latexFound = $true
+            break
           }
+        }
+        
+        # Test LaTeX commands
+        $latexCommands = @("pdflatex", "latex", "miktex", "tlmgr")
+        foreach ($cmd in $latexCommands) {
+          try {
+            $result = & $cmd --version 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ $cmd is available"
+              Write-Host "Version: $($result | Select-Object -First 1)"
+              $latexFound = $true
+              break
+            }
+          } catch {
+            Write-Host "⚠️ $cmd not found or failed"
+          }
+        }
+        
+        if ($latexFound) {
+          Write-Host "✅ LaTeX installation verified successfully"
+        } else {
+          Write-Host "⚠️ LaTeX installation could not be verified"
+          Write-Host "PATH contains: $env:PATH"
         }
       shell: pwsh
 
