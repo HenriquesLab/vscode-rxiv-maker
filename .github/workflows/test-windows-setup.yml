@@ -34,63 +34,12 @@ jobs:
         echo "MANUSCRIPT_PATH=$manuscriptPath" >> $env:GITHUB_ENV
       shell: pwsh
 
-    # Setup TeXLive on Windows - reliable LaTeX installation
-    - name: Setup TeXLive
-      uses: teatimeguest/setup-texlive-action@v4
-      with:
-        packages: |
-          scheme-basic
-          authblk
-          preprint
-          geometry
-          amsmath
-          amsfonts
-          amssymb
-          hyperref
-          graphicx
-          xcolor
-          tikz
-          natbib
-          cleveref
-          nameref
-          tabularx
-          longtable
-          rotating
-          caption
-          sidecap
-          placeins
-          listings
-          babel-english
-          fontenc
-          inputenc
-          times
-          helvet
-          fontawesome
-          textcomp
-          gensymb
-          fancyhdr
-          lastpage
-          titlesec
-          chapterbib
-          url
-          scalerel
-          siunitx
-          textgreek
-          mhchem
-          lettrine
-          ifsym
-          bbding
-          pdfpages
-          seqsplit
-          verbatim
-          mathptmx
-
-    # Fallback: Install MiKTeX if TeXLive fails
-    - name: Install MiKTeX (fallback)
-      if: failure()
+    # Install MiKTeX directly (more reliable on Windows)
+    - name: Install MiKTeX
       run: |
-        Write-Host "TeXLive installation failed, trying MiKTeX fallback..."
+        Write-Host "Installing MiKTeX..."
         try {
+          Write-Host "Using chocolatey to install MiKTeX..."
           choco install miktex -y --timeout=3600
           Write-Host "✅ MiKTeX installed successfully"
           
@@ -99,11 +48,26 @@ jobs:
           if (Test-Path $miktexPath) {
             echo "$miktexPath" >> $env:GITHUB_PATH
             Write-Host "✅ MiKTeX added to PATH: $miktexPath"
+          } else {
+            Write-Host "⚠️ MiKTeX path not found, checking alternative locations..."
+            $altPaths = @(
+              "${env:ProgramFiles}\MiKTeX\miktex\bin",
+              "${env:ProgramFiles(x86)}\MiKTeX\miktex\bin\x64",
+              "${env:ProgramFiles(x86)}\MiKTeX\miktex\bin"
+            )
+            foreach ($path in $altPaths) {
+              if (Test-Path $path) {
+                echo "$path" >> $env:GITHUB_PATH
+                Write-Host "✅ MiKTeX found at: $path"
+                $miktexPath = $path
+                break
+              }
+            }
           }
           
           # Initialize MiKTeX package database
           Write-Host "Initializing MiKTeX package database..."
-          miktex --admin --configure
+          & "$miktexPath\miktex.exe" --admin --configure
           Write-Host "✅ MiKTeX configured"
           
         } catch {
