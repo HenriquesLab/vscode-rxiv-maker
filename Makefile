@@ -26,11 +26,48 @@
 export
 .EXPORT_ALL_VARIABLES:
 
-# Check if .env file exists
-ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
+# ======================================================================
+# 🌐 CROSS-PLATFORM COMPATIBILITY
+# ======================================================================
 
-# Python command selection (use venv if available, otherwise system python)
-PYTHON_CMD := $(shell if [ -f ".venv/bin/python" ]; then echo "$(PWD)/.venv/bin/python"; else echo "python3"; fi)
+# Detect operating system
+ifeq ($(OS),Windows_NT)
+    DETECTED_OS := Windows
+    PATH_SEP := \\
+    SHELL_NULL := nul
+    PYTHON_EXEC := python
+    VENV_PYTHON := .venv\Scripts\python.exe
+    VENV_ACTIVATE := .venv\Scripts\activate
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        DETECTED_OS := Linux
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        DETECTED_OS := macOS
+    endif
+    PATH_SEP := /
+    SHELL_NULL := /dev/null
+    PYTHON_EXEC := python3
+    VENV_PYTHON := .venv/bin/python
+    VENV_ACTIVATE := .venv/bin/activate
+endif
+
+# Check if .env file exists (cross-platform)
+ifeq ($(OS),Windows_NT)
+    ENV_FILE_EXISTS := $(shell if exist ".env" (echo true) else (echo false))
+else
+    ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
+endif
+
+# Cross-platform Python command selection (prefer uv, then venv, then system python)
+ifeq ($(OS),Windows_NT)
+    # Windows detection
+    PYTHON_CMD := $(shell where uv >nul 2>&1 && echo uv run python || (if exist "$(VENV_PYTHON)" (echo $(PWD)\$(VENV_PYTHON)) else (echo $(PYTHON_EXEC))))
+else
+    # Unix-like systems (macOS, Linux)
+    PYTHON_CMD := $(shell if command -v uv >$(SHELL_NULL) 2>&1; then echo "uv run python"; elif [ -f "$(VENV_PYTHON)" ]; then echo "$(PWD)/$(VENV_PYTHON)"; else echo "$(PYTHON_EXEC)"; fi)
+endif
 
 OUTPUT_DIR := output
 
@@ -53,20 +90,17 @@ endif
 # Export MANUSCRIPT_PATH explicitly after determining its value
 export MANUSCRIPT_PATH
 
-# Check if .env file exists
-ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
-
-# Python command selection (use venv if available, otherwise system python)
-PYTHON_CMD := $(shell if [ -f ".venv/bin/python" ]; then echo "$(PWD)/.venv/bin/python"; else echo "python3"; fi)
-
-OUTPUT_DIR := output
-# Default manuscript path if not provided via environment or .env
-DEFAULT_MANUSCRIPT_PATH := $(shell \
-	if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
-		grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
-	else \
-		echo "MANUSCRIPT"; \
-	fi)
+# Default manuscript path if not provided via environment or .env (cross-platform)
+ifeq ($(OS),Windows_NT)
+    DEFAULT_MANUSCRIPT_PATH := $(shell if exist ".env" (for /f "tokens=2 delims==" %i in ('findstr /b "MANUSCRIPT_PATH=" .env 2^>nul') do @echo %i) else (echo MANUSCRIPT))
+else
+    DEFAULT_MANUSCRIPT_PATH := $(shell \
+        if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
+            grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
+        else \
+            echo "MANUSCRIPT"; \
+        fi)
+endif
 
 # Simple variable precedence: Use MANUSCRIPT_PATH if defined, otherwise use default
 # This handles both command-line (MANUSCRIPT_PATH=value make target) and environment variables
@@ -103,14 +137,75 @@ all: pdf
 # ======================================================================
 # Main user-facing commands with simple names
 
-# Install Python dependencies
+# Install Python dependencies (cross-platform)
 .PHONY: setup
 setup:
-	@echo "Installing Python dependencies..."
-	@$(PYTHON_CMD) -m pip install --upgrade pip
-	@$(PYTHON_CMD) -m pip install -e ".[dev]"
+	@echo "🔧 Setting up Python environment with uv on $(DETECTED_OS)..."
+ifeq ($(OS),Windows_NT)
+	@where uv >nul 2>&1 && ( \
+		echo "✅ Found uv, using it for environment management" && \
+		echo "📦 Installing dependencies with uv..." && \
+		uv sync --dev \
+	) || ( \
+		echo "⚠️  uv not found, installing it first..." && \
+		powershell -Command "irm https://astral.sh/uv/install.ps1 | iex" && \
+		echo "✅ uv installed, setting up project..." && \
+		uv sync --dev \
+	)
+else
+	@if command -v uv >$(SHELL_NULL) 2>&1; then \
+		echo "✅ Found uv, using it for environment management"; \
+		echo "📦 Installing dependencies with uv..."; \
+		uv sync --dev; \
+	else \
+		echo "⚠️  uv not found, installing it first..."; \
+		curl -LsSf https://astral.sh/uv/install.sh | sh; \
+		echo "✅ uv installed, setting up project..."; \
+		uv sync --dev; \
+	fi
+endif
 	@echo "✅ Setup complete! Now you can run 'make pdf' to create your document."
 	@echo "Note: You'll also need LaTeX installed on your system."
+	@echo "💡 Virtual environment is available at .venv/ (automatically used by make commands)"
+
+# Reinstall Python dependencies (removes .venv and creates new one) - cross-platform
+.PHONY: setup-reinstall
+setup-reinstall:
+	@echo "🔄 Reinstalling Python environment with uv on $(DETECTED_OS)..."
+ifeq ($(OS),Windows_NT)
+	@if exist ".venv" ( \
+		echo "🗑️  Removing existing virtual environment..." && \
+		rmdir /s /q .venv \
+	)
+	@where uv >nul 2>&1 && ( \
+		echo "✅ Found uv, using it for environment management" && \
+		echo "📦 Installing dependencies with uv..." && \
+		uv sync --dev \
+	) || ( \
+		echo "⚠️  uv not found, installing it first..." && \
+		powershell -Command "irm https://astral.sh/uv/install.ps1 | iex" && \
+		echo "✅ uv installed, setting up project..." && \
+		uv sync --dev \
+	)
+else
+	@if [ -d ".venv" ]; then \
+		echo "🗑️  Removing existing virtual environment..."; \
+		rm -rf .venv; \
+	fi
+	@if command -v uv >$(SHELL_NULL) 2>&1; then \
+		echo "✅ Found uv, using it for environment management"; \
+		echo "📦 Installing dependencies with uv..."; \
+		uv sync --dev; \
+	else \
+		echo "⚠️  uv not found, installing it first..."; \
+		curl -LsSf https://astral.sh/uv/install.sh | sh; \
+		echo "✅ uv installed, setting up project..."; \
+		uv sync --dev; \
+	fi
+endif
+	@echo "✅ Reinstall complete! Now you can run 'make pdf' to create your document."
+	@echo "Note: You'll also need LaTeX installed on your system."
+	@echo "💡 Virtual environment is available at .venv/ (automatically used by make commands)"
 
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
@@ -336,10 +431,20 @@ _generate_files:
 # 🧹 MAINTENANCE
 # ======================================================================
 
-# Clean output directory
+# Clean output directory (cross-platform)
 .PHONY: clean
 clean:
 	@echo "Cleaning output directory..."
+ifeq ($(OS),Windows_NT)
+	@if exist "$(OUTPUT_DIR)" rmdir /s /q "$(OUTPUT_DIR)" 2>nul || echo Output directory already clean
+	@echo "Cleaning generated figures..."
+	@if exist "$(FIGURES_DIR)" ( \
+		for /r "$(FIGURES_DIR)" %%f in (*.pdf *.png *.svg *.eps) do del "%%f" 2>nul || echo No figures to clean \
+	)
+	@echo "Cleaning any leftover arXiv files..."
+	@if exist "for_arxiv.zip" del "for_arxiv.zip" 2>nul || echo No arXiv files to clean
+	@if exist "arxiv_submission" rmdir /s /q "arxiv_submission" 2>nul || echo No arXiv submission directory to clean
+else
 	@rm -rf $(OUTPUT_DIR)
 	@echo "Cleaning generated figures..."
 	@if [ -d "$(FIGURES_DIR)" ]; then \
@@ -347,6 +452,7 @@ clean:
 	fi
 	@echo "Cleaning any leftover arXiv files..."
 	@rm -f for_arxiv.zip arxiv_submission 2>/dev/null || true
+endif
 	@echo "Clean complete"
 
 # Show help
@@ -355,10 +461,12 @@ help:
 	@VERSION=$$($(PYTHON_CMD) -c "import sys; sys.path.insert(0, 'src/py'); from src.py import __version__; print(__version__)" 2>/dev/null || echo "unknown"); \
 	echo "====================================="; \
 	echo "Rxiv-Maker v$$VERSION - Makefile Commands"; \
+	echo "Platform: $(DETECTED_OS)"; \
 	echo "====================================="; \
 	echo ""; \
 	echo "🚀 ESSENTIAL COMMANDS:"; \
 	echo "  make setup          - Install Python dependencies"; \
+	echo "  make setup-reinstall - Reinstall dependencies (removes .venv and creates new one)"; \
 	echo "  make pdf            - Generate PDF with validation (auto-runs Python figure scripts)"; \
 	echo "  make validate       - Check manuscript for issues"; \
 	echo "  make fix-bibliography - Automatically fix bibliography issues using CrossRef"; \
@@ -392,6 +500,11 @@ help:
 	echo "   - Preview bibliography fixes: make fix-bibliography-dry-run"; \
 	echo "   - Add bibliography: make add-bibliography 10.1000/example"; \
 	echo "   - Multiple DOIs: make add-bibliography 10.1000/ex1 10.1000/ex2"; \
-	echo "   - Validation options: python3 src/py/commands/validate.py --help"; \
+	echo "   - Validation options: $(PYTHON_EXEC) src/py/commands/validate.py --help"; \
 	echo "   - arXiv files created in: $(OUTPUT_DIR)/arxiv_submission/"; \
-	echo "   - arXiv ZIP file: $(OUTPUT_DIR)/for_arxiv.zip"
+	echo "   - arXiv ZIP file: $(OUTPUT_DIR)/for_arxiv.zip"; \
+	echo ""; \
+	echo "🌐 PLATFORM NOTES:"; \
+	echo "   - Platform detected: $(DETECTED_OS)"; \
+	echo "   - Python command: $(PYTHON_CMD)"; \
+	echo "   - Virtual environment: $(VENV_PYTHON)"
