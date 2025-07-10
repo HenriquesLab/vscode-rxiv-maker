@@ -15,30 +15,73 @@ on:
         type: string
 
 jobs:
-  test-windows-setup:
+  # Parallel preparation jobs
+  prepare-environment:
     runs-on: windows-latest
-
+    outputs:
+      manuscript_path: ${{ steps.set-path.outputs.manuscript_path }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Set manuscript path
+      id: set-path
       run: |
         $manuscriptPath = "${{ github.event.inputs.manuscript_path }}"
         if ([string]::IsNullOrEmpty($manuscriptPath)) {
           $manuscriptPath = "EXAMPLE_MANUSCRIPT"
         }
         Write-Host "Using manuscript path: $manuscriptPath"
-        echo "MANUSCRIPT_PATH=$manuscriptPath" >> $env:GITHUB_ENV
+        echo "manuscript_path=$manuscriptPath" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
-    - name: Install Make (Windows)
+  install-tools:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        component: [make, nodejs-mermaid, uv]
+    steps:
+    - name: Install Make
+      if: matrix.component == 'make'
       run: |
         Write-Host "Installing Make for Windows..."
         choco install make --no-progress
-        Write-Host "Make installation completed"
+        Write-Host "✅ Make installation completed"
       shell: pwsh
 
+    - name: Install Node.js and Mermaid CLI
+      if: matrix.component == 'nodejs-mermaid'
+      run: |
+        Write-Host "Installing Node.js and Mermaid CLI..."
+        # Install Node.js
+        choco install nodejs --no-progress
+        Write-Host "✅ Node.js installation completed"
+        
+        # Install Mermaid CLI
+        npm install -g @mermaid-js/mermaid-cli
+        Write-Host "✅ Mermaid CLI installation completed"
+      shell: pwsh
+
+    - name: Install uv
+      if: matrix.component == 'uv'
+      run: |
+        Write-Host "Installing uv package manager..."
+        powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"
+        $uvPath = "$env:USERPROFILE\.cargo\bin"
+        Write-Host "✅ uv installation completed at: $uvPath"
+        
+        # Verify installation
+        if (Test-Path "$uvPath\uv.exe") {
+          Write-Host "✅ uv installation verified"
+          & "$uvPath\uv.exe" --version
+        } else {
+          Write-Host "⚠️ uv installation may need verification"
+        }
+      shell: pwsh
+
+  install-latex:
+    runs-on: windows-latest
+    steps:
     - name: Install LaTeX (Windows) - Primary method
       id: install-latex-primary
       continue-on-error: true
@@ -159,16 +202,94 @@ jobs:
         }
       shell: pwsh
 
-    - name: Install Node.js for Mermaid CLI
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+  test-windows-setup:
+    needs: [prepare-environment, install-tools, install-latex]
+    runs-on: windows-latest
+    env:
+      MANUSCRIPT_PATH: ${{ needs.prepare-environment.outputs.manuscript_path }}
 
-    - name: Install Mermaid CLI
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Reinstall tools (from cache or quick install)
       run: |
-        Write-Host "Installing Mermaid CLI..."
+        Write-Host "Reinstalling tools quickly..."
+        # Quick reinstall since they were already downloaded/cached by parallel jobs
+        choco install make --no-progress
+        choco install nodejs --no-progress
         npm install -g @mermaid-js/mermaid-cli
-        Write-Host "Mermaid CLI installation completed"
+        powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"
+        echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
+        Write-Host "✅ Tools reinstalled"
+      shell: pwsh
+
+    - name: Reinstall LaTeX (from parallel job)
+      run: |
+        Write-Host "Reinstalling LaTeX quickly..."
+        # Quick reinstall since LaTeX was already downloaded/cached by parallel job
+        try {
+          choco install miktex --no-progress --timeout=300
+          Write-Host "✅ LaTeX reinstalled from cache"
+        } catch {
+          Write-Host "⚠️ LaTeX quick reinstall failed, continuing..."
+        }
+      shell: pwsh
+
+    - name: Verify all tools installation
+      run: |
+        Write-Host "=== Verifying All Tools Installation ==="
+        
+        # Refresh PATH
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+        
+        # Test Make
+        try {
+          make --version
+          Write-Host "✅ Make is available"
+        } catch {
+          Write-Host "⚠️ Make not found"
+        }
+        
+        # Test Node.js and Mermaid
+        try {
+          node --version
+          Write-Host "✅ Node.js is available"
+          mmdc --version
+          Write-Host "✅ Mermaid CLI is available"
+        } catch {
+          Write-Host "⚠️ Node.js or Mermaid CLI not found"
+        }
+        
+        # Test uv
+        try {
+          uv --version
+          Write-Host "✅ uv is available"
+        } catch {
+          Write-Host "⚠️ uv not found"
+        }
+        
+        # Test LaTeX
+        $latexFound = $false
+        $latexCommands = @("pdflatex", "latex", "miktex")
+        foreach ($cmd in $latexCommands) {
+          try {
+            $result = & $cmd --version 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ $cmd is available"
+              $latexFound = $true
+              break
+            }
+          } catch {
+            Write-Host "⚠️ $cmd not found"
+          }
+        }
+        
+        if (-not $latexFound) {
+          Write-Host "⚠️ LaTeX installation could not be verified"
+        }
+        
+        Write-Host "=== Tool Verification Complete ==="
       shell: pwsh
 
     - name: Debug - Show platform info
