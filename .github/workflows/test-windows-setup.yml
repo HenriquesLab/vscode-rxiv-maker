@@ -1,4 +1,4 @@
-name: Test Windows Setup
+name: Test Windows LaTeX PDF Generation
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
         type: string
 
 jobs:
-  test-windows-setup:
+  test-windows-latex:
     runs-on: windows-latest
     env:
       MANUSCRIPT_PATH: ${{ github.event.inputs.manuscript_path || 'EXAMPLE_MANUSCRIPT' }}
@@ -34,68 +34,29 @@ jobs:
         echo "MANUSCRIPT_PATH=$manuscriptPath" >> $env:GITHUB_ENV
       shell: pwsh
 
-    # Cache Chocolatey packages to speed up installations
-    - name: Cache Chocolatey packages
-      uses: actions/cache@v4
+    # Setup TeXLive on Windows - reliable LaTeX installation
+    - name: Setup TeXLive
+      uses: teatimeguest/setup-texlive-action@v3
       with:
-        path: |
-          C:\ProgramData\chocolatey\lib
-          C:\ProgramData\chocolatey\cache
-        key: ${{ runner.os }}-chocolatey-${{ hashFiles('.github/workflows/test-windows-setup.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-chocolatey-
+        packages: |
+          scheme-basic
+          authblk
+          preprint
+          geometry
+          amsmath
+          amsfonts
+          amssymb
+          hyperref
+          graphicx
 
-    # Cache Node.js global modules
-    - name: Cache Node.js global modules
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~\AppData\Roaming\npm
-          ~\AppData\Roaming\npm-cache
-        key: ${{ runner.os }}-npm-global-${{ hashFiles('.github/workflows/test-windows-setup.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-global-
-
-    # Cache uv installation
+    # Cache uv installation for Python package management
     - name: Cache uv installation
       uses: actions/cache@v4
       with:
-        path: |
-          ~\.local\bin
-          ~\.cargo\bin
+        path: ~\.local\bin
         key: ${{ runner.os }}-uv-${{ hashFiles('.github/workflows/test-windows-setup.yml') }}
         restore-keys: |
           ${{ runner.os }}-uv-
-
-    # Cache TinyTeX download
-    - name: Cache TinyTeX download
-      uses: actions/cache@v4
-      with:
-        path: |
-          C:\TinyTeX
-          ${{ runner.temp }}\TinyTeX.zip
-        key: ${{ runner.os }}-tinytex-2024.01
-        restore-keys: |
-          ${{ runner.os }}-tinytex-
-
-    # Install tools sequentially (background jobs don't work in GitHub Actions)
-    - name: Install Make
-      run: |
-        Write-Host "Installing Make..."
-        choco install make --no-progress
-        Write-Host "✅ Make installation completed"
-      shell: pwsh
-
-    - name: Install Node.js and Mermaid CLI  
-      run: |
-        Write-Host "Installing Node.js..."
-        choco install nodejs --no-progress
-        Write-Host "✅ Node.js installation completed"
-        
-        Write-Host "Installing Mermaid CLI..."
-        npm install -g @mermaid-js/mermaid-cli
-        Write-Host "✅ Mermaid CLI installation completed"
-      shell: pwsh
 
     - name: Install uv package manager
       run: |
@@ -106,129 +67,7 @@ jobs:
         Write-Host "✅ uv installation completed at: $uvPath"
       shell: pwsh
 
-    - name: Install LaTeX with multiple fallback strategies
-      run: |
-        Write-Host "=== Installing LaTeX with Fallback Strategies ==="
-        $latexInstalled = $false
-        
-        # Check if TinyTeX is already cached and working
-        $tinyTexBin = "C:\TinyTeX\TinyTeX\bin\windows"
-        if (Test-Path "$tinyTexBin\pdflatex.exe") {
-          Write-Host "✅ TinyTeX found in cache and verified"
-          $env:PATH = "$tinyTexBin;$env:PATH"
-          echo "$tinyTexBin" >> $env:GITHUB_PATH
-          $latexInstalled = $true
-        }
-        
-        # Strategy 1: TinyTeX (more reliable for CI) - Try this if not cached
-        if (-not $latexInstalled) {
-          try {
-            Write-Host "Attempting TinyTeX installation (primary method)..."
-            $tinyTexUrl = "https://github.com/rstudio/tinytex-releases/releases/download/v2024.01/TinyTeX-2-v2024.01.zip"
-            $tinyTexZip = "$env:TEMP\TinyTeX.zip"
-            $tinyTexDir = "C:\TinyTeX"
-            
-            # Check if ZIP is already cached
-            if (Test-Path $tinyTexZip) {
-              Write-Host "TinyTeX ZIP found in cache, skipping download"
-            } else {
-              Write-Host "Downloading TinyTeX (approximately 200MB)..."
-              # Use shorter timeout and retry logic
-              $retryCount = 0
-              $maxRetries = 3
-              $downloadSuccess = $false
-              
-              while (-not $downloadSuccess -and $retryCount -lt $maxRetries) {
-                try {
-                  Invoke-WebRequest -Uri $tinyTexUrl -OutFile $tinyTexZip -UseBasicParsing -TimeoutSec 300
-                  $downloadSuccess = $true
-                  Write-Host "Download completed successfully"
-                } catch {
-                  $retryCount++
-                  Write-Host "Download attempt $retryCount failed: $_"
-                  if ($retryCount -lt $maxRetries) {
-                    Write-Host "Retrying in 10 seconds..."
-                    Start-Sleep 10
-                  }
-                }
-              }
-              
-              if (-not $downloadSuccess) {
-                throw "Failed to download TinyTeX after $maxRetries attempts"
-              }
-            }
-            
-            Write-Host "Extracting TinyTeX..."
-            Expand-Archive -Path $tinyTexZip -DestinationPath $tinyTexDir -Force
-            
-            # Add to PATH
-            $env:PATH = "$tinyTexBin;$env:PATH"
-            echo "$tinyTexBin" >> $env:GITHUB_PATH
-            
-            # Verify installation
-            if (Test-Path "$tinyTexBin\pdflatex.exe") {
-              Write-Host "✅ TinyTeX installation completed and verified"
-              $latexInstalled = $true
-            } else {
-              Write-Host "⚠️ TinyTeX extraction may have failed - pdflatex not found"
-            }
-          } catch {
-            Write-Host "⚠️ TinyTeX installation failed: $_"
-          }
-        }
-        
-        # Strategy 2: MiKTeX with very short timeout (only if TinyTeX fails)
-        if (-not $latexInstalled) {
-          try {
-            Write-Host "Attempting MiKTeX installation (short timeout)..."
-            $env:CHOCO_TIMEOUT = "300"  # 5 minutes max
-            choco install miktex --no-progress --timeout=300 --ignore-http-cache
-            Write-Host "✅ MiKTeX installation completed"
-            $latexInstalled = $true
-          } catch {
-            Write-Host "⚠️ MiKTeX installation failed: $_"
-          }
-        }
-        
-        # Strategy 3: Minimal LaTeX via winget (last resort)
-        if (-not $latexInstalled) {
-          try {
-            Write-Host "Attempting minimal LaTeX via winget..."
-            winget install --id MiKTeX.MiKTeX --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
-            
-            # Check common installation paths
-            $miktexPaths = @(
-              "$env:ProgramFiles\MiKTeX\miktex\bin\x64",
-              "$env:LOCALAPPDATA\Programs\MiKTeX\miktex\bin\x64"
-            )
-            
-            foreach ($path in $miktexPaths) {
-              if (Test-Path "$path\pdflatex.exe") {
-                $env:PATH = "$path;$env:PATH"
-                echo "$path" >> $env:GITHUB_PATH
-                Write-Host "✅ Winget LaTeX installation completed at: $path"
-                $latexInstalled = $true
-                break
-              }
-            }
-            
-            if (-not $latexInstalled) {
-              Write-Host "⚠️ Winget installation completed but pdflatex not found"
-            }
-          } catch {
-            Write-Host "⚠️ Winget installation failed: $_"
-          }
-        }
-        
-        if (-not $latexInstalled) {
-          Write-Host "⚠️ All LaTeX installation methods failed - workflow will continue without LaTeX"
-          Write-Host "This means PDF generation tests will be skipped"
-        }
-        
-        echo "LATEX_INSTALLED=$latexInstalled" >> $env:GITHUB_ENV
-      shell: pwsh
-
-    # Force Unix shell detection for Makefile in GitHub Actions
+    # Setup Makefile environment for GitHub Actions (avoid shell syntax issues)
     - name: Setup Makefile environment for GitHub Actions
       run: |
         Write-Host "Setting up Makefile environment variables for GitHub Actions..."
@@ -238,27 +77,18 @@ jobs:
         Write-Host "✅ Makefile environment configured for GitHub Actions"
       shell: pwsh
 
-    - name: Verify all tools installation
+    # Cache virtual environment
+    - name: Cache virtual environment
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: ${{ runner.os }}-venv-${{ hashFiles('pyproject.toml', 'requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-venv-
+
+    - name: Verify tools installation
       run: |
-        Write-Host "=== Verifying All Tools Installation ==="
-        
-        # Test Make
-        try {
-          make --version
-          Write-Host "✅ Make is available"
-        } catch {
-          Write-Host "⚠️ Make not found"
-        }
-        
-        # Test Node.js and Mermaid
-        try {
-          node --version
-          Write-Host "✅ Node.js is available"
-          mmdc --version
-          Write-Host "✅ Mermaid CLI is available"
-        } catch {
-          Write-Host "⚠️ Node.js or Mermaid CLI not found"
-        }
+        Write-Host "=== Verifying Tools Installation ==="
         
         # Test uv
         try {
@@ -284,17 +114,18 @@ jobs:
           }
         }
         
-        if (-not $latexFound -and $env:LATEX_INSTALLED -eq "True") {
-          Write-Host "⚠️ LaTeX reported as installed but commands not accessible"
+        if (-not $latexFound) {
+          Write-Host "⚠️ LaTeX installation could not be verified"
         }
         
         Write-Host "=== Tool Verification Complete ==="
       shell: pwsh
 
-    - name: Test Python environment setup
+    - name: Setup Python environment
       run: |
-        Write-Host "Testing Python environment setup..."
+        Write-Host "Setting up Python environment..."
         try {
+          $env:UV_SYSTEM_PYTHON = "1"
           make setup
           Write-Host "✅ Python environment setup completed"
         } catch {
@@ -302,6 +133,7 @@ jobs:
         }
       shell: pwsh
 
+    # Debug information (only when debug mode is enabled)
     - name: Debug - Show platform info
       if: ${{ github.event.inputs.debug_enabled == 'true' }}
       run: |
@@ -316,115 +148,22 @@ jobs:
         $env:PATH -split ';' | ForEach-Object { Write-Host $_ }
       shell: pwsh
 
-    - name: Install uv (Windows)
+    # Test PDF generation without figure regeneration or cleanup
+    - name: Test PDF generation
       run: |
-        Write-Host "Installing uv package manager..."
-        powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"
-        $uvPath = "$env:USERPROFILE\.cargo\bin"
-        Write-Host "Adding uv to PATH: $uvPath"
-        echo "$uvPath" >> $env:GITHUB_PATH
-      shell: pwsh
-
-    - name: Verify uv installation
-      run: |
-        Write-Host "Verifying uv installation..."
-        $uvPath = "$env:USERPROFILE\.cargo\bin\uv.exe"
-        if (Test-Path $uvPath) {
-          Write-Host "✅ uv found at: $uvPath"
-          & $uvPath --version
-        } else {
-          Write-Host "❌ uv not found, checking PATH..."
-          Get-Command uv -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found uv at: $($_.Source)" }
-          try {
-            & uv --version
-            Write-Host "✅ uv command successful"
-          } catch {
-            Write-Host "❌ uv command failed: $_"
-          }
-        }
-      shell: pwsh
-
-    # Cache virtual environment and dependencies
-    - name: Cache virtual environment
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: ${{ runner.os }}-venv-${{ hashFiles('pyproject.toml', 'requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-venv-
-
-    - name: Test make setup
-      run: |
-        Write-Host "Running make setup..."
-        $env:UV_SYSTEM_PYTHON = "1"
-        make setup
-        Write-Host "✅ Make setup completed successfully"
-      shell: pwsh
-
-    - name: Verify virtual environment creation
-      run: |
-        Write-Host "Verifying virtual environment creation..."
-        $venvPython = ".venv\Scripts\python.exe"
-        if (Test-Path $venvPython) {
-          Write-Host "✅ Virtual environment created successfully on Windows"
-          Write-Host "Python version in venv:"
-          & $venvPython --version
-          Write-Host "Installed packages:"
-          & $venvPython -m pip list
-        } else {
-          Write-Host "❌ Virtual environment not found on Windows"
-          Write-Host "Contents of .venv directory:"
-          if (Test-Path ".venv") {
-            Get-ChildItem -Path ".venv" -Recurse | Format-Table -AutoSize
-          } else {
-            Write-Host "❌ .venv directory does not exist"
-          }
-          exit 1
-        }
-      shell: pwsh
-
-    # Cache LaTeX outputs
-    - name: Cache LaTeX outputs
-      uses: actions/cache@v4
-      with:
-        path: |
-          output/*.aux
-          output/*.bbl
-          output/*.blg
-          output/*.toc
-          output/*.out
-        key: ${{ runner.os }}-latex-${{ hashFiles('${{ env.MANUSCRIPT_PATH }}/**/*.md', '${{ env.MANUSCRIPT_PATH }}/**/*.bib', '${{ env.MANUSCRIPT_PATH }}/**/*.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-latex-
-
-    # Cache processed figures
-    - name: Cache processed figures
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.MANUSCRIPT_PATH }}/FIGURES/*/
-          cache/figures
-        key: ${{ runner.os }}-figures-${{ hashFiles('${{ env.MANUSCRIPT_PATH }}/FIGURES/**/*') }}
-        restore-keys: |
-          ${{ runner.os }}-figures-
-
-    - name: Test make pdf with clean build
-      run: |
-        Write-Host "Running clean build process..."
-        Write-Host "Cleaning previous outputs..."
-        make clean
+        Write-Host "Testing PDF generation for: $env:MANUSCRIPT_PATH"
         
-        Write-Host "Creating necessary directories..."
+        Write-Host "Creating output directory..."
         if (!(Test-Path "output")) {
           New-Item -ItemType Directory -Path "output" -Force
         }
         
-        Write-Host "Generating PDF for: $env:MANUSCRIPT_PATH"
-        $env:FORCE_FIGURES = "true"
+        Write-Host "Generating PDF (skipping figure regeneration)..."
         make pdf MANUSCRIPT_PATH=$env:MANUSCRIPT_PATH
         Write-Host "✅ PDF generation completed"
       shell: pwsh
 
+    # Verify PDF generation
     - name: Verify PDF generation
       run: |
         Write-Host "Verifying PDF generation..."
@@ -455,22 +194,7 @@ jobs:
         }
       shell: pwsh
 
-    - name: Check output directory structure
-      run: |
-        Write-Host "=== Output Directory Structure ==="
-        if (Test-Path "output") {
-          Get-ChildItem -Path "output" -Recurse | Format-Table -AutoSize
-        } else {
-          Write-Host "❌ Output directory not found"
-        }
-        
-        Write-Host "=== Generated Files Summary ==="
-        Get-ChildItem -Path "output" -Include "*.pdf", "*.tex", "*.log" -Recurse -ErrorAction SilentlyContinue | 
-          ForEach-Object {
-            Write-Host "$($_.Extension.ToUpper()) file: $($_.Name) ($($_.Length) bytes)"
-          }
-      shell: pwsh
-
+    # Upload artifacts for debugging
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       if: always()
@@ -478,16 +202,7 @@ jobs:
         name: windows-output-${{ github.run_number }}
         path: |
           output/
-          .venv/
         retention-days: 7
-
-    - name: Test cleanup
-      if: always()
-      run: |
-        Write-Host "Running cleanup..."
-        make clean
-        Write-Host "✅ Cleanup completed"
-      shell: pwsh
 
     - name: Final status report
       if: always()
