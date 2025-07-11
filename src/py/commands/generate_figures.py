@@ -228,7 +228,8 @@ class FigureGenerator:
 
             current_files = set()
             for ext in ["png", "pdf", "svg", "eps"]:
-                found_files = list(figure_dir.glob(f"*.{ext}"))
+                # Use rglob to find files recursively in subdirectories
+                found_files = list(figure_dir.rglob(f"*.{ext}"))
                 current_files.update(found_files)
                 file_names = [f.name for f in found_files]
                 print(f"     Debug: Found {len(found_files)} {ext} files: {file_names}")
@@ -248,7 +249,9 @@ class FigureGenerator:
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    print(f"     - {figure_dir.name}/{gen_file.name}")
+                    # Show relative path from figure_dir
+                    rel_path = gen_file.relative_to(figure_dir)
+                    print(f"     - {figure_dir.name}/{rel_path}")
             else:
                 print(f"  ⚠️  No output files detected for {py_file.name}")
                 print(f"     Debug: Checked {len(current_files)} total files")
