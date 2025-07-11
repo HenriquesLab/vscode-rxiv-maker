@@ -58,19 +58,37 @@ jobs:
         echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> $GITHUB_ENV
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
 
+    # Cache Python dependencies and virtual environment
+    - name: Cache Python dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-python-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-python-
+
     # Install Python dependencies (system dependencies already in Docker image)
     - name: Install Python dependencies
       run: |
         echo "Installing Python dependencies..."
 
-        # Install Python dependencies (system packages already in Docker image)
-        python3 -m pip install --upgrade pip
-        python3 -m pip install -e ".[dev]"
+        # Use make setup instead of pip for better dependency management
+        make setup
 
         # Set up a writable R library directory (already exists in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
 
-
+    # Cache R library directory
+    - name: Cache R packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.R/library
+        key: ${{ runner.os }}-r-${{ hashFiles('**/DESCRIPTION') }}
+        restore-keys: |
+          ${{ runner.os }}-r-
 
     # Cache LaTeX build outputs from previous runs
     - name: Cache LaTeX outputs
