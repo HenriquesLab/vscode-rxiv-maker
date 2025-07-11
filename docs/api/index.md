@@ -4,11 +4,16 @@ Welcome to the API documentation for rxiv-maker.
 
 ## Commands Modules
 
+- [commands.add_bibliography.py](commands_add_bibliography.py.md)
 - [commands.analyze_word_count.py](commands_analyze_word_count.py.md)
+- [commands.build_manager.py](commands_build_manager.py.md)
+- [commands.cleanup.py](commands_cleanup.py.md)
 - [commands.copy_pdf.py](commands_copy_pdf.py.md)
+- [commands.fix_bibliography.py](commands_fix_bibliography.py.md)
 - [commands.generate_docs.py](commands_generate_docs.py.md)
 - [commands.generate_figures.py](commands_generate_figures.py.md)
 - [commands.generate_preprint.py](commands_generate_preprint.py.md)
+- [commands.setup_environment.py](commands_setup_environment.py.md)
 - [commands.validate.py](commands_validate.py.md)
 
 ## Processors Modules
@@ -34,7 +39,11 @@ Welcome to the API documentation for rxiv-maker.
 
 - [_version.py](_version.py.md)
 - [template_processor.py](template_processor.py.md)
+- [utils.doi_cache.py](utils_doi_cache.py.md)
 - [utils.email_encoder.py](utils_email_encoder.py.md)
+- [utils.platform.py](utils_platform.py.md)
 - [utils.py](utils.py.md)
 - [validators.base_validator.py](validators_base_validator.py.md)
+- [validators.citation_validator.py](validators_citation_validator.py.md)
+- [validators.doi_validator.py](validators_doi_validator.py.md)
 
