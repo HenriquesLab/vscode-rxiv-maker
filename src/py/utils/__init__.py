@@ -15,6 +15,27 @@ from .email_encoder import (
     process_author_emails,
 )
 
+
+def safe_print(message: str, emoji: str = "", fallback: str = ""):
+    """Print a message with emoji, falling back to ASCII on Windows console encoding errors.
+    
+    Args:
+        message: The main message to print
+        emoji: The emoji to prefix (e.g., "✅", "⚠️", "❌")
+        fallback: ASCII fallback if emoji fails (e.g., "[OK]", "[WARN]", "[ERROR]")
+    """
+    try:
+        if emoji:
+            print(f"{emoji} {message}")
+        else:
+            print(message)
+    except UnicodeEncodeError:
+        # Fallback to ASCII characters for Windows console compatibility
+        if fallback:
+            print(f"{fallback} {message}")
+        else:
+            print(message)
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
@@ -106,7 +127,7 @@ except ImportError:
 
         try:
             shutil.copy2(output_pdf, manuscript_pdf_path)
-            print(f"✅ PDF copied to manuscript folder: {manuscript_pdf_path}")
+            safe_print(f"PDF copied to manuscript folder: {manuscript_pdf_path}", "✅", "[OK]")
             return manuscript_pdf_path
         except Exception as e:
             print(f"Error copying PDF: {e}")
@@ -130,7 +151,7 @@ except ImportError:
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(template_content)
 
-        print(f"✅ Manuscript written to: {output_file}")
+        safe_print(f"Manuscript written to: {output_file}", "✅", "[OK]")
         return str(output_file)
 
 
@@ -139,6 +160,7 @@ __all__ = [
     "encode_author_emails",
     "encode_email",
     "process_author_emails",
+    "safe_print",
     "find_manuscript_md",
     "copy_pdf_to_manuscript_folder",
     "get_custom_pdf_filename",
