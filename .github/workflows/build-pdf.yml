@@ -82,8 +82,9 @@ jobs:
         echo "Installing Python dependencies..."
 
         # Install Python dependencies directly (system dependencies already in Docker image)
-        python3 -m pip install --upgrade pip
-        python3 -m pip install -e ".[dev]"
+        # python3 -m pip install --upgrade pip
+        # python3 -m pip install -e ".[dev]"
+        make setup
 
         # Set up a writable R library directory (already exists in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron

@@ -53,6 +53,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
+# Install GitHub CLI
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y gh \
+    && rm -rf /var/lib/apt/lists/*
+
 # ======================================================================
 # LaTeX Installation Stage
 # ======================================================================
@@ -106,6 +114,39 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
 
 # Upgrade pip to latest version
 RUN python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install uv (modern Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Pre-install core Python libraries for rxiv-maker
+RUN uv pip install --system --no-cache-dir \
+    "matplotlib>=3.7.0" \
+    "seaborn>=0.12.0" \
+    "numpy>=1.24.0" \
+    "pandas>=2.0.0" \
+    "scipy>=1.10.0" \
+    "Pillow>=9.0.0" \
+    "pypdf>=3.0.0" \
+    "PyYAML>=6.0.0" \
+    "python-dotenv>=1.0.0" \
+    "crossref-commons>=0.0.7" \
+    "lazydocs>=0.4.8" \
+    "types-requests>=2.32.4.20250611"
+
+# Pre-install common development dependencies
+RUN uv pip install --system --no-cache-dir \
+    "pytest>=7.4,<8.0" \
+    "py>=1.11.0" \
+    "ruff>=0.8.0" \
+    "mypy>=1.0" \
+    "types-PyYAML>=6.0.0" \
+    "nox>=2023.0.0" \
+    "pytest-cov>=4.0" \
+    "coverage[toml]>=7.0" \
+    "pytest-notebook>=0.10.0" \
+    "nbstripout>=0.7.1" \
+    "pre-commit>=4.0.0"
 
 # ======================================================================
 # Node.js and Mermaid CLI Installation Stage
@@ -172,19 +213,28 @@ RUN mkdir -p /home/rxivmaker/.R/library \
 # Verify installations
 RUN echo "=== Verification ===" \
     && python3 --version \
+    && uv --version \
+    && gh --version \
     && node --version \
     && npm --version \
     && mmdc --version \
     && R --version | head -1 \
     && pdflatex --version | head -1 \
     && biber --version | head -1 \
+    && echo "=== Python packages verification ===" \
+    && python3 -c "import matplotlib; print(f'matplotlib: {matplotlib.__version__}')" \
+    && python3 -c "import numpy; print(f'numpy: {numpy.__version__}')" \
+    && python3 -c "import pandas; print(f'pandas: {pandas.__version__}')" \
+    && python3 -c "import yaml; print('PyYAML: OK')" \
+    && python3 -c "import pytest; print(f'pytest: {pytest.__version__}')" \
+    && python3 -c "import ruff; print('ruff: OK')" \
     && echo "=== All dependencies installed successfully ==="
 
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
 LABEL description="Base image for Rxiv-Maker with system dependencies"
-LABEL version="1.0"
-LABEL org.opencontainers.image.source="https://github.com/paxcalpt/rxiv-maker"
+LABEL version="1.1"
+LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed"
 LABEL org.opencontainers.image.licenses="MIT"
 
