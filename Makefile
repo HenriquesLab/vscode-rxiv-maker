@@ -179,9 +179,9 @@ pdf-no-validate:
 
 # Prepare arXiv submission package
 .PHONY: arxiv
-arxiv: _generate_files
+arxiv: pdf
 	@echo "Preparing arXiv submission package..."
-	@$(PYTHON_CMD) prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --zip
+	@$(PYTHON_CMD) src/py/commands/prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --zip
 	@echo "✅ arXiv package ready: $(OUTPUT_DIR)/for_arxiv.zip"
 	@echo "Copying arXiv package to manuscript directory with naming convention..."
 	@YEAR=$$($(PYTHON_CMD) -c "import yaml; import sys; sys.path.insert(0, 'src/py'); config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \

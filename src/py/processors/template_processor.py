@@ -76,7 +76,7 @@ def generate_supplementary_cover_page(yaml_metadata):
 % Footer information
 \\begin{{minipage}}{{\\textwidth}}
 \\centering
-{{\\small Generated on \\today\\space by Rxiv-Maker}}
+% Generated text removed
 \\end{{minipage}}
 
 \\end{{center}}
