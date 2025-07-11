@@ -75,8 +75,9 @@ jobs:
       run: |
         echo "Installing Python dependencies..."
 
-        # Use make setup for dependency installation (optimized for the project)
-        make setup
+        # Install Python dependencies directly (system dependencies already in Docker image)
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -e ".[dev]"
 
         # Set up a writable R library directory (already exists in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
