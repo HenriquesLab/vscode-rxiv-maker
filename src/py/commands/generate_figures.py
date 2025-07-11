@@ -204,6 +204,8 @@ class FigureGenerator:
                 if result.stderr:
                     print(f"     {result.stderr}")
                 return
+            
+            print(f"     Debug: Script executed successfully, now checking for files...")
 
             # Check for generated files by scanning the figure subdirectory
             # Add a small delay to ensure files are fully written in CI environments
@@ -216,10 +218,13 @@ class FigureGenerator:
 
             os.sync() if hasattr(os, "sync") else None
 
-            print(f"     Debug: Scanning directory: {figure_dir.absolute()}")
+            print(f"     Debug: About to scan directory: {figure_dir.absolute()}")
             print(f"     Debug: Directory exists: {figure_dir.exists()}")
-            dir_contents = list(figure_dir.iterdir()) if figure_dir.exists() else "N/A"
-            print(f"     Debug: Directory contents: {dir_contents}")
+            if figure_dir.exists():
+                dir_contents = list(figure_dir.iterdir())
+                print(f"     Debug: Directory contents: {dir_contents}")
+            else:
+                print(f"     Debug: Directory does not exist!")
 
             current_files = set()
             for ext in ["png", "pdf", "svg", "eps"]:
