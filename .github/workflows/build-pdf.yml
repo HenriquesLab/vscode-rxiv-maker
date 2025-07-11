@@ -47,6 +47,7 @@ jobs:
   build-pdf:
     needs: prepare
     runs-on: ubuntu-latest
+    container: henriqueslab/rxiv-maker-base:latest
 
     steps:
     - name: Checkout repository
@@ -57,51 +58,16 @@ jobs:
         echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> $GITHUB_ENV
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
 
-    # Install all required LaTeX packages and Python dependencies
-    - name: Install Node.js for Mermaid CLI
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-
-    - name: Install Mermaid CLI
+    # Install Python dependencies (system dependencies already in Docker image)
+    - name: Install Python dependencies
       run: |
-        echo "Installing Mermaid CLI..."
-        npm install -g @mermaid-js/mermaid-cli
+        echo "Installing Python dependencies..."
 
-    - name: Install LaTeX, R and Python dependencies
-      run: |
-        echo "Installing TeXLive, R and Python dependencies..."
-
-        # Update and install LaTeX packages and R with required system dependencies
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
-          libfontconfig1-dev \
-          libfreetype6-dev \
-          libharfbuzz-dev \
-          libfribidi-dev \
-          pkg-config \
-          texlive-latex-base \
-          texlive-latex-recommended \
-          texlive-latex-extra \
-          texlive-fonts-recommended \
-          texlive-fonts-extra \
-          texlive-science \
-          texlive-bibtex-extra \
-          texlive-pictures \
-          biber \
-          python3 \
-          python3-pip \
-          python3-venv \
-          make \
-          curl \
-          r-base
-
-        # Install Python dependencies
+        # Install Python dependencies (system packages already in Docker image)
         python3 -m pip install --upgrade pip
         python3 -m pip install -e ".[dev]"
 
-        # Set up a writable R library directory
-        mkdir -p ~/.R/library
+        # Set up a writable R library directory (already exists in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
 
 
@@ -228,7 +194,7 @@ jobs:
           TAG=$(git tag --sort=-creatordate | head -n 1)
           echo "Using most recent tag: $TAG"
         fi
-        
+
         echo "MOST_RECENT_TAG=$TAG" >> $GITHUB_ENV
         echo "MOST_RECENT_TAG=$TAG" >> $GITHUB_OUTPUT
 
