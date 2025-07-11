@@ -32,6 +32,7 @@ from .supplementary_note_processor import (
 )
 from .table_processor import convert_table_references_to_latex, convert_tables_to_latex
 from .text_formatters import (
+    convert_subscript_superscript_to_latex,
     escape_special_characters,
     process_code_spans,
     protect_bold_outside_texttt,
@@ -350,7 +351,7 @@ def _convert_headers(
 def _process_text_formatting(
     content: LatexContent, protected_backtick_content: ProtectedContent
 ) -> LatexContent:
-    """Process text formatting (backticks, bold, italic)."""
+    """Process text formatting (backticks, bold, italic, subscript, superscript)."""
     # IMPORTANT: Process backticks BEFORE bold/italic to ensure markdown inside
     # code spans is preserved as literal text
 
@@ -364,6 +365,9 @@ def _process_text_formatting(
     # Convert bold and italic AFTER processing backticks
     content = protect_bold_outside_texttt(content)
     content = protect_italic_outside_texttt(content)
+
+    # Convert subscript and superscript formatting
+    content = convert_subscript_superscript_to_latex(content)
 
     # Special handling for italic text in list items
     content = re.sub(r"(\\item\s+)\*([^*]+?)\*", r"\1\\textit{\2}", content)

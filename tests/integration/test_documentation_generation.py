@@ -60,11 +60,17 @@ def test_full_documentation_generation():
 
         # Make sure lazydocs is installed in the test environment
         try:
-            subprocess.run(
-                ["pip", "install", "lazydocs"], check=True, stdout=subprocess.PIPE
+            # Try uv first, then fall back to pip
+            result = subprocess.run(
+                ["uv", "add", "lazydocs"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
-        except subprocess.CalledProcessError:
-            pytest.skip("Failed to install lazydocs - skipping test")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            try:
+                subprocess.run(
+                    ["pip", "install", "lazydocs"], check=True, stdout=subprocess.PIPE
+                )
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                pytest.skip("Failed to install lazydocs with either uv or pip - skipping test")
 
         try:
             # Change to the temporary project directory

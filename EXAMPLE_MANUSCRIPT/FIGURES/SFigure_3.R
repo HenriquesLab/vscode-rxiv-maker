@@ -59,19 +59,19 @@ load_and_process_data <- function() {
   script_args <- commandArgs(trailingOnly = FALSE)
   script_path <- normalizePath(sub("--file=", "", script_args[grep("--file=", script_args)]))
   script_dir <- dirname(script_path)
-  
+
   # Define the path to the data file
   data_path <- file.path(script_dir, "DATA", "SFigure_3", "pubmed_by_year.csv")
-  
+
   # Check if the file exists
   if (!file.exists(data_path)) {
     stop(paste("Error: Data file not found at", data_path))
   }
-  
+
   # Load and process the data
   df <- read_csv(data_path, show_col_types = FALSE)  # Suppress column type messages
   df <- df %>%
-    pivot_longer(cols = c(preprint, medrxiv, biorxiv, arxiv), names_to = "source", values_to = "submissions") %>% 
+    pivot_longer(cols = c(preprint, medrxiv, biorxiv, arxiv), names_to = "source", values_to = "submissions") %>%
     mutate(date = as.Date(paste0(Year, "-01-01"), format = "%Y-%m-%d")) %>%  # Convert year to Date
     arrange(date, source)  # Ensure proper ordering
   return(df)
@@ -111,19 +111,19 @@ create_figure <- function(df) {
 # Save the figure
 save_figure <- function(p, output_path = NULL) {
   output_path <- ifelse(is.null(output_path), getwd(), output_path)
-  
+
   # Ensure the output directory exists
   if (!dir.exists(output_path)) {
     dir.create(output_path, recursive = TRUE)
   }
-  
+
   # Save the figure in multiple formats
   ggsave(file.path(output_path, "SFigure_3.pdf"), plot = p, width = 3.5, height = 4, dpi = 300)
   ggsave(file.path(output_path, "SFigure_3.png"), plot = p, width = 3.5, height = 4, dpi = 300)
-  
+
   # Use svglite for SVG output
   ggsave(file.path(output_path, "SFigure_3.svg"), plot = p, width = 3.5, height = 4, device = svglite::svglite)
-  
+
   cat("Figure saved to:\n")
   cat(paste0("  - ", file.path(output_path, "SFigure_3.pdf"), "\n"))
   cat(paste0("  - ", file.path(output_path, "SFigure_3.png"), "\n"))

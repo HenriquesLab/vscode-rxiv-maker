@@ -179,9 +179,9 @@ pdf-no-validate:
 
 # Prepare arXiv submission package
 .PHONY: arxiv
-arxiv: _generate_files
+arxiv: pdf
 	@echo "Preparing arXiv submission package..."
-	@$(PYTHON_CMD) prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --zip
+	@$(PYTHON_CMD) src/py/commands/prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --zip
 	@echo "✅ arXiv package ready: $(OUTPUT_DIR)/for_arxiv.zip"
 	@echo "Copying arXiv package to manuscript directory with naming convention..."
 	@YEAR=$$($(PYTHON_CMD) -c "import yaml; import sys; sys.path.insert(0, 'src/py'); config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \
@@ -220,6 +220,55 @@ _validate_quiet:
 		echo "💡 Use 'make pdf-no-validate' to skip validation and build anyway."; \
 		exit 1; \
 	}
+
+# ======================================================================
+# 🧪 TESTING AND CODE QUALITY
+# ======================================================================
+
+# Run all tests
+.PHONY: test
+test:
+	@echo "🧪 Running all tests..."
+	@$(PYTHON_CMD) -m pytest tests/ -v
+
+# Run unit tests only
+.PHONY: test-unit
+test-unit:
+	@echo "🧪 Running unit tests..."
+	@$(PYTHON_CMD) -m pytest tests/unit/ -v
+
+# Run integration tests only
+.PHONY: test-integration
+test-integration:
+	@echo "🧪 Running integration tests..."
+	@$(PYTHON_CMD) -m pytest tests/integration/ -v
+
+# Lint code
+.PHONY: lint
+lint:
+	@echo "🔍 Linting code..."
+	@$(PYTHON_CMD) -m ruff check src/
+
+# Format code
+.PHONY: format
+format:
+	@echo "🎨 Formatting code..."
+	@$(PYTHON_CMD) -m ruff format src/
+
+# Type checking
+.PHONY: typecheck
+typecheck:
+	@echo "🔍 Running type checking..."
+	@$(PYTHON_CMD) -m mypy src/
+
+# Run all code quality checks
+.PHONY: check
+check: lint typecheck
+	@echo "✅ All code quality checks passed!"
+
+# ======================================================================
+# 📚 BIBLIOGRAPHY MANAGEMENT
+# ======================================================================
 
 # Fix bibliography issues automatically by searching CrossRef
 .PHONY: fix-bibliography

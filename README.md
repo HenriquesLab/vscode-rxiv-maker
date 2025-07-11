@@ -70,6 +70,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 | `<!-- comment -->` | `% comment` | Comments (converted to LaTeX style) |
 | `<newpage>` | `\newpage` | Manual page break control |
 | `<clearpage>` | `\clearpage` | Page break with float clearing |
+| `<float-barrier>` | `\FloatBarrier` | Prevent floats from crossing this point |
 
 </details>
 
@@ -200,6 +201,8 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 |------|---------|---------------|
 | Generate PDF | `make pdf` | [User Guide](docs/user_guide.md) |
 | Validate Manuscript | `make validate` | [Validation Guide](docs/validate_manuscript.md) |
+| Fix Bibliography | `make fix-bibliography` | [User Guide](docs/user_guide.md) |
+| Add Bibliography Entry | `make add-bibliography 10.1000/doi` | [User Guide](docs/user_guide.md) |
 | Cloud PDF Generation | Actions → "Run workflow" | [GitHub Actions Guide](docs/github-actions-guide.md) |
 | Custom Manuscript | `make pdf MANUSCRIPT_PATH=MY_PAPER` | [User Guide](docs/user_guide.md) |
 | Force Figure Regeneration | `make pdf FORCE_FIGURES=true` | [User Guide](docs/user_guide.md) |

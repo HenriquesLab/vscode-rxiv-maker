@@ -9,6 +9,40 @@ import re
 from .types import LatexContent, MarkdownContent
 
 
+def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
+    """Convert subscript and superscript markdown syntax to LaTeX.
+    
+    Avoids converting inside LaTeX commands like \\texttt{}.
+
+    Args:
+        text: Text content that may contain subscript and superscript
+
+    Returns:
+        LaTeX formatted text with subscript/superscript converted
+    """
+    # Helper function to avoid replacing inside LaTeX commands
+    def replace_outside_commands(pattern, replacement, text):
+        """Replace pattern with replacement, but not inside LaTeX commands."""
+        # Split text by LaTeX commands like \texttt{...}
+        parts = re.split(r'(\\texttt\{[^}]*\})', text)
+        result = []
+        
+        for i, part in enumerate(parts):
+            if i % 2 == 0:  # Not inside a LaTeX command
+                part = re.sub(pattern, replacement, part)
+            result.append(part)
+        
+        return ''.join(result)
+    
+    # Convert simple subscript and superscript using markdown-style syntax
+    # H~2~O becomes H\textsubscript{2}O
+    text = replace_outside_commands(r"~([^~\s]+)~", r"\\textsubscript{\1}", text)
+    # E=mc^2^ becomes E=mc\textsuperscript{2}
+    text = replace_outside_commands(r"\^([^\^\s]+)\^", r"\\textsuperscript{\1}", text)
+    
+    return text
+
+
 def convert_text_formatting_to_latex(text: MarkdownContent) -> LatexContent:
     """Convert markdown text formatting to LaTeX.
 
@@ -22,11 +56,8 @@ def convert_text_formatting_to_latex(text: MarkdownContent) -> LatexContent:
     text = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", text)
     text = re.sub(r"\*(.+?)\*", r"\\textit{\1}", text)
 
-    # Convert simple subscript and superscript using markdown-style syntax
-    # H~2~O becomes H\textsubscript{2}O
-    text = re.sub(r"~([^~\s]+)~", r"\\textsubscript{\1}", text)
-    # E=mc^2^ becomes E=mc\textsuperscript{2}
-    text = re.sub(r"\^([^\^\s]+)\^", r"\\textsuperscript{\1}", text)
+    # Convert subscript and superscript
+    text = convert_subscript_superscript_to_latex(text)
 
     # Note: Code conversion is handled by process_code_spans function
     # to properly support line breaking for long code spans
