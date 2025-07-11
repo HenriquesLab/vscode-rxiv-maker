@@ -144,7 +144,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 FROM r-deps AS final
 
-# Create a non-root user for security
+# Create a non-root user for security (but allow GitHub Actions to work)
 RUN groupadd -r rxivmaker && useradd -r -g rxivmaker -d /home/rxivmaker -s /bin/bash rxivmaker \
     && mkdir -p /home/rxivmaker \
     && chown rxivmaker:rxivmaker /home/rxivmaker
@@ -154,7 +154,8 @@ WORKDIR /workspace
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /workspace/output /workspace/cache /tmp/texmf-var \
-    && chown -R rxivmaker:rxivmaker /workspace /tmp/texmf-var
+    && chown -R rxivmaker:rxivmaker /workspace /tmp/texmf-var \
+    && chmod -R 777 /workspace /tmp/texmf-var
 
 # Set environment variables for LaTeX
 ENV TEXMFVAR=/tmp/texmf-var
@@ -187,8 +188,8 @@ LABEL org.opencontainers.image.source="https://github.com/paxcalpt/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# Switch to non-root user
-USER rxivmaker
+# For GitHub Actions, we need to stay as root to allow workspace access
+# USER rxivmaker
 
 # Set default command
 CMD ["/bin/bash"]
