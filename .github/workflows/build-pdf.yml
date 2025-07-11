@@ -58,6 +58,12 @@ jobs:
         echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> $GITHUB_ENV
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
 
+    - name: Configure Git
+      run: |
+        git config --global --add safe.directory /__w/rxiv-maker/rxiv-maker
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
     # Cache Python dependencies and virtual environment
     - name: Cache Python dependencies
       uses: actions/cache@v4
