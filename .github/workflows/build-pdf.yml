@@ -47,7 +47,9 @@ jobs:
   build-pdf:
     needs: prepare
     runs-on: ubuntu-latest
-    container: henriqueslab/rxiv-maker-base:latest
+    container:
+      image: henriqueslab/rxiv-maker-base:latest
+      options: --platform linux/amd64
 
     steps:
     - name: Checkout repository

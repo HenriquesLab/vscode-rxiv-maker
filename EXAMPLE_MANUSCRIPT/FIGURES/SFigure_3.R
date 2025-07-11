@@ -141,14 +141,3 @@ main <- function() {
 }
 
 main()
-# Main function
-main <- function() {
-  df <- load_and_process_data()
-  p <- create_figure(df)
-  save_figure(p)
-  if (opt$show) {
-    print(p)
-  }
-}
-
-main()

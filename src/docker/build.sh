@@ -17,7 +17,7 @@
 set -e  # Exit on any error
 
 # Configuration
-DOCKER_HUB_REPO="rxivmaker/base"
+DOCKER_HUB_REPO="henriqueslab/rxiv-maker-base"
 DEFAULT_TAG="latest"
 PLATFORMS="linux/amd64,linux/arm64"
 CONTEXT_DIR="."

@@ -159,8 +159,20 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Chromium for Puppeteer (required by Mermaid CLI)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium-browser \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Mermaid CLI globally
 RUN npm install -g @mermaid-js/mermaid-cli
+
+# Install chrome-headless-shell for Puppeteer (used by Mermaid CLI)
+RUN npx puppeteer browsers install chrome-headless-shell
+
+# Set environment variables for Puppeteer to use system Chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # ======================================================================
 # R Installation Stage
@@ -176,8 +188,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
+    # Graphics and font libraries for R plots
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
+
+# Pre-install common R packages for faster figure generation
+RUN R -e "install.packages(c('ggplot2', 'dplyr', 'scales', 'readr', 'tidyr', 'optparse', 'svglite'), repos='https://cloud.r-project.org/', dependencies=TRUE)"
 
 # ======================================================================
 # Final Optimized Stage
@@ -233,7 +252,7 @@ RUN echo "=== Verification ===" \
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
 LABEL description="Base image for Rxiv-Maker with system dependencies"
-LABEL version="1.1"
+LABEL version="1.2"
 LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed"
 LABEL org.opencontainers.image.licenses="MIT"
