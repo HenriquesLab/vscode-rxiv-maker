@@ -19,6 +19,7 @@ dependencies = [
     "PyYAML>=6.0.0",
     "python-dotenv>=1.0.0",
     "crossref-commons>=0.0.7",
+    "lazydocs>=0.4.8",
 ]
 
 [project.optional-dependencies]
