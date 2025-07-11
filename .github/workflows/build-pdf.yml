@@ -75,8 +75,14 @@ jobs:
       run: |
         echo "Installing Python dependencies..."
 
-        # Use make setup instead of pip for better dependency management
-        make setup
+        # Check if uv is available (faster than pip)
+        if command -v uv &> /dev/null; then
+          echo "Using uv for fast dependency installation..."
+          uv pip install --system -e ".[dev]"
+        else
+          echo "Using make setup for dependency installation..."
+          make setup
+        fi
 
         # Set up a writable R library directory (already exists in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
