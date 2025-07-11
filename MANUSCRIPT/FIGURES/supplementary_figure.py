@@ -4,14 +4,11 @@
 import matplotlib
 
 matplotlib.use("Agg")  # Use non-interactive backend
-import os
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Create output directory if it doesn't exist
-output_dir = "supplementary_figure"
-os.makedirs(output_dir, exist_ok=True)
+# Files will be saved directly to the current working directory
 
 # Generate sample data
 np.random.seed(42)
@@ -26,8 +23,8 @@ plt.title("Example Supplementary Figure")
 plt.grid(True, alpha=0.3)
 
 # Save as both PNG and PDF
-plt.savefig(f"{output_dir}/supplementary_figure.png", dpi=300, bbox_inches="tight")
-plt.savefig(f"{output_dir}/supplementary_figure.pdf", bbox_inches="tight")
+plt.savefig("supplementary_figure.png", dpi=300, bbox_inches="tight")
+plt.savefig("supplementary_figure.pdf", bbox_inches="tight")
 plt.close()
 
 print("Supplementary figure generated successfully!")
