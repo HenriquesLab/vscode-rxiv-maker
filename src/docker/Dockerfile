@@ -48,6 +48,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     libgif-dev \
     libpng-dev \
+    # X11 libraries for Puppeteer/Chrome (Mermaid diagram generation)
+    libx11-6 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    # Additional X11 dependencies
+    libxkbcommon0 \
+    libgtk-3-0 \
+    libgbm1 \
+    libnss3 \
+    libxshmfence1 \
     # Git for version control
     git \
     # Clean up
@@ -282,7 +300,7 @@ RUN echo "=== Verification ===" \
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
 LABEL description="Base image for Rxiv-Maker with system dependencies"
-LABEL version="1.3"
+LABEL version="1.4"
 LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed"
 LABEL org.opencontainers.image.licenses="MIT"

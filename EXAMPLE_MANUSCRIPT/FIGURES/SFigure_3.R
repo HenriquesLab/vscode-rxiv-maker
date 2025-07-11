@@ -80,7 +80,7 @@ load_and_process_data <- function() {
 # Create the figure
 create_figure <- function(df) {
   p <- ggplot(df, aes(x = date, y = submissions, color = source, fill = source)) +
-    geom_line(linewidth = 0.6, alpha = 0.8) +
+    geom_line(size = 0.6, alpha = 0.8) +
     geom_area(alpha = 0.2, position = "identity") +  # Use "identity" to avoid stacking
     labs(
       title = "PubMed Preprints by Year and Source",
@@ -101,8 +101,8 @@ create_figure <- function(df) {
     theme(
       axis.title = element_text(face = "bold"),
       plot.title = element_text(face = "bold", size = 10, hjust = 0.5),
-      panel.grid.minor = element_line(linewidth = 0.3, linetype = "dotted"),
-      panel.grid.major = element_line(linewidth = 0.3),
+      panel.grid.minor = element_line(size = 0.3, linetype = "dotted"),
+      panel.grid.major = element_line(size = 0.3),
       axis.text.x = element_text(angle = 45, hjust = 1)
     )
   return(p)

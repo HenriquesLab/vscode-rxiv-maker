@@ -352,6 +352,12 @@ clean-temp:
 clean-cache:
 	@$(PYTHON_CMD) src/py/commands/cleanup.py --cache-only
 
+# Build Docker image
+.PHONY: docker-image
+docker-image:
+	@echo "🐳 Building Docker image..."
+	@cd src/docker && docker build --platform linux/amd64 -t henriqueslab/rxiv-maker-base:latest .
+
 # Show help
 .PHONY: help
 help:
