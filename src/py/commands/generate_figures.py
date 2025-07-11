@@ -12,8 +12,6 @@ Usage:
 """
 
 import argparse
-import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -29,7 +27,11 @@ class FigureGenerator:
     """Main class for generating figures from various source formats."""
 
     def __init__(
-        self, figures_dir="FIGURES", output_dir="FIGURES", output_format="png", r_only=False
+        self,
+        figures_dir="FIGURES",
+        output_dir="FIGURES",
+        output_format="png",
+        r_only=False,
     ):
         """Initialize the figure generator.
 
@@ -58,9 +60,7 @@ class FigureGenerator:
     def generate_all_figures(self):
         """Generate all figures found in the figures directory."""
         if not self.figures_dir.exists():
-            print(
-                f"Warning: Figures directory '{self.figures_dir}' does not exist"
-            )
+            print(f"Warning: Figures directory '{self.figures_dir}' does not exist")
             return
 
         print(f"Scanning for figures in: {self.figures_dir}")
@@ -113,12 +113,8 @@ class FigureGenerator:
         try:
             # Check if mmdc (Mermaid CLI) is available
             if not self._check_mermaid_cli():
-                print(
-                    f"  ⚠️  Skipping {mmd_file.name}: Mermaid CLI not available"
-                )
-                print(
-                    "     Install with: npm install -g @mermaid-js/mermaid-cli"
-                )
+                print(f"  ⚠️  Skipping {mmd_file.name}: Mermaid CLI not available")
+                print("     Install with: npm install -g @mermaid-js/mermaid-cli")
                 return
 
             # Create subdirectory for this figure
@@ -142,12 +138,8 @@ class FigureGenerator:
 
                 # Add Puppeteer configuration for --no-sandbox if required
                 if not PUPPETEER_CONFIG_PATH.exists():
-                    PUPPETEER_CONFIG_PATH.write_text(
-                        '{"args": ["--no-sandbox"]}'
-                    )
-                cmd_parts.extend(
-                    ["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)]
-                )
+                    PUPPETEER_CONFIG_PATH.write_text('{"args": ["--no-sandbox"]}')
+                cmd_parts.extend(["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)])
 
                 # Add format-specific options
                 if format_type == "pdf":
@@ -156,33 +148,23 @@ class FigureGenerator:
                     cmd_parts.extend(["--width", "1200", "--height", "800"])
                 # No extra options needed for svg
 
-                print(
-                    f"  🎨 Generating {figure_dir.name}/{output_file.name}..."
-                )
-                
+                print(f"  🎨 Generating {figure_dir.name}/{output_file.name}...")
+
                 # Use platform-appropriate command execution
                 cmd = " ".join(cmd_parts)
-                result = self.platform.run_command(
-                    cmd, capture_output=True, text=True
-                )
+                result = self.platform.run_command(cmd, capture_output=True, text=True)
 
                 if result.returncode == 0:
                     success_msg = f"Successfully generated {figure_dir.name}/"
                     success_msg += f"{output_file.name}"
                     print(f"  ✅ {success_msg}")
-                    generated_files.append(
-                        f"{figure_dir.name}/{output_file.name}"
-                    )
+                    generated_files.append(f"{figure_dir.name}/{output_file.name}")
                 else:
-                    print(
-                        f"  ❌ Error generating {format_type} for {mmd_file.name}:"
-                    )
+                    print(f"  ❌ Error generating {format_type} for {mmd_file.name}:")
                     print(f"     {result.stderr}")
 
             if generated_files:
-                print(
-                    f"     Total files generated: {', '.join(generated_files)}"
-                )
+                print(f"     Total files generated: {', '.join(generated_files)}")
 
         except Exception as e:
             print(f"  ❌ Error processing {mmd_file.name}: {e}")
@@ -203,7 +185,7 @@ class FigureGenerator:
                 cmd = ["uv", "run", "python", str(py_file.absolute())]
             else:
                 cmd = [python_cmd, str(py_file.absolute())]
-            
+
             result = self.platform.run_command(
                 " ".join(cmd),
                 capture_output=True,
@@ -257,9 +239,7 @@ class FigureGenerator:
             if not self._check_rscript():
                 print(f"  ⚠️  Skipping {r_file.name}: Rscript not available")
                 print("     Ensure R is installed and accessible in your PATH")
-                print(
-                    "Check https://www.r-project.org/ for installation instructions"
-                )
+                print("Check https://www.r-project.org/ for installation instructions")
                 return
 
             # Create subdirectory for this figure
@@ -395,9 +375,7 @@ def main():
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
-    parser.add_argument(
-        "--r-only", action="store_true", help="Only process R files"
-    )
+    parser.add_argument("--r-only", action="store_true", help="Only process R files")
 
     args = parser.parse_args()
 

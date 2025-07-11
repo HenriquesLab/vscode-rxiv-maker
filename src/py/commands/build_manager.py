@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -33,7 +34,7 @@ class BuildManager:
 
     def __init__(
         self,
-        manuscript_path: str = None,
+        manuscript_path: Optional[str] = None,
         output_dir: str = "output",
         force_figures: bool = False,
         skip_validation: bool = False,
@@ -48,7 +49,7 @@ class BuildManager:
             skip_validation: Skip manuscript validation
             verbose: Enable verbose output
         """
-        self.manuscript_path = manuscript_path or os.getenv(
+        self.manuscript_path: str = manuscript_path or os.getenv(
             "MANUSCRIPT_PATH", "MANUSCRIPT"
         )
         self.output_dir = Path(output_dir)
@@ -135,8 +136,9 @@ class BuildManager:
 
         try:
             # Use subprocess to run validation to avoid import issues
+            python_parts = self.platform.python_cmd.split()
             cmd = [
-                self.platform.python_cmd.split()[0],
+                python_parts[0] if python_parts else "python",
                 "src/py/commands/validate.py",
                 self.manuscript_path,
             ]
@@ -322,8 +324,9 @@ class BuildManager:
 
         try:
             # Run the main generation script
+            python_parts = self.platform.python_cmd.split()
             cmd = [
-                self.platform.python_cmd.split()[0],  # Handle "uv run python"
+                python_parts[0] if python_parts else "python",
                 "src/py/commands/generate_preprint.py",
                 "--output-dir",
                 str(self.output_dir),
@@ -456,8 +459,9 @@ class BuildManager:
         """Copy generated PDF to manuscript directory with custom name."""
         try:
             # Use the existing copy_pdf command
+            python_parts = self.platform.python_cmd.split()
             cmd = [
-                self.platform.python_cmd.split()[0],
+                python_parts[0] if python_parts else "python",
                 "src/py/commands/copy_pdf.py",
                 "--output-dir",
                 str(self.output_dir),
@@ -487,8 +491,9 @@ class BuildManager:
         """Run word count analysis on the manuscript."""
         try:
             # Use the existing word count analysis command
+            python_parts = self.platform.python_cmd.split()
             cmd = [
-                self.platform.python_cmd.split()[0],
+                python_parts[0] if python_parts else "python",
                 "src/py/commands/analyze_word_count.py",
             ]
 

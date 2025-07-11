@@ -13,7 +13,7 @@ import sys
 import time
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 
@@ -56,7 +56,7 @@ class BibliographyFixer:
         self.cache = DOICache()
         self.similarity_threshold = 0.8
 
-    def fix_bibliography(self, dry_run: bool = False) -> Dict[str, Any]:
+    def fix_bibliography(self, dry_run: bool = False) -> dict[str, Any]:
         """Fix bibliography issues found by validation.
 
         Args:
@@ -128,7 +128,7 @@ class BibliographyFixer:
             "backup_created": self.backup,
         }
 
-    def _parse_bibliography(self, bib_content: str) -> List[Dict[str, Any]]:
+    def _parse_bibliography(self, bib_content: str) -> list[dict[str, Any]]:
         """Parse bibliography entries from BibTeX content."""
         entries = []
 
@@ -159,7 +159,7 @@ class BibliographyFixer:
 
         return entries
 
-    def _extract_bib_fields(self, fields_text: str) -> Dict[str, str]:
+    def _extract_bib_fields(self, fields_text: str) -> dict[str, str]:
         """Extract field values from BibTeX entry fields."""
         fields = {}
 
@@ -177,8 +177,8 @@ class BibliographyFixer:
         return fields
 
     def _identify_problematic_entries(
-        self, validation_result, entries: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, validation_result, entries: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Identify entries that have issues and might be fixable."""
         problematic = []
 
@@ -200,7 +200,7 @@ class BibliographyFixer:
 
         return problematic
 
-    def _is_fixable_error(self, error, entry: Dict[str, Any]) -> bool:
+    def _is_fixable_error(self, error, entry: dict[str, Any]) -> bool:
         """Check if a validation error can potentially be fixed automatically."""
         # We can try to fix entries that have:
         # 1. Invalid or missing DOI but have title
@@ -223,7 +223,7 @@ class BibliographyFixer:
 
         return any(keyword in error_message for keyword in fixable_keywords)
 
-    def _attempt_fix_entry(self, entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _attempt_fix_entry(self, entry: dict[str, Any]) -> Optional[dict[str, Any]]:
         """Attempt to find correct metadata for a bibliography entry."""
         title = entry.get("title", "").strip()
         author = entry.get("author", "").strip()
@@ -283,7 +283,7 @@ class BibliographyFixer:
 
     def _search_crossref(
         self, title: str, author: str = "", year: str = ""
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search CrossRef for publications matching the given criteria."""
         candidates = []
 
@@ -411,7 +411,7 @@ class BibliographyFixer:
 
             return False
 
-    def _extract_authors(self, author_list: List[Dict[str, Any]]) -> str:
+    def _extract_authors(self, author_list: list[dict[str, Any]]) -> str:
         """Extract author string from CrossRef author list."""
         if not author_list:
             return ""
@@ -429,20 +429,20 @@ class BibliographyFixer:
         return " and ".join(authors)
 
     def _find_best_match(
-        self, entry: Dict[str, Any], candidates: List[Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+        self, entry: dict[str, Any], candidates: list[dict[str, Any]]
+    ) -> Optional[dict[str, Any]]:
         """Find the best matching candidate for the entry."""
         if not candidates:
             return None
 
         best_match = None
-        best_score = 0
+        best_score = 0.0
 
         entry_title = entry.get("title", "").lower().strip()
         entry_year = entry.get("year", "").strip()
 
         for candidate in candidates:
-            score = 0
+            score = 0.0
 
             # Title similarity (most important)
             candidate_title = candidate.get("title", "").lower().strip()
@@ -473,7 +473,7 @@ class BibliographyFixer:
         return best_match
 
     def _calculate_confidence(
-        self, entry: Dict[str, Any], crossref_data: Dict[str, Any]
+        self, entry: dict[str, Any], crossref_data: dict[str, Any]
     ) -> float:
         """Calculate confidence score for the match."""
         entry_title = entry.get("title", "").lower().strip()
@@ -485,7 +485,7 @@ class BibliographyFixer:
         return SequenceMatcher(None, entry_title, candidate_title).ratio()
 
     def _generate_fixed_entry(
-        self, original: Dict[str, Any], crossref_data: Dict[str, Any]
+        self, original: dict[str, Any], crossref_data: dict[str, Any]
     ) -> str:
         """Generate a fixed BibTeX entry from CrossRef data."""
         entry_type = original.get("type", "article")
@@ -528,7 +528,7 @@ class BibliographyFixer:
 
         return "\n".join(lines)
 
-    def _show_dry_run_results(self, fixes: List[Dict[str, Any]]):
+    def _show_dry_run_results(self, fixes: list[dict[str, Any]]):
         """Show what would be fixed in dry run mode."""
         print("\n" + "=" * 80)
         print("DRY RUN - Potential Bibliography Fixes")
@@ -557,7 +557,7 @@ class BibliographyFixer:
         logger.info(f"Created backup: {backup_file}")
 
     def _apply_fixes(
-        self, bib_file: Path, bib_content: str, fixes: List[Dict[str, Any]]
+        self, bib_file: Path, bib_content: str, fixes: list[dict[str, Any]]
     ) -> int:
         """Apply the fixes to the bibliography file."""
         success_count = 0

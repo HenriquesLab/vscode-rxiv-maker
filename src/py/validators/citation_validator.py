@@ -9,10 +9,15 @@ try:
     from .doi_validator import DOIValidator
 except ImportError:
     # Fallback for script execution
-    import sys
     import os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    from validators.base_validator import BaseValidator, ValidationLevel, ValidationResult
+    import sys
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from validators.base_validator import (
+        BaseValidator,
+        ValidationLevel,
+        ValidationResult,
+    )
     from validators.doi_validator import DOIValidator
 
 
@@ -54,7 +59,9 @@ class CitationValidator(BaseValidator):
         # Load bibliography keys
         bib_file_path = os.path.join(self.manuscript_path, "03_REFERENCES.bib")
         if os.path.exists(bib_file_path):
-            self.bib_keys, self.bib_key_lines = self._parse_bibliography_keys(bib_file_path)
+            self.bib_keys, self.bib_key_lines = self._parse_bibliography_keys(
+                bib_file_path
+            )
             metadata["bibliography_keys"] = len(self.bib_keys)
         else:
             errors.append(
@@ -82,16 +89,16 @@ class CitationValidator(BaseValidator):
         # Check for unused bibliography entries
         if self.bib_keys:
             unused_entries = self.bib_keys - set(self.citations_found.keys())
-            
+
             # Special entries that should be excluded from unused warnings
             # These are typically added dynamically by the system
             system_entries = {
-                'saraiva_2025_rxivmaker',  # Dynamically added Rxiv-Maker self-citation
+                "saraiva_2025_rxivmaker",  # Dynamically added Rxiv-Maker self-citation
             }
-            
+
             # Filter out system entries from unused warnings
             unused_entries = unused_entries - system_entries
-            
+
             for unused_key in sorted(unused_entries):
                 line_number = self.bib_key_lines.get(unused_key)
                 errors.append(
@@ -115,7 +122,13 @@ class CitationValidator(BaseValidator):
                     len(lines) for lines in self.citations_found.values()
                 ),
                 "unique_citations": len(self.citations_found),
-                "unused_entries": len(self.bib_keys - set(self.citations_found.keys()) - {'saraiva_2025_rxivmaker'}) if self.bib_keys else 0,
+                "unused_entries": len(
+                    self.bib_keys
+                    - set(self.citations_found.keys())
+                    - {"saraiva_2025_rxivmaker"}
+                )
+                if self.bib_keys
+                else 0,
                 "undefined_citations": len(
                     [
                         key
@@ -129,20 +142,20 @@ class CitationValidator(BaseValidator):
         # Perform DOI validation if enabled
         if self.enable_doi_validation:
             doi_validator = DOIValidator(
-                self.manuscript_path, 
-                enable_online_validation=self.enable_doi_validation
+                self.manuscript_path,
+                enable_online_validation=self.enable_doi_validation,
             )
             doi_result = doi_validator.validate()
-            
+
             # Merge DOI validation results
             errors.extend(doi_result.errors)
-            metadata.update({
-                "doi_validation": doi_result.metadata
-            })
+            metadata.update({"doi_validation": doi_result.metadata})
 
         return ValidationResult("CitationValidator", errors, metadata)
 
-    def _parse_bibliography_keys(self, bib_file_path: str) -> tuple[set[str], dict[str, int]]:
+    def _parse_bibliography_keys(
+        self, bib_file_path: str
+    ) -> tuple[set[str], dict[str, int]]:
         """Parse bibliography file to extract citation keys and their line numbers."""
         keys: set[str] = set()
         key_lines: dict[str, int] = {}
@@ -152,11 +165,11 @@ class CitationValidator(BaseValidator):
             return keys, key_lines
 
         # Split content into lines to track line numbers
-        lines = content.split('\n')
-        
+        lines = content.split("\n")
+
         # Find all @article{key, @book{key, etc.
         entry_pattern = re.compile(r"@\w+\s*\{\s*([^,\s}]+)", re.IGNORECASE)
-        
+
         for line_num, line in enumerate(lines, 1):
             match = entry_pattern.search(line)
             if match:
@@ -189,12 +202,12 @@ class CitationValidator(BaseValidator):
             # Skip protected content (tables, code blocks, etc.)
             if self.CITATION_PATTERNS["protected_citation"].search(line):
                 continue
-            
+
             # Track fenced code blocks
             if line.strip().startswith("```"):
                 in_code_block = not in_code_block
                 continue
-            
+
             # Skip citations inside fenced code blocks
             if in_code_block:
                 continue
@@ -215,7 +228,7 @@ class CitationValidator(BaseValidator):
             # Skip citations inside code spans
             if self._is_position_in_code_span(line, match.start()):
                 continue
-                
+
             citation_group = match.group(1)  # @key1;@key2
             citations = [c.strip() for c in citation_group.split(";")]
 
@@ -232,7 +245,7 @@ class CitationValidator(BaseValidator):
             # Skip citations inside code spans
             if self._is_position_in_code_span(line, match.start()):
                 continue
-                
+
             key = match.group(1)
             cite_errors = self._validate_citation_key(
                 key, file_path, line_num, match.start(), line
@@ -247,9 +260,9 @@ class CitationValidator(BaseValidator):
         backtick_ranges = []
         in_backtick = False
         start_pos = 0
-        
+
         for i, char in enumerate(line):
-            if char == '`':
+            if char == "`":
                 if not in_backtick:
                     start_pos = i
                     in_backtick = True
@@ -257,12 +270,12 @@ class CitationValidator(BaseValidator):
                     # End of backtick span
                     backtick_ranges.append((start_pos, i))
                     in_backtick = False
-        
+
         # Check if position is inside any backtick range
         for start, end in backtick_ranges:
             if start <= position <= end:
                 return True
-                
+
         return False
 
     def _validate_citation_key(

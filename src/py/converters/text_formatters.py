@@ -11,7 +11,7 @@ from .types import LatexContent, MarkdownContent
 
 def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
     """Convert subscript and superscript markdown syntax to LaTeX.
-    
+
     Avoids converting inside LaTeX commands like \\texttt{}.
 
     Args:
@@ -20,26 +20,27 @@ def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
     Returns:
         LaTeX formatted text with subscript/superscript converted
     """
+
     # Helper function to avoid replacing inside LaTeX commands
     def replace_outside_commands(pattern, replacement, text):
         """Replace pattern with replacement, but not inside LaTeX commands."""
         # Split text by LaTeX commands like \texttt{...}
-        parts = re.split(r'(\\texttt\{[^}]*\})', text)
+        parts = re.split(r"(\\texttt\{[^}]*\})", text)
         result = []
-        
+
         for i, part in enumerate(parts):
             if i % 2 == 0:  # Not inside a LaTeX command
                 part = re.sub(pattern, replacement, part)
             result.append(part)
-        
-        return ''.join(result)
-    
+
+        return "".join(result)
+
     # Convert simple subscript and superscript using markdown-style syntax
     # H~2~O becomes H\textsubscript{2}O
     text = replace_outside_commands(r"~([^~\s]+)~", r"\\textsubscript{\1}", text)
     # E=mc^2^ becomes E=mc\textsuperscript{2}
     text = replace_outside_commands(r"\^([^\^\s]+)\^", r"\\textsuperscript{\1}", text)
-    
+
     return text
 
 
@@ -155,7 +156,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
                             content = text[start:j]
                             # Check if this is followed by the end marker
                             end_marker = "}PROTECTED_DETOKENIZE_END"
-                            if text[j:j+len(end_marker)] == end_marker:
+                            if text[j : j + len(end_marker)] == end_marker:
                                 replacement = f"\\texttt{{\\detokenize{{{content}}}}}"
                                 result.append(replacement)
                                 i = j + len(end_marker)

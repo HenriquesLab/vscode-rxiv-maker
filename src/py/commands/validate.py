@@ -23,13 +23,13 @@ from typing import Any
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 try:
+    from validators.base_validator import ValidationLevel
     from validators.citation_validator import CitationValidator
     from validators.figure_validator import FigureValidator
     from validators.latex_error_parser import LaTeXErrorParser
     from validators.math_validator import MathValidator
     from validators.reference_validator import ReferenceValidator
     from validators.syntax_validator import SyntaxValidator
-    from validators.base_validator import ValidationLevel
 
     VALIDATORS_AVAILABLE = True
 except ImportError:
@@ -102,8 +102,8 @@ class UnifiedValidator:
                 # Pass DOI validation option to CitationValidator
                 if validator_class == CitationValidator:
                     validator = validator_class(
-                        self.manuscript_path, 
-                        enable_doi_validation=self.enable_doi_validation
+                        self.manuscript_path,
+                        enable_doi_validation=self.enable_doi_validation,
                     )
                 else:
                     validator = validator_class(self.manuscript_path)
@@ -240,13 +240,15 @@ class UnifiedValidator:
                 # Add DOI validation statistics if available
                 if "doi_validation" in metadata:
                     doi_stats = metadata["doi_validation"]
-                    stats.extend([
-                        ("DOIs found", "total_dois"),
-                        ("DOIs validated", "validated_dois"),
-                        ("DOI format errors", "invalid_format"),
-                        ("API failures", "api_failures"),
-                        ("Metadata mismatches", "mismatched_metadata"),
-                    ])
+                    stats.extend(
+                        [
+                            ("DOIs found", "total_dois"),
+                            ("DOIs validated", "validated_dois"),
+                            ("DOI format errors", "invalid_format"),
+                            ("API failures", "api_failures"),
+                            ("Metadata mismatches", "mismatched_metadata"),
+                        ]
+                    )
                     # Update metadata with doi_validation data for display
                     metadata.update({f"doi_{k}": v for k, v in doi_stats.items()})
             elif validator_name == "Cross-references":
@@ -319,7 +321,9 @@ class UnifiedValidator:
         # Show warnings
         if warning_count > 0:
             print("\n⚠️  WARNINGS:")
-            warnings = [e for e in self.all_errors if e.level == ValidationLevel.WARNING]
+            warnings = [
+                e for e in self.all_errors if e.level == ValidationLevel.WARNING
+            ]
             for i, warning in enumerate(warnings, 1):
                 location = ""
                 if warning.file_path:
@@ -328,11 +332,13 @@ class UnifiedValidator:
                         location += f":{warning.line_number}"
                     location += ")"
                 print(f"  {i}. {warning.message}{location}")
-                
+
         # Show info messages only in verbose or include-info mode
         if info_count > 0 and self.include_info:
             print(f"\n💡 INFO ({info_count}):")
-            info_messages = [e for e in self.all_errors if e.level == ValidationLevel.INFO]
+            info_messages = [
+                e for e in self.all_errors if e.level == ValidationLevel.INFO
+            ]
             for i, info in enumerate(info_messages, 1):
                 location = ""
                 if info.file_path:

@@ -20,6 +20,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "crossref-commons>=0.0.7",
     "lazydocs>=0.4.8",
+    "types-requests>=2.32.4.20250611",
 ]
 
 [project.optional-dependencies]
