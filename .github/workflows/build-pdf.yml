@@ -118,6 +118,7 @@ jobs:
 
     - name: Generate PDF
       timeout-minutes: 15
+      shell: bash
       env:
         R_LIBS_USER: ~/.R/library
       run: |
