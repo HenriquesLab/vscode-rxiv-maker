@@ -13,6 +13,7 @@ from crossref_commons.retrieval import get_publication_as_json
 
 try:
     from ..utils.doi_cache import DOICache
+    from ..utils.bibliography_checksum import get_bibliography_checksum_manager
     from .base_validator import (
         BaseValidator,
         ValidationError,
@@ -26,6 +27,7 @@ except ImportError:
 
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
     from utils.doi_cache import DOICache
+    from utils.bibliography_checksum import get_bibliography_checksum_manager
     from validators.base_validator import (
         BaseValidator,
         ValidationError,
@@ -47,6 +49,7 @@ class DOIValidator(BaseValidator):
         manuscript_path: str,
         enable_online_validation: bool = True,
         cache_dir: Optional[str] = None,
+        force_validation: bool = False,
     ):
         """Initialize DOI validator.
 
@@ -54,14 +57,25 @@ class DOIValidator(BaseValidator):
             manuscript_path: Path to manuscript directory
             enable_online_validation: Whether to perform online DOI validation
             cache_dir: Custom cache directory (default: .cache)
+            force_validation: Force validation even if checksum unchanged
         """
         super().__init__(manuscript_path)
         self.enable_online_validation = enable_online_validation
-        self.cache = DOICache(cache_dir=cache_dir) if cache_dir else DOICache()
+        
+        # Extract manuscript name from path for cache naming
+        manuscript_name = Path(manuscript_path).name
+        
+        # Initialize cache with manuscript-specific naming
+        if cache_dir:
+            self.cache = DOICache(cache_dir=cache_dir, manuscript_name=manuscript_name)
+        else:
+            self.cache = DOICache(manuscript_name=manuscript_name)
+        
         self.similarity_threshold = 0.8  # Minimum similarity for title matching
+        self.force_validation = force_validation
 
     def validate(self) -> ValidationResult:
-        """Validate DOI entries in bibliography.
+        """Validate DOI entries in bibliography using checksum-based caching.
 
         Returns:
             ValidationResult with DOI validation issues
@@ -73,6 +87,7 @@ class DOIValidator(BaseValidator):
             "invalid_format": 0,
             "api_failures": 0,
             "mismatched_metadata": 0,
+            "checksum_cache_used": False,
         }
 
         # Find bibliography file
@@ -87,6 +102,35 @@ class DOIValidator(BaseValidator):
             )
             return ValidationResult(self.name, errors, metadata)
 
+        # Check if validation is needed using checksum manager
+        try:
+            checksum_manager = get_bibliography_checksum_manager(self.manuscript_path)
+            
+            if self.force_validation:
+                logger.info("Forcing DOI validation (ignoring checksum)")
+                checksum_manager.force_validation()
+                needs_validation = True
+            else:
+                needs_validation = checksum_manager.needs_validation()
+            
+            if not needs_validation:
+                logger.info("Bibliography DOI validation is up to date (checksum unchanged)")
+                metadata["checksum_cache_used"] = True
+                # Still return basic metadata about the file
+                bib_content = self._read_file_safely(str(bib_file))
+                if bib_content:
+                    entries = self._extract_bib_entries(bib_content)
+                    metadata["total_dois"] = sum(1 for entry in entries if "doi" in entry)
+                    metadata["validated_dois"] = metadata["total_dois"]  # Assume previously validated
+                
+                return ValidationResult(self.name, errors, metadata)
+            
+            logger.info("Bibliography has changed, performing DOI validation")
+            
+        except Exception as e:
+            logger.warning(f"Failed to use checksum manager for DOI validation: {e}")
+            # Fall back to normal validation
+            
         # Read bibliography file
         bib_content = self._read_file_safely(str(bib_file))
         if not bib_content:
@@ -164,6 +208,21 @@ class DOIValidator(BaseValidator):
                         error_code="DOI_VALIDATION_SUMMARY",
                     )
                 )
+
+        # Update checksum after successful validation
+        try:
+            checksum_manager = get_bibliography_checksum_manager(self.manuscript_path)
+            # Consider validation successful if we didn't encounter major errors
+            validation_successful = not any(
+                e.level == ValidationLevel.ERROR for e in errors
+            )
+            checksum_manager.update_checksum(validation_completed=validation_successful)
+            if validation_successful:
+                logger.info("Updated bibliography checksum after successful DOI validation")
+            else:
+                logger.warning("DOI validation had errors, but checksum updated anyway")
+        except Exception as e:
+            logger.warning(f"Failed to update bibliography checksum: {e}")
 
         return ValidationResult(self.name, errors, metadata)
 

@@ -144,6 +144,8 @@ markers = [
     "unit: marks tests as unit tests",
     "notebook: marks tests as notebook tests",
     "validation: marks tests as validation-related tests",
+    "build_manager: marks tests as build manager-related tests",
+    "pdf_validation: marks tests as PDF validation-related tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",

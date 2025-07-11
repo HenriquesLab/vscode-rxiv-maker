@@ -13,16 +13,32 @@ class DOICache:
     """Cache system for DOI metadata from CrossRef API."""
 
     def __init__(
-        self, cache_dir: str = ".cache", cache_filename: str = "doi_cache.json"
+        self, 
+        cache_dir: str = ".cache", 
+        cache_filename: Optional[str] = None,
+        manuscript_name: Optional[str] = None
     ):
         """Initialize DOI cache.
 
         Args:
             cache_dir: Directory to store cache files
-            cache_filename: Name of the cache file
+            cache_filename: Name of the cache file (if None, uses manuscript-specific naming)
+            manuscript_name: Name of the manuscript (used for manuscript-specific caching)
         """
         self.cache_dir = Path(cache_dir)
-        self.cache_file = self.cache_dir / cache_filename
+        self.manuscript_name = manuscript_name
+        
+        # Determine cache filename
+        if cache_filename is not None:
+            # Use provided filename (backward compatibility)
+            self.cache_file = self.cache_dir / cache_filename
+        elif manuscript_name is not None:
+            # Use manuscript-specific filename
+            self.cache_file = self.cache_dir / f"doi_cache_{manuscript_name}.json"
+        else:
+            # Default filename
+            self.cache_file = self.cache_dir / "doi_cache.json"
+        
         self.cache_expiry_days = 30
 
         # Create cache directory if it doesn't exist
@@ -232,6 +248,7 @@ class DOICache:
                     expired_entries += 1
 
         return {
+            "manuscript_name": self.manuscript_name,
             "total_entries": len(self._cache),
             "valid_entries": valid_entries,
             "expired_entries": expired_entries,

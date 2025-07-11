@@ -12,12 +12,14 @@ import argparse
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from utils.figure_checksum import get_figure_checksum_manager
 from utils.platform import platform_detector
 
 
@@ -38,6 +40,7 @@ class BuildManager:
         output_dir: str = "output",
         force_figures: bool = False,
         skip_validation: bool = False,
+        skip_pdf_validation: bool = False,
         verbose: bool = False,
     ):
         """Initialize build manager.
@@ -47,6 +50,7 @@ class BuildManager:
             output_dir: Output directory for generated files
             force_figures: Force regeneration of all figures
             skip_validation: Skip manuscript validation
+            skip_pdf_validation: Skip PDF validation
             verbose: Enable verbose output
         """
         self.manuscript_path: str = manuscript_path or os.getenv(
@@ -55,6 +59,7 @@ class BuildManager:
         self.output_dir = Path(output_dir)
         self.force_figures = force_figures
         self.skip_validation = skip_validation
+        self.skip_pdf_validation = skip_pdf_validation
         self.verbose = verbose
         self.platform = platform_detector
 
@@ -69,18 +74,63 @@ class BuildManager:
         self.output_tex = self.output_dir / f"{self.manuscript_name}.tex"
         self.output_pdf = self.output_dir / f"{self.manuscript_name}.pdf"
 
+        # Set up logging
+        self.warnings_log = self.output_dir / "build_warnings.log"
+        self.bibtex_log = self.output_dir / "bibtex_warnings.log"
+
     def log(self, message: str, level: str = "INFO"):
         """Log a message with appropriate formatting."""
         if level == "INFO":
             print(f"✅ {message}")
         elif level == "WARNING":
             print(f"⚠️  {message}")
+            self._log_to_file(message, level)
         elif level == "ERROR":
             print(f"❌ {message}")
+            self._log_to_file(message, level)
         elif level == "STEP":
             print(f"🔧 {message}")
         else:
             print(message)
+
+    def _log_to_file(self, message: str, level: str):
+        """Log warnings and errors to files."""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"[{timestamp}] {level}: {message}\n"
+
+        try:
+            with open(self.warnings_log, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+        except Exception:
+            pass  # Don't fail the build if logging fails
+
+    def _log_bibtex_warnings(self):
+        """Extract and log BibTeX warnings from .blg file."""
+        blg_file = self.output_dir / f"{self.manuscript_name}.blg"
+        if not blg_file.exists():
+            return
+
+        try:
+            with open(blg_file, encoding="utf-8") as f:
+                blg_content = f.read()
+
+            # Extract warnings
+            warnings = []
+            for line in blg_content.split("\n"):
+                if line.startswith("Warning--"):
+                    warnings.append(line.replace("Warning--", "").strip())
+
+            if warnings:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                with open(self.bibtex_log, "w", encoding="utf-8") as f:
+                    f.write(f"BibTeX Warnings Report - {timestamp}\n")
+                    f.write("=" * 50 + "\n")
+                    for i, warning in enumerate(warnings, 1):
+                        f.write(f"{i}. {warning}\n")
+
+                self.log(f"BibTeX warnings logged to {self.bibtex_log.name}", "INFO")
+        except Exception:
+            pass  # Don't fail the build if logging fails
 
     def setup_output_directory(self) -> bool:
         """Create and set up the output directory."""
@@ -202,6 +252,20 @@ class BuildManager:
             r_figure_gen.generate_all_figures()
 
             self.log("Figure generation completed")
+
+            # Update checksums after successful generation
+            try:
+                checksum_manager = get_figure_checksum_manager(self.manuscript_path)
+                if self.force_figures:
+                    # Force update all checksums when figures are force-generated
+                    checksum_manager.force_update_all()
+                else:
+                    # Update checksums for all current source files
+                    checksum_manager.update_checksums()
+                self.log("Updated figure checksums")
+            except Exception as e:
+                self.log(f"Warning: Failed to update checksums: {e}", "WARNING")
+
             return True
 
         except Exception as e:
@@ -209,11 +273,66 @@ class BuildManager:
             return False
 
     def _check_figures_need_update(self) -> bool:
-        """Check if figures need to be updated."""
+        """Check if figures need to be updated using checksum-based approach."""
         if not self.figures_dir.exists():
             return False
 
-        # Check for source files that need processing
+        # Use checksum manager for efficient change detection
+        try:
+            checksum_manager = get_figure_checksum_manager(self.manuscript_path)
+
+            # Clean up orphaned checksums first
+            checksum_manager.cleanup_orphaned_checksums()
+
+            # Check if any files have changed
+            need_update = checksum_manager.check_figures_need_update()
+
+            if need_update:
+                changed_files = checksum_manager.get_changed_files()
+                self.log(f"Found {len(changed_files)} changed figure source files")
+                for file_path in changed_files:
+                    self.log(f"  Changed: {file_path.name}")
+
+            # Also check if output files are missing (fallback safety check)
+            if not need_update:
+                need_update = self._check_missing_output_files()
+                if need_update:
+                    self.log("Some figure output files are missing")
+
+            return need_update
+
+        except Exception as e:
+            self.log(f"Error checking figure checksums: {e}", "WARNING")
+            # Fallback to file modification time approach
+            return self._check_figures_need_update_fallback()
+
+    def _check_missing_output_files(self) -> bool:
+        """Check if any expected output files are missing."""
+        source_files = (
+            list(self.figures_dir.glob("*.mmd"))
+            + list(self.figures_dir.glob("*.py"))
+            + list(self.figures_dir.glob("*.R"))
+        )
+
+        for source_file in source_files:
+            base_name = source_file.stem
+            output_dir = self.figures_dir / base_name
+
+            if source_file.suffix == ".mmd":
+                output_file = output_dir / f"{base_name}.pdf"
+            else:
+                output_file = output_dir / f"{base_name}.png"
+
+            # Check if output file exists
+            if not output_file.exists():
+                return True
+
+        return False
+
+    def _check_figures_need_update_fallback(self) -> bool:
+        """Fallback method using file modification times."""
+        self.log("Using fallback file modification time check", "WARNING")
+
         source_files = (
             list(self.figures_dir.glob("*.mmd"))
             + list(self.figures_dir.glob("*.py"))
@@ -408,6 +527,13 @@ class BuildManager:
                         return False
                 else:
                     self.log("BibTeX completed successfully")
+                    # Log BibTeX warnings to file
+                    try:
+                        self._log_bibtex_warnings()
+                    except Exception as e:
+                        self.log(
+                            f"Debug: BibTeX warning logging failed: {e}", "WARNING"
+                        )
 
             # Second pass
             result2 = subprocess.run(
@@ -519,6 +645,49 @@ class BuildManager:
             self.log(f"Error running word count analysis: {e}", "WARNING")
             return False
 
+    def run_pdf_validation(self) -> bool:
+        """Run PDF validation to check final output quality."""
+        if self.skip_pdf_validation:
+            self.log("Skipping PDF validation")
+            return True
+
+        try:
+            self.log("Running PDF validation...", "STEP")
+
+            # Use the existing PDF validation command
+            python_parts = self.platform.python_cmd.split()
+            cmd = [
+                python_parts[0] if python_parts else "python",
+                "src/py/validators/pdf_validator.py",
+                self.manuscript_path,
+                "--pdf-path",
+                str(self.output_pdf),
+            ]
+
+            if "uv run" in self.platform.python_cmd:
+                cmd = ["uv", "run", "python"] + cmd[1:]
+
+            result = subprocess.run(cmd, capture_output=True, text=True)
+
+            if result.returncode == 0:
+                self.log("PDF validation completed successfully")
+                # Print validation output if available
+                if result.stdout:
+                    print(result.stdout)
+                return True
+            else:
+                self.log("PDF validation found issues", "WARNING")
+                if result.stderr:
+                    print(result.stderr)
+                if result.stdout:
+                    print(result.stdout)
+                # Don't fail the build on PDF validation warnings
+                return True
+
+        except Exception as e:
+            self.log(f"Error running PDF validation: {e}", "WARNING")
+            return True  # Don't fail the build on PDF validation errors
+
     def run_full_build(self) -> bool:
         """Run the complete build process."""
         self.log(
@@ -565,11 +734,19 @@ class BuildManager:
         if not self.copy_pdf_to_manuscript():
             return False
 
-        # Step 11: Run word count analysis
+        # Step 11: Run PDF validation
+        self.run_pdf_validation()
+
+        # Step 12: Run word count analysis
         self.run_word_count_analysis()
 
         # Success!
         self.log(f"Build completed successfully: {self.output_pdf}")
+
+        # Inform user about warning logs if they exist
+        if self.warnings_log.exists():
+            self.log(f"Build warnings logged to {self.warnings_log.name}", "INFO")
+
         return True
 
 
