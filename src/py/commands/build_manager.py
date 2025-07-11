@@ -191,7 +191,11 @@ class BuildManager:
                 python_parts[0] if python_parts else "python",
                 "src/py/commands/validate.py",
                 self.manuscript_path,
+                "--detailed",
             ]
+
+            if self.verbose:
+                cmd.append("--verbose")
 
             if "uv run" in self.platform.python_cmd:
                 cmd = ["uv", "run", "python"] + cmd[1:]
@@ -200,11 +204,14 @@ class BuildManager:
 
             if result.returncode == 0:
                 self.log("Validation completed successfully")
-                if self.verbose and result.stdout:
+                if result.stdout:
                     print(result.stdout)
                 return True
             else:
                 self.log("Validation failed", "ERROR")
+                # Always show validation output for debugging
+                if result.stdout:
+                    print(result.stdout)
                 if result.stderr:
                     print(result.stderr)
                 return False
@@ -487,7 +494,7 @@ class BuildManager:
             tex_file = f"{self.manuscript_name}.tex"
 
             # First pass
-            result1 = subprocess.run(
+            subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", tex_file],
                 capture_output=True,
                 text=True,
@@ -536,7 +543,7 @@ class BuildManager:
                         )
 
             # Second pass
-            result2 = subprocess.run(
+            subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", tex_file],
                 capture_output=True,
                 text=True,

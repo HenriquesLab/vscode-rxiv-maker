@@ -170,7 +170,7 @@ setup-reinstall:
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
 pdf:
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/build_manager.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures)
+	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/build_manager.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --verbose $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF without validation (for debugging)
 .PHONY: pdf-no-validate
