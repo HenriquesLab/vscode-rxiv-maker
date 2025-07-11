@@ -275,6 +275,55 @@ _validate_quiet:
 		exit 1; \
 	}
 
+# ======================================================================
+# 🧪 TESTING AND CODE QUALITY
+# ======================================================================
+
+# Run all tests
+.PHONY: test
+test:
+	@echo "🧪 Running all tests..."
+	@$(PYTHON_CMD) -m pytest tests/ -v
+
+# Run unit tests only
+.PHONY: test-unit
+test-unit:
+	@echo "🧪 Running unit tests..."
+	@$(PYTHON_CMD) -m pytest tests/unit/ -v
+
+# Run integration tests only
+.PHONY: test-integration
+test-integration:
+	@echo "🧪 Running integration tests..."
+	@$(PYTHON_CMD) -m pytest tests/integration/ -v
+
+# Lint code
+.PHONY: lint
+lint:
+	@echo "🔍 Linting code..."
+	@$(PYTHON_CMD) -m ruff check src/
+
+# Format code
+.PHONY: format
+format:
+	@echo "🎨 Formatting code..."
+	@$(PYTHON_CMD) -m ruff format src/
+
+# Type checking
+.PHONY: typecheck
+typecheck:
+	@echo "🔍 Running type checking..."
+	@$(PYTHON_CMD) -m mypy src/
+
+# Run all code quality checks
+.PHONY: check
+check: lint typecheck
+	@echo "✅ All code quality checks passed!"
+
+# ======================================================================
+# 📚 BIBLIOGRAPHY MANAGEMENT
+# ======================================================================
+
 # Fix bibliography issues automatically by searching CrossRef
 .PHONY: fix-bibliography
 fix-bibliography:
