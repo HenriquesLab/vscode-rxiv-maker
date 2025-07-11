@@ -357,13 +357,34 @@ class BuildManager:
                 text=True
             )
             
-            # Run bibtex if references exist
-            if self.references_bib.exists():
-                subprocess.run(
+            # Run bibtex if references exist (check in current working directory which is output_dir)
+            output_references = Path("03_REFERENCES.bib")
+            if output_references.exists():
+                self.log("Running BibTeX to process bibliography...")
+                bibtex_result = subprocess.run(
                     ["bibtex", self.manuscript_name],
                     capture_output=True,
                     text=True
                 )
+                
+                # Log BibTeX warnings and errors only
+                if bibtex_result.stderr:
+                    self.log(f"BibTeX errors: {bibtex_result.stderr}", "WARNING")
+                elif "warning" in bibtex_result.stdout.lower():
+                    # Count warnings but don't spam the output
+                    warning_count = bibtex_result.stdout.lower().count("warning")
+                    self.log(f"BibTeX completed with {warning_count} warning(s)", "WARNING")
+                
+                # Check for serious bibtex errors that would prevent citation resolution
+                if bibtex_result.returncode != 0:
+                    self.log(f"BibTeX returned error code {bibtex_result.returncode}", "WARNING")
+                    # Check if .bbl file was still created despite errors
+                    bbl_file = Path(f"{self.manuscript_name}.bbl")
+                    if not bbl_file.exists():
+                        self.log("BibTeX failed to create .bbl file - citations will appear as ?", "ERROR")
+                        return False
+                else:
+                    self.log("BibTeX completed successfully")
             
             # Second pass
             result2 = subprocess.run(
