@@ -206,9 +206,27 @@ class FigureGenerator:
                 return
 
             # Check for generated files by scanning the figure subdirectory
+            # Add a small delay to ensure files are fully written in CI environments
+            import time
+
+            time.sleep(0.1)
+
+            # Force filesystem sync
+            import os
+
+            os.sync() if hasattr(os, "sync") else None
+
+            print(f"     Debug: Scanning directory: {figure_dir.absolute()}")
+            print(f"     Debug: Directory exists: {figure_dir.exists()}")
+            dir_contents = list(figure_dir.iterdir()) if figure_dir.exists() else "N/A"
+            print(f"     Debug: Directory contents: {dir_contents}")
+
             current_files = set()
             for ext in ["png", "pdf", "svg", "eps"]:
-                current_files.update(figure_dir.glob(f"*.{ext}"))
+                found_files = list(figure_dir.glob(f"*.{ext}"))
+                current_files.update(found_files)
+                file_names = [f.name for f in found_files]
+                print(f"     Debug: Found {len(found_files)} {ext} files: {file_names}")
 
             # Look for files that might have been created by this script
             base_name = py_file.stem
@@ -228,6 +246,11 @@ class FigureGenerator:
                     print(f"     - {figure_dir.name}/{gen_file.name}")
             else:
                 print(f"  ⚠️  No output files detected for {py_file.name}")
+                print(f"     Debug: Checked {len(current_files)} total files")
+                print(f"     Debug: Base name pattern: {base_name.lower()}")
+                if current_files:
+                    available_files = [f.name for f in current_files]
+                    print(f"     Debug: Available files: {available_files}")
 
         except Exception as e:
             print(f"  ❌ Error executing {py_file.name}: {e}")
