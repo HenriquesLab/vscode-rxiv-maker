@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Example supplementary figure generation script for the template."""
+"""SFigure__example: Example supplementary figure generation script for the template."""
 
 import matplotlib
 
@@ -23,8 +23,8 @@ plt.title("Example Supplementary Figure")
 plt.grid(True, alpha=0.3)
 
 # Save as both PNG and PDF
-plt.savefig("supplementary_figure.png", dpi=300, bbox_inches="tight")
-plt.savefig("supplementary_figure.pdf", bbox_inches="tight")
+plt.savefig("SFigure__example.png", dpi=300, bbox_inches="tight")
+plt.savefig("SFigure__example.pdf", bbox_inches="tight")
 plt.close()
 
-print("Supplementary figure generated successfully!")
+print("SFigure__example generated successfully!")

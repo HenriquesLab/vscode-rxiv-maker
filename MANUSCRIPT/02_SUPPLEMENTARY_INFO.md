@@ -32,5 +32,5 @@ Provide detailed methodology that supplements the main text. Include step-by-ste
 
 ## Supplementary Figures
 
-![](FIGURES/supplementary_figure/supplementary_figure.png)
+![](FIGURES/SFigure__example/SFigure__example.png)
 {#sfig:example} **Example Supplementary Figure.** Caption describing the supplementary figure content.

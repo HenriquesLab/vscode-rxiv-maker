@@ -6,6 +6,7 @@ This script handles cross-platform environment setup including:
 - Virtual environment management
 - Dependency installation
 - Environment validation
+- System dependency checking
 """
 
 import argparse
@@ -17,21 +18,25 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.platform import platform_detector
+from utils.dependency_checker import DependencyChecker
 
 
 class EnvironmentSetup:
     """Handle environment setup operations."""
 
-    def __init__(self, reinstall: bool = False, verbose: bool = False):
+    def __init__(self, reinstall: bool = False, verbose: bool = False, check_system_deps: bool = True):
         """Initialize environment setup.
 
         Args:
             reinstall: Whether to reinstall (remove existing .venv)
             verbose: Whether to show verbose output
+            check_system_deps: Whether to check system dependencies
         """
         self.reinstall = reinstall
         self.verbose = verbose
+        self.check_system_deps = check_system_deps
         self.platform = platform_detector
+        self.dependency_checker = DependencyChecker(verbose=verbose)
 
     def log(self, message: str, level: str = "INFO"):
         """Log a message with appropriate formatting."""
@@ -126,6 +131,40 @@ class EnvironmentSetup:
             self.log(f"Error installing dependencies: {e}", "ERROR")
             return False
 
+    def check_system_dependencies(self) -> bool:
+        """Check system dependencies and provide guidance."""
+        if not self.check_system_deps:
+            return True
+            
+        self.log("Checking system dependencies...", "STEP")
+        
+        # Check all dependencies
+        self.dependency_checker.check_all_dependencies()
+        
+        # Get missing required dependencies
+        missing_required = self.dependency_checker.get_missing_required_dependencies()
+        missing_optional = self.dependency_checker.get_missing_optional_dependencies()
+        
+        if missing_required:
+            self.log("Missing required system dependencies detected", "WARNING")
+            print()
+            self.dependency_checker.print_dependency_report()
+            print()
+            self.log("Please install missing required dependencies before continuing", "ERROR")
+            return False
+        else:
+            self.log("All required system dependencies found")
+            
+            if missing_optional and self.verbose:
+                print()
+                self.log("Some optional dependencies are missing:", "WARNING")
+                for dep in missing_optional:
+                    print(f"  • {dep.name} - {dep.description}")
+                print("  Use 'make check-deps' for detailed installation instructions")
+                print()
+            
+        return True
+
     def validate_environment(self) -> bool:
         """Validate the environment setup."""
         self.log("Validating environment setup...", "STEP")
@@ -159,8 +198,27 @@ class EnvironmentSetup:
         print("  🔍 Run 'make validate' to check your manuscript")
         print("  🎨 Add figure scripts to MANUSCRIPT/FIGURES/ directory")
         print("  📚 Run 'make help' to see all available commands")
+        print("  🔧 Run 'make check-deps' to verify system dependencies")
         print()
-        print("💡 Note: You'll also need LaTeX installed on your system")
+        
+        # Check if we have missing dependencies to show appropriate guidance
+        if self.check_system_deps and hasattr(self, 'dependency_checker'):
+            missing_required = self.dependency_checker.get_missing_required_dependencies()
+            missing_optional = self.dependency_checker.get_missing_optional_dependencies()
+            
+            if missing_required:
+                print("⚠️  Some required dependencies are missing. Check them with:")
+                print("   make check-deps")
+            elif missing_optional:
+                print("💡 Some optional dependencies are missing. For full functionality:")
+                print("   make check-deps")
+            else:
+                print("✅ All system dependencies are available!")
+        else:
+            print("💡 Note: System dependencies (LaTeX, Node.js, R) may be required")
+            print("   Run 'make check-deps' to verify your system is ready")
+        
+        print()
         print(f"🌐 Platform: {self.platform.platform}")
         print(f"🐍 Python: {self.platform.python_cmd}")
 
@@ -168,7 +226,7 @@ class EnvironmentSetup:
         if venv_path:
             print(f"🔧 Virtual environment: {venv_path}")
 
-        print("🎉 Rxiv-Maker installation complete!")
+        print("🎉 Rxiv-Maker Python environment setup complete!")
 
     def run_setup(self) -> bool:
         """Run the complete setup process."""
@@ -177,12 +235,22 @@ class EnvironmentSetup:
             "STEP",
         )
 
-        # Step 1: Remove existing environment if reinstalling
+        # Step 1: Check system dependencies first (if enabled)
+        if self.check_system_deps:
+            if not self.check_system_dependencies():
+                print()
+                self.log("System dependency check failed. You can:", "WARNING")
+                print("  • Install missing dependencies and run 'make setup' again")
+                print("  • Skip dependency checking with 'python src/py/commands/setup_environment.py --no-check-system-deps'")
+                print("  • Use Docker mode instead: 'make pdf RXIV_ENGINE=DOCKER'")
+                return False
+
+        # Step 2: Remove existing environment if reinstalling
         if self.reinstall:
             if not self.remove_existing_venv():
                 return False
 
-        # Step 2: Check/install uv
+        # Step 3: Check/install uv
         if not self.check_uv_installation():
             if not self.install_uv():
                 return False
@@ -194,15 +262,15 @@ class EnvironmentSetup:
         else:
             self.log("Found uv, using it for environment management")
 
-        # Step 3: Sync dependencies
+        # Step 4: Sync dependencies
         if not self.sync_dependencies():
             return False
 
-        # Step 4: Validate environment
+        # Step 5: Validate environment
         if not self.validate_environment():
             return False
 
-        # Step 5: Show completion message
+        # Step 6: Show completion message
         self.show_completion_message()
 
         return True
@@ -219,11 +287,31 @@ def main():
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Show verbose output"
     )
+    parser.add_argument(
+        "--no-check-system-deps",
+        action="store_true",
+        help="Skip system dependency checking (not recommended)",
+    )
+    parser.add_argument(
+        "--check-deps-only",
+        action="store_true",
+        help="Only check system dependencies, don't set up Python environment",
+    )
 
     args = parser.parse_args()
 
     try:
-        setup = EnvironmentSetup(reinstall=args.reinstall, verbose=args.verbose)
+        # Handle check-deps-only mode
+        if args.check_deps_only:
+            from utils.dependency_checker import print_dependency_report
+            print_dependency_report(verbose=args.verbose)
+            return 0
+        
+        setup = EnvironmentSetup(
+            reinstall=args.reinstall, 
+            verbose=args.verbose,
+            check_system_deps=not args.no_check_system_deps
+        )
 
         success = setup.run_setup()
 

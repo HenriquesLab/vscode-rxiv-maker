@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SFigure 2: ArXiv Preprints Over Time.
+"""SFigure__arxiv_growth: ArXiv Preprints Over Time.
 
 Publication-ready plot showing the growth of arXiv submissions from 1991 to 2025.
 Optimized for single-column format in academic preprints.
@@ -7,9 +7,9 @@ Runs in headless mode by default (no display window).
 Data source: https://arxiv.org/stats/monthly_submissions.
 
 Usage:
-    python SFigure_2.py           # Headless mode (save files only)
-    python SFigure_2.py --show    # Display plot and save files
-    python SFigure_2.py --help    # Show help message
+    python SFigure__arxiv_growth.py           # Headless mode (save files only)
+    python SFigure__arxiv_growth.py --show    # Display plot and save files
+    python SFigure__arxiv_growth.py --help    # Show help message
 """
 
 import sys
@@ -51,7 +51,7 @@ def load_and_process_data():
     """Load and process the arXiv submission data."""
     # Define the path to the data file
     data_path = (
-        Path(__file__).parent / "DATA" / "SFigure_2" / "arxiv_monthly_submissions.csv"
+        Path(__file__).parent / "DATA" / "SFigure__arxiv_growth" / "arxiv_monthly_submissions.csv"
     )
 
     # Load the data
@@ -151,7 +151,7 @@ def save_figure(fig, output_path=None):
 
     # Save as PDF (vector format for LaTeX)
     fig.savefig(
-        output_path / "SFigure_2.pdf",
+        output_path / "SFigure__arxiv_growth.pdf",
         dpi=300,
         bbox_inches="tight",
         facecolor="white",
@@ -160,7 +160,7 @@ def save_figure(fig, output_path=None):
 
     # Save as SVG (vector format for web)
     fig.savefig(
-        output_path / "SFigure_2.svg",
+        output_path / "SFigure__arxiv_growth.svg",
         bbox_inches="tight",
         facecolor="white",
         edgecolor="none",
@@ -168,7 +168,7 @@ def save_figure(fig, output_path=None):
 
     # Save as high-resolution PNG (raster format for LaTeX compatibility)
     fig.savefig(
-        output_path / "SFigure_2.png",
+        output_path / "SFigure__arxiv_growth.png",
         dpi=300,
         bbox_inches="tight",
         facecolor="white",
@@ -177,16 +177,16 @@ def save_figure(fig, output_path=None):
 
     # Print save locations
     print("Figure saved to:")
-    print(f"  - {output_path / 'SFigure_2.pdf'}")
-    print(f"  - {output_path / 'SFigure_2.svg'}")
-    print(f"  - {output_path / 'SFigure_2.png'}")
+    print(f"  - {output_path / 'SFigure__arxiv_growth.pdf'}")
+    print(f"  - {output_path / 'SFigure__arxiv_growth.svg'}")
+    print(f"  - {output_path / 'SFigure__arxiv_growth.png'}")
 
 
 def main():
     """Main function to create and save the figure."""
     # Check for help flag
     if "--help" in sys.argv or "-h" in sys.argv:
-        print("Usage: python SFigure_2.py [--show] [--help|-h]")
+        print("Usage: python SFigure__arxiv_growth.py [--show] [--help|-h]")
         print("  --show: Display plot (default is headless mode)")
         print("  --help|-h: Show this help message")
         return
@@ -208,7 +208,7 @@ def main():
         print(f"Error: Could not find data file. {e}")
         print(
             "Please ensure arxiv_monthly_submissions.csv is in the "
-            "DATA/SFigure_2/ directory."
+            "DATA/SFigure__arxiv_growth/ directory."
         )
     except Exception as e:
         print(f"Error creating figure: {e}")

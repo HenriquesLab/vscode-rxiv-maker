@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Example figure generation script for the template.
+"""Figure__example: Example figure generation script for the template.
 
 This script demonstrates how to create figures programmatically.
 """
@@ -27,8 +27,8 @@ plt.legend()
 plt.grid(True, alpha=0.3)
 
 # Save as both PNG and PDF
-plt.savefig("example_figure.png", dpi=300, bbox_inches="tight")
-plt.savefig("example_figure.pdf", bbox_inches="tight")
+plt.savefig("Figure__example.png", dpi=300, bbox_inches="tight")
+plt.savefig("Figure__example.pdf", bbox_inches="tight")
 plt.close()
 
-print("Example figure generated successfully!")
+print("Figure__example generated successfully!")

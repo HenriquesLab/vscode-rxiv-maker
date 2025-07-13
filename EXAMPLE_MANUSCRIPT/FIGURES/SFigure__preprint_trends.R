@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# SFigure 3: ArXiv Preprints Over Time
+# SFigure__preprint_trends: Preprint Submission Trends Across Multiple Servers
 #
 # Publication-ready plot showing the growth of arXiv submissions from 1991 to 2025.
 # Optimized for single-column format in academic preprints.
@@ -7,9 +7,9 @@
 # Data source: https://arxiv.org/stats/monthly_submissions.
 #
 # Usage:
-#   Rscript SFigure_3.R           # Headless mode (save files only)
-#   Rscript SFigure_3.R --show    # Display plot and save files
-#   Rscript SFigure_3.R --help    # Show help message
+#   Rscript SFigure__preprint_trends.R           # Headless mode (save files only)
+#   Rscript SFigure__preprint_trends.R --show    # Display plot and save files
+#   Rscript SFigure__preprint_trends.R --help    # Show help message
 
 # Function to check and install required packages
 check_and_install_packages <- function(packages) {
@@ -47,7 +47,7 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list = option_list))
 
 if (opt$help) {
-  cat("Usage: Rscript SFigure_3.R [--show] [--help]\n")
+  cat("Usage: Rscript SFigure__preprint_trends.R [--show] [--help]\n")
   cat("  --show: Display plot (default is headless mode)\n")
   cat("  --help: Show this help message\n")
   quit(status = 0)
@@ -61,7 +61,7 @@ load_and_process_data <- function() {
   script_dir <- dirname(script_path)
 
   # Define the path to the data file
-  data_path <- file.path(script_dir, "DATA", "SFigure_3", "pubmed_by_year.csv")
+  data_path <- file.path(script_dir, "DATA", "SFigure__preprint_trends", "pubmed_by_year.csv")
 
   # Check if the file exists
   if (!file.exists(data_path)) {
@@ -118,16 +118,16 @@ save_figure <- function(p, output_path = NULL) {
   }
 
   # Save the figure in multiple formats
-  ggsave(file.path(output_path, "SFigure_3.pdf"), plot = p, width = 3.5, height = 4, dpi = 300)
-  ggsave(file.path(output_path, "SFigure_3.png"), plot = p, width = 3.5, height = 4, dpi = 300)
+  ggsave(file.path(output_path, "SFigure__preprint_trends.pdf"), plot = p, width = 3.5, height = 4, dpi = 300)
+  ggsave(file.path(output_path, "SFigure__preprint_trends.png"), plot = p, width = 3.5, height = 4, dpi = 300)
 
   # Use svglite for SVG output
-  ggsave(file.path(output_path, "SFigure_3.svg"), plot = p, width = 3.5, height = 4, device = svglite::svglite)
+  ggsave(file.path(output_path, "SFigure__preprint_trends.svg"), plot = p, width = 3.5, height = 4, device = svglite::svglite)
 
   cat("Figure saved to:\n")
-  cat(paste0("  - ", file.path(output_path, "SFigure_3.pdf"), "\n"))
-  cat(paste0("  - ", file.path(output_path, "SFigure_3.png"), "\n"))
-  cat(paste0("  - ", file.path(output_path, "SFigure_3.svg"), "\n"))
+  cat(paste0("  - ", file.path(output_path, "SFigure__preprint_trends.pdf"), "\n"))
+  cat(paste0("  - ", file.path(output_path, "SFigure__preprint_trends.png"), "\n"))
+  cat(paste0("  - ", file.path(output_path, "SFigure__preprint_trends.svg"), "\n"))
 }
 
 # Main function
