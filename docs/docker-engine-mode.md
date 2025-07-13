@@ -2,7 +2,7 @@
 
 Docker Engine Mode provides a **minimal dependency** approach to using Rxiv-Maker by running all operations inside pre-configured containers. This eliminates the need to install LaTeX, R, Node.js, or Python packages locally while ensuring reproducible builds across all AMD64 platforms. Only Docker and Make are required on the host system.
 
-**⚠️ IMPORTANT:** Docker Engine Mode only supports **AMD64/x86_64 architecture** due to Google Chrome dependency limitations. ARM64 users (Apple Silicon Macs, ARM64 Linux) should use [local installation](user_guide.md) instead.
+**⚠️ IMPORTANT:** Docker Engine Mode is optimized for **AMD64/x86_64 architecture**. While ARM64 users (Apple Silicon Macs) can run AMD64 Docker images via Rosetta emulation, performance may be reduced. The underlying technical limitation is that Google does not provide Chrome for ARM64 Linux distributions, requiring us to use AMD64-only base images.
 
 ## Table of Contents
 - [Architecture Requirements](#architecture-requirements)
@@ -20,22 +20,48 @@ Docker Engine Mode provides a **minimal dependency** approach to using Rxiv-Make
 ## Architecture Requirements
 
 ### Supported Architectures
-- **✅ AMD64/x86_64**: Fully supported with Docker Engine Mode
-- **❌ ARM64/aarch64**: Not supported - use local installation instead
+- **✅ AMD64/x86_64**: Native support with optimal performance
+- **⚠️ ARM64/aarch64**: Can run via Rosetta emulation with reduced performance
 
-### Why AMD64 Only?
-Docker Engine Mode requires **Google Chrome** for Mermaid diagram generation (`.mmd` files). Google does not provide Chrome for ARM64 Linux distributions, making reliable containerized builds impossible on ARM64 systems.
+### Technical Background: The Google Chrome ARM64 Linux Limitation
 
-### Alternative for ARM64 Users
-If you're using ARM64 architecture (Apple Silicon Macs, ARM64 Linux servers), please use the [local installation method](user_guide.md) instead:
+Docker Engine Mode requires **Google Chrome** for Mermaid diagram generation (`.mmd` files). The core issue is that **Google does not provide Chrome for ARM64 Linux distributions**. This creates several options:
 
+1. **AMD64 systems**: Use native AMD64 Docker images with Chrome (optimal)
+2. **Apple Silicon Macs**: Use AMD64 Docker images via Rosetta emulation (functional but slower)
+3. **ARM64 Linux**: Use AMD64 Docker images via emulation (functional but slower)
+
+### Performance Considerations
+
+- **Local Installation**: Always optimal performance on any architecture (Chrome available natively)
+- **Docker on AMD64**: Native performance, no emulation overhead
+- **Docker on ARM64**: Functional via Rosetta/emulation but with performance penalty
+
+### Recommendations by Platform
+
+**Apple Silicon Macs:**
 ```bash
-# For ARM64 users - use local installation
-make setup    # Install dependencies locally
-make pdf      # Generate PDF using local tools
+# Option 1: Docker with Rosetta emulation (containerized but slower)
+make pdf RXIV_ENGINE=DOCKER
+
+# Option 2: Local installation (faster, native performance)
+make setup && make pdf
 ```
 
-Local installation works perfectly on ARM64 systems because browsers are available natively.
+**ARM64 Linux:**
+```bash
+# Option 1: Docker with emulation (containerized but slower)  
+make pdf RXIV_ENGINE=DOCKER
+
+# Option 2: Local installation (faster, native performance)
+make setup && make pdf
+```
+
+**AMD64 systems:**
+```bash
+# Docker provides optimal performance (recommended)
+make pdf RXIV_ENGINE=DOCKER
+```
 
 ---
 

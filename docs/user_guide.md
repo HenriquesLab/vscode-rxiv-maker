@@ -14,35 +14,78 @@ This guide covers everything from getting started to advanced workflows, practic
 
 ## Getting Started
 
-Choose your preferred environment:
+### 🎯 **Choose Your Development Environment (Pick ONE)**
 
-### Option 1: Docker Engine Mode (Recommended - Only Docker + Make Required)
+<details>
+<summary><strong>🏠 Local Installation (Recommended for All Users)</strong></summary>
+
+**Full control with native performance - works on all architectures**
+
+**Why Local Installation?**
+- ✅ **Universal compatibility**: Works on AMD64, ARM64 (Apple Silicon), and all platforms
+- ✅ **Better performance**: Native execution, faster builds
+- ✅ **Full feature support**: All Mermaid diagrams, R/Python figures work reliably
+- ✅ **Easier debugging**: Direct access to logs and intermediate files
+- ✅ **Incremental development**: Faster iteration when developing manuscripts
+
 **Prerequisites:** 
+- Python 3.11+ (check with `python --version`)
+- LaTeX distribution (TeX Live, MacTeX, or MiKTeX)
+- Make (typically pre-installed on macOS/Linux, see [platform guide](platforms/LOCAL_DEVELOPMENT.md) for Windows)
+
+```bash
+# Clone and set up local environment
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+
+# Automatic setup (detects your platform)
+make setup
+
+# Generate your first PDF
+make pdf
+```
+
+</details>
+
+<details>
+<summary><strong>🐳 Docker Engine Mode (AMD64 only)</strong></summary>
+
+**Only Docker + Make required - no LaTeX, Python, or R installation needed**
+
+**⚠️ Technical Note:** Docker mode uses AMD64 base images due to Google Chrome ARM64 Linux limitations. Apple Silicon Macs can run these via Rosetta emulation, though local installation provides better performance.
+
+**Why Docker Mode?**
+- ✅ **Minimal dependencies**: Only Docker and Make needed locally
+- ✅ **Reproducible builds**: Exact same environment every time
+- ✅ **CI/CD ready**: Perfect for GitHub Actions on AMD64 runners
+- ❌ **AMD64 only**: Google Chrome dependency limits architecture support
+
+**Prerequisites:** 
+- AMD64/x86_64 system (Intel/AMD processors only)
 - Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
 - Install Make (typically pre-installed on macOS/Linux, see [platform guide](platforms/LOCAL_DEVELOPMENT.md) for Windows)
 
 ```bash
-# Clone and use immediately with Docker (no local LaTeX/Python/R required)
+# Clone and use immediately with Docker
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 make pdf RXIV_ENGINE=DOCKER        # Generate PDF in container
 make validate RXIV_ENGINE=DOCKER   # Validate in container
 ```
 
-### Option 2: Local Development
-For platform-specific setup, see [platforms/LOCAL_DEVELOPMENT.md](platforms/LOCAL_DEVELOPMENT.md).
+**Benefits**: Cross-platform consistency, no dependency conflicts, matches CI environment (AMD64 only)
 
-- Install dependencies and LaTeX as described in the platform guide.
-- Build your first PDF:
-  ```bash
-  make setup
-  make validate  # Check for issues first
-  make pdf       # Generate PDF
-  ```
-- Use a different manuscript folder:
-  ```bash
-  MANUSCRIPT_PATH=MY_ARTICLE make pdf
-  ```
+</details>
+
+<details>
+<summary><strong>☁️ Cloud-Based Options</strong></summary>
+
+**No local installation required**
+
+- **🌐 Google Colab**: [Tutorial](tutorials/google_colab.md) - Browser-based, perfect for trying Rxiv-Maker
+- **⚡ GitHub Actions**: [Setup Guide](../github-actions-guide.md) - Automated builds on every commit
+
+</details>
 
 ---
 

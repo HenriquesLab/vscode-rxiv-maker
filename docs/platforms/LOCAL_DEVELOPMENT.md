@@ -16,7 +16,7 @@ This guide covers setting up Rxiv-Maker for local development across different p
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 
-# Generate PDF using Docker (no local dependencies required)
+# Generate PDF using Docker (only Docker and Make required locally)
 make pdf RXIV_ENGINE=DOCKER
 
 # Validate manuscript

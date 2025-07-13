@@ -200,6 +200,18 @@ setup:
 setup-reinstall:
 	@$(PYTHON_CMD) src/py/commands/setup_environment.py --reinstall
 
+# Check system dependencies
+.PHONY: check-deps
+check-deps:
+	@echo "🔍 Checking system dependencies..."
+	@$(PYTHON_CMD) src/py/commands/setup_environment.py --check-deps-only
+
+# Check system dependencies (verbose)
+.PHONY: check-deps-verbose
+check-deps-verbose:
+	@echo "🔍 Checking system dependencies (verbose)..."
+	@$(PYTHON_CMD) src/py/commands/setup_environment.py --check-deps-only --verbose
+
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
 pdf:
@@ -404,6 +416,7 @@ help:
 	echo "🚀 ESSENTIAL COMMANDS:"; \
 	echo "  make setup          - Install Python dependencies"; \
 	echo "  make setup-reinstall - Reinstall dependencies (removes .venv and creates new one)"; \
+	echo "  make check-deps     - Check system dependencies (LaTeX, Make, Node.js, R)"; \
 	echo "  make pdf            - Generate PDF with validation (auto-runs Python figure scripts)"; \
 	echo "  make validate       - Check manuscript for issues"; \
 	echo "  make fix-bibliography - Automatically fix bibliography issues using CrossRef"; \
@@ -436,8 +449,8 @@ help:
 	echo "   - Or place static figures in subdirectories (e.g., Figure_1/Figure_1.svg)"; \
 	echo "   - Build system creates FIGURES directory automatically if missing"; \
 	echo ""; \
-	echo "�💡 TIP: New to Rxiv-Maker?"; \
-	echo "   1. Install LaTeX on your system"; \
+	echo "💡 TIP: New to Rxiv-Maker?"; \
+	echo "   1. Run 'make check-deps' to see what you need to install"; \
 	echo "   2. Run 'make setup' to install Python dependencies"; \
 	echo "   3. Run 'make pdf' to generate your first PDF"; \
 	echo "   4. Edit files in $(ARTICLE_DIR)/ and re-run 'make pdf'"; \
@@ -448,6 +461,8 @@ help:
 	echo "   - Use different manuscript folder: MANUSCRIPT_PATH=path/to/folder make -e pdf"; \
 	echo "   - Docker engine mode: RXIV_ENGINE=DOCKER make pdf (uses containers)"; \
 	echo "   - Custom Docker image: DOCKER_IMAGE=my/image:tag RXIV_ENGINE=DOCKER make pdf"; \
+	echo "   - Verbose dependency check: make check-deps-verbose"; \
+	echo "   - Skip system deps check: python src/py/commands/setup_environment.py --no-check-system-deps"; \
 	echo "   - Preview bibliography fixes: make fix-bibliography-dry-run"; \
 	echo "   - Add bibliography: make add-bibliography 10.1000/example"; \
 	echo "   - Multiple DOIs: make add-bibliography 10.1000/ex1 10.1000/ex2"; \
