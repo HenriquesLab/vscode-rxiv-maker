@@ -82,6 +82,39 @@ else
     PYTHON_CMD := $(shell if command -v uv >$(SHELL_NULL) 2>&1; then echo "uv run python"; elif [ -f "$(VENV_PYTHON)" ]; then echo "$(PWD)/$(VENV_PYTHON)"; else echo "$(PYTHON_EXEC)"; fi)
 endif
 
+# ======================================================================
+# 🐳 ENGINE MODE CONFIGURATION (DOCKER vs LOCAL)
+# ======================================================================
+
+# Engine mode: LOCAL (default) or DOCKER
+# Override with: make pdf RXIV_ENGINE=DOCKER
+RXIV_ENGINE ?= LOCAL
+
+# Docker configuration
+DOCKER_IMAGE ?= henriqueslab/rxiv-maker-base:latest
+DOCKER_HUB_REPO ?= henriqueslab/rxiv-maker-base
+
+# Platform detection for Docker (use appropriate architecture)
+DOCKER_PLATFORM := $(shell \
+    if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then \
+        echo "linux/arm64"; \
+    else \
+        echo "linux/amd64"; \
+    fi)
+
+# Engine-specific command configuration
+ifeq ($(RXIV_ENGINE),DOCKER)
+    # Docker mode: Run all commands inside containers with platform-specific image
+    DOCKER_RUN_CMD = docker run --rm --platform $(DOCKER_PLATFORM) -v $(PWD):/workspace -w /workspace
+    PYTHON_CMD = $(DOCKER_RUN_CMD) $(DOCKER_IMAGE) python
+    DOCKER_MODE_ACTIVE = true
+    ENGINE_STATUS = 🐳 Docker ($(DOCKER_PLATFORM))
+else
+    # Local mode: Use local installations (existing behavior)
+    DOCKER_MODE_ACTIVE = false
+    ENGINE_STATUS = 💻 Local
+endif
+
 OUTPUT_DIR := output
 
 # Handle MANUSCRIPT_PATH with proper precedence: command line > environment > .env > default
@@ -352,11 +385,12 @@ clean-temp:
 clean-cache:
 	@$(PYTHON_CMD) src/py/commands/cleanup.py --cache-only
 
-# Build Docker image
-.PHONY: docker-image
-docker-image:
-	@echo "🐳 Building Docker image..."
-	@cd src/docker && docker build --platform linux/amd64 -t henriqueslab/rxiv-maker-base:latest .
+# ======================================================================
+# 🐳 DOCKER ENGINE MODE
+# ======================================================================
+
+# Note: Docker image management commands are in src/docker/Makefile for maintainers.
+# End users can use RXIV_ENGINE=DOCKER with any command for containerized execution.
 
 # Show help
 .PHONY: help
@@ -383,6 +417,13 @@ help:
 	echo "  make clean-cache    - Remove only cache files"; \
 	echo "  make help           - Show this help message"; \
 	echo ""; \
+	echo "🐳 DOCKER ENGINE MODE:"; \
+	echo "  Current engine: $(ENGINE_STATUS)"; \
+	echo "  make pdf RXIV_ENGINE=DOCKER     - Generate PDF using Docker container"; \
+	echo "  make validate RXIV_ENGINE=DOCKER - Validate manuscript using Docker"; \
+	echo "  make test RXIV_ENGINE=DOCKER     - Run tests in Docker container"; \
+	echo "  Note: Docker image management in src/docker/Makefile"; \
+	echo ""; \
 	echo "📁 DIRECTORIES:"; \
 	echo "  - Manuscript files: $(ARTICLE_DIR)/"; \
 	echo "  - Figures:          $(FIGURES_DIR)/"; \
@@ -405,6 +446,8 @@ help:
 	echo "   - Skip validation: make pdf-no-validate"; \
 	echo "   - Force figure regeneration: make pdf FORCE_FIGURES=true (re-runs all Python/Mermaid scripts)"; \
 	echo "   - Use different manuscript folder: MANUSCRIPT_PATH=path/to/folder make -e pdf"; \
+	echo "   - Docker engine mode: RXIV_ENGINE=DOCKER make pdf (uses containers)"; \
+	echo "   - Custom Docker image: DOCKER_IMAGE=my/image:tag RXIV_ENGINE=DOCKER make pdf"; \
 	echo "   - Preview bibliography fixes: make fix-bibliography-dry-run"; \
 	echo "   - Add bibliography: make add-bibliography 10.1000/example"; \
 	echo "   - Multiple DOIs: make add-bibliography 10.1000/ex1 10.1000/ex2"; \

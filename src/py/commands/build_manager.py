@@ -161,8 +161,16 @@ class BuildManager:
             self.log(f"Missing required files: {', '.join(missing_files)}", "ERROR")
             return False
 
-        # Create FIGURES directory if it doesn't exist
-        if not self.figures_dir.exists():
+        # Only create FIGURES directory if we're in a valid manuscript directory that's being actively processed
+        # Don't create FIGURES in default "MANUSCRIPT" directory unless it's explicitly being used
+        should_create_figures = (
+            not self.figures_dir.exists() and 
+            (self.manuscript_path != "MANUSCRIPT" or 
+             (self.manuscript_path == "MANUSCRIPT" and 
+              len([f for f in self.manuscript_dir.iterdir() if f.suffix in ['.md', '.yml', '.bib']]) > 2))
+        )
+        
+        if should_create_figures:
             self.log("FIGURES directory not found, creating it...", "WARNING")
             try:
                 self.figures_dir.mkdir(parents=True, exist_ok=True)

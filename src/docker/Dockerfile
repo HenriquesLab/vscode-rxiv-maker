@@ -1,8 +1,13 @@
 # ======================================================================
-# Rxiv-Maker Base Docker Image
+# Rxiv-Maker Base Docker Image (AMD64 only)
 # ======================================================================
 # This Docker image contains all system dependencies for Rxiv-Maker
 # but NO Python code or rxiv-maker specific logic.
+#
+# ARCHITECTURE REQUIREMENT: AMD64/x86_64 only
+# - Google Chrome is required for Mermaid diagram generation
+# - Google Chrome is not available for ARM64 Linux
+# - ARM64 users should use local installation instead
 #
 # This base image is designed to accelerate GitHub Actions workflows
 # by pre-installing time-consuming system dependencies.
@@ -29,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Essential system tools
     curl \
     wget \
+    unzip \
     ca-certificates \
     software-properties-common \
     gnupg \
@@ -124,8 +130,15 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y --no-install-recommends nodejs=18.* \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies for Puppeteer (required by Mermaid CLI)
+# Install browser dependencies for Puppeteer (required by Mermaid CLI)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Required fonts for diagram rendering including emoji support
+    fonts-liberation \
+    fonts-dejavu-core \
+    fonts-noto-color-emoji \
+    fonts-emojione \
+    fontconfig \
+    # Additional dependencies for Puppeteer/Chrome/Chromium
     libnss3 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -139,21 +152,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxfixes3 \
     libxext6 \
     libx11-6 \
-    && rm -rf /var/lib/apt/lists/*
+    # Additional dependencies for Google Chrome
+    libgtk-3-0 \
+    libatspi2.0-0 \
+    libxshmfence1 \
+    && rm -rf /var/lib/apt/lists/* \
+    # Update font cache for emoji fonts
+    && fc-cache -fv
+
+# Install Google Chrome for AMD64 (Docker engine mode is AMD64-only)
+# ARM64 users should use local installation instead
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Mermaid CLI globally with specific version for better caching
 RUN npm install -g @mermaid-js/mermaid-cli@10.6.1
 
-# Install chrome-headless-shell for Puppeteer (used by Mermaid CLI)
-RUN npx puppeteer browsers install chrome-headless-shell
+# Configure Puppeteer for AMD64 with Google Chrome
+RUN echo 'export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true' >> /etc/environment && \
+    echo 'export PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome' >> /etc/environment
 
-# Set environment variables for Puppeteer to use chrome-headless-shell
-# Find the installed chrome-headless-shell path and create a symlink
-RUN CHROME_PATH=$(find /root/.cache/puppeteer -name "chrome-headless-shell" -type f | head -1) && \
-    ln -sf "$CHROME_PATH" /usr/bin/chrome-headless-shell
-
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chrome-headless-shell
+# Set default values for Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
 # ======================================================================
 # LaTeX Installation Stage
@@ -288,6 +312,13 @@ RUN echo "=== Verification ===" \
     && R --version | head -1 \
     && pdflatex --version | head -1 \
     && biber --version | head -1 \
+    && echo "=== Browser verification ===" \
+    && ARCH=$(dpkg --print-architecture) \
+    && if [ "$ARCH" = "amd64" ]; then \
+        /usr/bin/google-chrome --version; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        /usr/bin/chromium --version; \
+    fi \
     && echo "=== Python packages verification ===" \
     && python3 -c "import matplotlib; print(f'matplotlib: {matplotlib.__version__}')" \
     && python3 -c "import numpy; print(f'numpy: {numpy.__version__}')" \
@@ -300,7 +331,7 @@ RUN echo "=== Verification ===" \
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
 LABEL description="Base image for Rxiv-Maker with system dependencies"
-LABEL version="1.4"
+LABEL version="1.5"
 LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed"
 LABEL org.opencontainers.image.licenses="MIT"

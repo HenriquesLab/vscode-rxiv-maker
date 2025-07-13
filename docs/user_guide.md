@@ -14,6 +14,22 @@ This guide covers everything from getting started to advanced workflows, practic
 
 ## Getting Started
 
+Choose your preferred environment:
+
+### Option 1: Docker Engine Mode (Recommended - Only Docker + Make Required)
+**Prerequisites:** 
+- Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
+- Install Make (typically pre-installed on macOS/Linux, see [platform guide](platforms/LOCAL_DEVELOPMENT.md) for Windows)
+
+```bash
+# Clone and use immediately with Docker (no local LaTeX/Python/R required)
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+make pdf RXIV_ENGINE=DOCKER        # Generate PDF in container
+make validate RXIV_ENGINE=DOCKER   # Validate in container
+```
+
+### Option 2: Local Development
 For platform-specific setup, see [platforms/LOCAL_DEVELOPMENT.md](platforms/LOCAL_DEVELOPMENT.md).
 
 - Install dependencies and LaTeX as described in the platform guide.
@@ -114,6 +130,22 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
   ```bash
   MANUSCRIPT_PATH=MY_ARTICLE make pdf
   ```
+- **Docker Engine Mode (Only Docker Required):**
+  Run any command in a containerized environment without installing LaTeX, R, or Python locally (Docker must be installed):
+  ```bash
+  # All commands work with RXIV_ENGINE=DOCKER
+  make pdf RXIV_ENGINE=DOCKER
+  make validate RXIV_ENGINE=DOCKER
+  make test RXIV_ENGINE=DOCKER
+  
+  # Use custom Docker image
+  DOCKER_IMAGE=my/custom:tag RXIV_ENGINE=DOCKER make pdf
+  
+  # Make Docker mode default for session
+  export RXIV_ENGINE=DOCKER
+  make pdf  # Now runs in Docker automatically
+  ```
+  Benefits: Cross-platform consistency, no dependency conflicts, reproducible builds, faster CI/CD.
 - **Advanced Figure Generation:**
   - Place Python or Mermaid files in `MANUSCRIPT/FIGURES/`
   - Force regeneration:
@@ -125,6 +157,7 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
   - Reference your custom style in `00_CONFIG.yml`
 - **Continuous Integration (CI):**
   - GitHub Actions builds PDFs via manual trigger or git tags
+  - Accelerated with pre-compiled Docker images (~2 min vs. ~10 min builds)
   - See [GitHub Actions Guide](github-actions-guide.md) for step-by-step instructions
   - Customize workflows in `.github/workflows/`
 - **Environment Variables:**
@@ -142,6 +175,7 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
 
 ## Examples & Cookbook
 
+### Local Development Examples
 - **Basic PDF Generation:**
   ```bash
   make validate  # Check for issues first
@@ -150,6 +184,22 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
 - **Custom Manuscript Directory:**
   ```bash
   MANUSCRIPT_PATH=MY_PAPER make pdf
+  ```
+
+### Docker Engine Mode Examples
+- **Basic PDF Generation (No Dependencies):**
+  ```bash
+  make validate RXIV_ENGINE=DOCKER  # Check for issues first
+  make pdf RXIV_ENGINE=DOCKER       # Generate PDF in container
+  ```
+- **Custom Manuscript with Docker:**
+  ```bash
+  MANUSCRIPT_PATH=MY_PAPER RXIV_ENGINE=DOCKER make pdf
+  ```
+- **Set Docker as Default:**
+  ```bash
+  export RXIV_ENGINE=DOCKER
+  make validate && make pdf  # Both run in containers
   ```
 - **Adding Figures:**
   - Place `.py` or `.mmd` files in `MANUSCRIPT/FIGURES/`

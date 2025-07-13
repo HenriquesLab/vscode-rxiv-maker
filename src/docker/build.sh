@@ -158,22 +158,28 @@ BUILD_ARGS=(
     --pull
 )
 
-# Add push flag if not local only
-if [[ "$LOCAL_ONLY" != true ]]; then
-    # Check if logged in to Docker Hub
-    if ! docker info | grep -q "Username:"; then
-        print_warning "Not logged in to Docker Hub. Attempting to build locally..."
-        LOCAL_ONLY=true
-    else
-        BUILD_ARGS+=(--push)
-        print_info "Will push to Docker Hub after build"
-    fi
-fi
+# Push logic moved to multi-platform handling section below
 
-# Add load flag for local builds
+# Handle local builds and multi-platform constraints
 if [[ "$LOCAL_ONLY" == true ]]; then
-    BUILD_ARGS+=(--load)
-    print_info "Building locally only (no push)"
+    # Check if this is a multi-platform build
+    if [[ "$PLATFORM" == *","* ]]; then
+        print_error "Multi-platform builds cannot be built locally"
+        print_info "For multi-platform builds, use without --local flag to push to registry"
+        print_info "Or specify a single platform like --platform linux/amd64"
+        exit 1
+    else
+        BUILD_ARGS+=(--load)
+        print_info "Building locally for platform: $PLATFORM"
+    fi
+else
+    # For push builds, check if logged in
+    if ! test -f ~/.docker/config.json || ! grep -q "auths" ~/.docker/config.json 2>/dev/null; then
+        print_error "Not logged in to Docker Hub. Please run 'docker login' first"
+        exit 1
+    fi
+    BUILD_ARGS+=(--push)
+    print_info "Building for push to registry"
 fi
 
 # Execute the build
@@ -181,12 +187,28 @@ print_info "Starting Docker build..."
 echo "Command: docker buildx build ${BUILD_ARGS[*]} $CONTEXT_DIR"
 echo ""
 
+# Record start time for build timing
+START_TIME=$(date +%s)
+
 if docker buildx build "${BUILD_ARGS[@]}" "$CONTEXT_DIR"; then
-    print_success "Docker build completed successfully!"
+    # Calculate build time
+    END_TIME=$(date +%s)
+    BUILD_DURATION=$((END_TIME - START_TIME))
+    DURATION_MIN=$((BUILD_DURATION / 60))
+    DURATION_SEC=$((BUILD_DURATION % 60))
+    print_success "Docker build completed successfully in ${DURATION_MIN}m ${DURATION_SEC}s!"
 
     if [[ "$LOCAL_ONLY" == true ]]; then
         print_info "Image built locally: $IMAGE_NAME"
         print_info "To push later, run: docker push $IMAGE_NAME"
+        
+        # Quick verification for local builds
+        print_info "Verifying image functionality..."
+        if docker run --rm "$IMAGE_NAME" python --version >/dev/null 2>&1; then
+            print_success "✅ Image verification passed"
+        else
+            print_warning "⚠️  Image verification failed - Python not working"
+        fi
     else
         print_success "Image pushed to Docker Hub: $IMAGE_NAME"
         print_info "Image is now available at: https://hub.docker.com/r/${REPO}/tags"
@@ -216,6 +238,11 @@ echo "  container: $IMAGE_NAME"
 echo ""
 print_info "Usage for local development:"
 echo "  docker run -it --rm -v \$(pwd):/workspace $IMAGE_NAME"
+echo ""
+print_info "Usage with Rxiv-Maker Docker engine mode:"
+echo "  make pdf RXIV_ENGINE=DOCKER"
+echo "  make validate RXIV_ENGINE=DOCKER"
+echo "  make test RXIV_ENGINE=DOCKER"
 echo ""
 
 print_success "Build script completed successfully!"

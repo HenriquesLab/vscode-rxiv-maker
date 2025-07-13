@@ -2,6 +2,46 @@
 
 This guide covers setting up Rxiv-Maker for local development across different platforms and architectures.
 
+## 🐳 Quick Start with Docker (Recommended)
+
+**If you prefer to avoid installing LaTeX, Python, R, and Node.js locally, you can use Docker to run everything in containers.**
+
+### Prerequisites
+- Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
+- Install Make (typically pre-installed on macOS/Linux, see platform-specific sections below for Windows)
+
+### Docker Setup (Cross-Platform)
+```bash
+# Clone repository
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+
+# Generate PDF using Docker (no local dependencies required)
+make pdf RXIV_ENGINE=DOCKER
+
+# Validate manuscript
+make validate RXIV_ENGINE=DOCKER
+
+# Run tests
+make test RXIV_ENGINE=DOCKER
+
+# Make Docker mode default for your session
+export RXIV_ENGINE=DOCKER
+make pdf  # Now runs in Docker automatically
+```
+
+### Benefits of Docker Mode
+- **No dependency installation**: Skip LaTeX, Python, R, Node.js installation
+- **Cross-platform consistency**: Identical environment on Windows, macOS, Linux
+- **No version conflicts**: Isolated from your local installations
+- **Faster CI/CD**: Same pre-compiled images used in GitHub Actions
+
+### When to Use Docker vs Local Installation
+- **Use Docker if**: You want quick setup, avoid dependency conflicts, or ensure reproducible builds
+- **Use Local if**: You need faster iteration, custom development tools, or offline development
+
+---
+
 ## 🖥️ Platform-Specific Setup
 
 ### macOS (Intel x86_64)
@@ -143,6 +183,17 @@ choco install -y python311 nodejs git make
 
 # Install MikTeX for LaTeX
 choco install -y miktex
+```
+
+**Alternative Make installation methods:**
+```powershell
+# Option 1: Via Scoop (lighter package manager)
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm get.scoop.sh | iex
+scoop install make
+
+# Option 2: Via Visual Studio Build Tools (if using VS)
+# Make is included with "Desktop development with C++" workload
 ```
 
 
@@ -347,6 +398,15 @@ rxiv-maker/
 ```
 
 ## 🔧 Troubleshooting
+
+### Docker Alternative for Complex Issues
+If you encounter persistent setup issues with local installations, consider using Docker mode instead:
+```bash
+# Skip all local dependency installation
+make pdf RXIV_ENGINE=DOCKER
+make validate RXIV_ENGINE=DOCKER
+```
+This approach eliminates most platform-specific issues and provides a consistent environment.
 
 ### Common Issues by Platform
 

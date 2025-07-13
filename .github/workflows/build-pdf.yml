@@ -44,11 +44,13 @@ jobs:
           echo "manuscript_path=$MANUSCRIPT_PATH" >> $GITHUB_OUTPUT
 
   # Second job: Build the PDF document
+  # Using pre-compiled Docker image for 5x faster builds (~2 min vs ~10+ min)
+  # Container includes LaTeX, Python scientific stack, R packages, Node.js, and system dependencies
   build-pdf:
     needs: prepare
     runs-on: ubuntu-latest
     container:
-      image: henriqueslab/rxiv-maker-base:latest
+      image: henriqueslab/rxiv-maker-base:latest  # Pre-compiled image with all dependencies
       options: --platform linux/amd64 --user root
 
     steps:
@@ -78,21 +80,22 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-python-
 
-    # Install Python dependencies (system dependencies already in Docker image)
+    # Install Python dependencies only (system dependencies pre-installed in Docker image)
+    # This step is much faster than installing everything from scratch (~30s vs ~8+ min)
     - name: Install Python dependencies
       run: |
         echo "Installing Python dependencies..."
+        echo "NOTE: LaTeX, R packages, Node.js, and system dependencies are pre-installed in container"
 
         # Ensure cache directories have proper permissions
         mkdir -p ~/.cache ~/.R/library
         chown -R root:root ~/.cache ~/.R/library || true
 
-        # Install Python dependencies directly (system dependencies already in Docker image)
-        # python3 -m pip install --upgrade pip
-        # python3 -m pip install -e ".[dev]"
+        # Install only Python dependencies (system dependencies already in Docker image)
+        # This is the key performance optimization - no lengthy apt installs or LaTeX setup
         make setup
 
-        # Set up a writable R library directory (already exists in Docker image)
+        # Set up a writable R library directory (core R packages already in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
 
     # Cache R library directory

@@ -9,6 +9,7 @@
 ![Cross References](https://img.shields.io/badge/cross_refs-automated-blue?labelColor=white&color=gray)
 ![Citations](https://img.shields.io/badge/citations-bibtex-blue?labelColor=white&color=gray)
 ![LaTeX Output](https://img.shields.io/badge/output-professional_pdf-blue?labelColor=white&color=gray)
+![Docker Support](https://img.shields.io/badge/docker-containerized_builds-blue?labelColor=white&color=gray)
 ![GitHub Actions](https://img.shields.io/badge/deployment-cloud_&_local-blue?labelColor=white&color=gray)
 ![VS Code Extension](https://img.shields.io/badge/VS_Code-extension_available-blue?labelColor=white&color=gray)
 
@@ -18,7 +19,7 @@
 
 Rxiv-Maker is an automated LaTeX article generation system that transforms scientific writing from chaos to clarity. It converts Markdown manuscripts into publication-ready PDFs with reproducible figures, professional typesetting, and zero LaTeX hassle.
 
-The platform bridges the gap between **easy writing** (Markdown) and **beautiful output** (LaTeX), featuring automated figure generation from Python/R scripts and Mermaid diagrams, seamless citation management, and integration with GitHub Actions for cloud-based PDF generation.
+The platform bridges the gap between **easy writing** (Markdown) and **beautiful output** (LaTeX), featuring automated figure generation from Python/R scripts and Mermaid diagrams, seamless citation management, Docker containerization for dependency-free execution, and integration with GitHub Actions for accelerated cloud-based PDF generation.
 
 Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuring version control compatibility, facilitating reproducible science workflows, and providing professional formatting that meets publication standards.
 
@@ -30,7 +31,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 - **GitHub Actions Integration** - Cloud-based PDF generation with manual triggers
 - **Professional LaTeX Templates** - Various citation styles and academic formatting
 - **Version Control Friendly** - Git-based workflows and reproducible builds
-- **Multi-Environment Support** - Local, Google Colab, and GitHub Actions
+- **Multi-Environment Support** - Local, Docker containers, Google Colab, and GitHub Actions
 - **VS Code Integration** - Dedicated extension with syntax highlighting, IntelliSense, and project commands
 
 <details>
@@ -93,81 +94,65 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 
 ## Quickstart
 
+### 🎯 **Choose Your Setup Method (Pick ONE)**
+
 <details>
-<summary><strong>🚀 Quick Start (2 minutes)</strong></summary>
+<summary><strong>🆕 New Users → Start Here (2-5 minutes)</strong></summary>
 
-### 🎯 **Which Option is Right for You?**
+**Recommended for first-time users:**
 
-| User Type | Best Option | Requirements | Setup Time |
-|-----------|-------------|--------------|------------|
-| **📚 New to coding** | Google Colab | Google account | 2 minutes |
-| **⚡ Want automation** | GitHub Actions | GitHub account | 5 minutes |
-| **🔧 Full control** | Local Install | Python 3.11+, LaTeX, Make | 10-30 minutes |
-| **📝 VS Code users** | VS Code Extension | VS Code + Rxiv-Maker | 5 minutes |
+**🌐 Google Colab** (No installation required)
+- Build manuscripts in your browser [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)
+- Perfect for: Trying Rxiv-Maker, quick experiments, collaborative editing
+- [Complete Tutorial →](docs/tutorials/google_colab.md)
 
-### Google Colab (Easiest - No Installation Required)
-**Perfect for beginners and quick experiments without any local setup.**
-
-Build the manuscript [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb) and easily edit the author list [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_YAML_editor.ipynb)
-
-**✅ Perfect for:**
-- First-time users wanting to try Rxiv-Maker
-- Quick one-off document generation
-- Users without technical setup experience
-- Collaborative editing with shared notebooks
-
-### GitHub Actions (Recommended for Regular Use)
-**Automatic PDF generation on every commit - works with both public and private repos.**
-
-1. **Fork** this repository to your GitHub account
-2. **Go to Actions tab** → "Build and Release PDF"
-3. **Click "Run workflow"** → Select manuscript path → "Run workflow"
-4. **Download PDF** from completed workflow run
-
-**✅ Perfect for:**
-- Regular manuscript writing and revisions
-- Team collaboration and version control
-- Automatic backup and PDF generation
-- Professional workflow without local setup
-
-### Local Development (Full Control)
-**First time? See [platform setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for Windows/macOS/Linux installation.**
-
-```bash
-# Clone the repository
-git clone https://github.com/henriqueslab/rxiv-maker.git
-cd rxiv-maker
-
-# Set up environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-make setup
-
-# Generate your first PDF
-make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
-```
-
-**✅ Perfect for:**
-- Advanced users and developers
-- Custom modifications and extensions
-- Offline work environments
-- Integration with local development tools
-
-### VS Code Extension (Enhanced Writing Experience)
-**Intelligent editing with syntax highlighting, autocompletion, and project integration.**
-
-1. **Install** the [Rxiv-Maker VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)
-2. **Open** your rxiv-maker project in VS Code
-3. **Enjoy** enhanced editing with IntelliSense for citations and cross-references
-4. **Use** integrated commands for validation and PDF generation
-
-**✅ Perfect for:**
-- VS Code users wanting enhanced editing experience
-- Teams standardizing on VS Code workflows
-- Writers who prefer IDE-like features
-- Projects requiring citation and reference management
+**🐳 Docker Engine** (Only Docker + Make required)
+- No LaTeX, Python, or R installation needed
+- Cross-platform consistency (Windows, macOS, Linux)
+- [Setup Guide →](docs/docker-engine-mode.md)
 
 </details>
+
+<details>  
+<summary><strong>🔧 Developers & Power Users (5-30 minutes)</strong></summary>
+
+**For ongoing development work:**
+
+**🏠 Local Development** (Full control)
+- Complete local environment setup
+- Best for: Advanced users, offline work, custom modifications
+- [Platform-Specific Setup →](docs/platforms/LOCAL_DEVELOPMENT.md)
+
+**⚡ GitHub Actions** (Automated cloud builds)
+- Automatic PDF generation on every commit
+- 5x faster builds with pre-compiled Docker images
+- [Workflow Setup →](docs/github-actions-guide.md)
+
+</details>
+
+<details>
+<summary><strong>📝 VS Code Users (Enhanced editing)</strong></summary>
+
+**After choosing any setup method above:**
+- Install [VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker) for syntax highlighting and IntelliSense
+- Intelligent autocompletion for citations and cross-references
+- Integrated commands for validation and PDF generation
+
+</details>
+
+### 🚀 First PDF in 2 Minutes
+
+Once you've chosen your method above, generate your first PDF:
+
+```bash
+# For all local methods (add RXIV_ENGINE=DOCKER for Docker mode)
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
+
+# For Google Colab: just click the badge above
+# For GitHub Actions: fork repo → Actions tab → "Run workflow"
+```
 
 ## Core Workflow
 
