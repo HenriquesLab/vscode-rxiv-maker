@@ -534,6 +534,10 @@ affiliations:
         # Mock subprocess calls
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
+        # Create mock PDF file that would be generated
+        diff_pdf = self.output_dir / "test_diff.pdf"
+        diff_pdf.touch()
+
         # Test compilation
         with patch("os.chdir"), patch("os.getcwd", return_value=str(self.temp_dir)):
             result = manager.compile_diff_pdf(diff_tex)
@@ -567,6 +571,10 @@ affiliations:
 
         # Mock subprocess calls
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        # Create mock PDF file that would be generated
+        diff_pdf = self.output_dir / "test_diff.tex".with_suffix(".pdf")
+        diff_pdf.touch()
 
         # Test compilation
         with patch("os.chdir"), patch("os.getcwd", return_value=str(self.temp_dir)):
@@ -647,6 +655,10 @@ affiliations:
             return MagicMock(returncode=0, stdout="", stderr="")
 
         mock_run.side_effect = mock_subprocess
+
+        # Create mock PDF file that would be generated
+        diff_pdf = self.output_dir / "test_diff.pdf"
+        diff_pdf.touch()
 
         # Test compilation - should continue despite BibTeX error
         with patch("os.chdir"), patch("os.getcwd", return_value=str(self.temp_dir)):
