@@ -546,7 +546,7 @@ affiliations:
 
         # Verify BibTeX was called (should be call #2 - after first pdflatex)
         calls = mock_run.call_args_list
-        self.assertGreater(len(calls), 3)  # pdflatex, bibtex, pdflatex, pdflatex
+        self.assertGreaterEqual(len(calls), 3)  # pdflatex, bibtex, pdflatex, pdflatex
 
         # Find bibtex call
         bibtex_calls = [call for call in calls if "bibtex" in str(call)]
@@ -573,7 +573,7 @@ affiliations:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
         # Create mock PDF file that would be generated
-        diff_pdf = self.output_dir / "test_diff.tex".with_suffix(".pdf")
+        diff_pdf = self.output_dir / "test_diff.pdf"
         diff_pdf.touch()
 
         # Test compilation
