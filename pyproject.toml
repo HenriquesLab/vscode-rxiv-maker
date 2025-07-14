@@ -21,6 +21,9 @@ dependencies = [
     "crossref-commons>=0.0.7",
     "lazydocs>=0.4.8",
     "types-requests>=2.32.4.20250611",
+    "pytest>=7.4.4",
+    "ruff>=0.12.2",
+    "pre-commit>=4.2.0",
 ]
 
 [project.optional-dependencies]
@@ -240,4 +243,3 @@ tertiaryTextColor = "#ffffff"
 textColor = "#ffffff"
 fontFamily = "Arial, sans-serif"
 fontSize = "16px"
-

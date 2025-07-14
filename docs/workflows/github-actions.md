@@ -497,4 +497,9 @@ If you encounter issues:
 
 ---
 
-*This guide consolidates all GitHub Actions workflows for Rxiv-Maker. For installation help, see the [Installation Guide](../getting-started/installation.md). For general usage, see the [User Guide](../user_guide.md).*
+## Related Documentation
+- [Command Reference](../reference/commands.md) - Complete command documentation
+- [User Guide](../getting-started/user_guide.md) - Complete usage instructions
+- [Docker Guide](docker-engine-mode.md) - Containerized builds
+- [Local Development Setup](../platforms/LOCAL_DEVELOPMENT.md) - Platform-specific installation
+- [Change Tracking Guide](change-tracking.md) - Version comparison

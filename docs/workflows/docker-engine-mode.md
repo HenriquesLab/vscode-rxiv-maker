@@ -571,8 +571,9 @@ Docker Engine Mode transforms Rxiv-Maker from a complex multi-dependency system 
 - Explore custom Docker images for specialized requirements
 - Share reproducible builds with collaborators
 
-**Resources:**
-- [Docker Official Documentation](https://docs.docker.com/)
-- [Rxiv-Maker GitHub Repository](https://github.com/henriqueslab/rxiv-maker)
-- [GitHub Actions Guide](github-actions-guide.md)
-- [Local Development Guide](platforms/LOCAL_DEVELOPMENT.md)
+**Related Documentation:**
+- [Command Reference](../reference/commands.md) - Complete command documentation
+- [User Guide](../getting-started/user_guide.md) - Complete usage instructions  
+- [GitHub Actions Guide](github-actions.md) - Automated cloud builds
+- [Local Development Setup](../platforms/LOCAL_DEVELOPMENT.md) - Platform-specific installation
+- [Docker Official Documentation](https://docs.docker.com/) - Docker reference

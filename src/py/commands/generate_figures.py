@@ -16,10 +16,15 @@ import json
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
+# Add path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.platform import platform_detector
+try:
+    from utils.platform import platform_detector
+except ImportError:
+    # Fallback for when run as script
+    sys.path.insert(0, str(Path(__file__).parent.parent / "utils"))
+    from platform import platform_detector
 
 PUPPETEER_CONFIG_PATH = Path(__file__).parent / "puppeteer-config.json"
 
@@ -137,36 +142,47 @@ class FigureGenerator:
                 # Generate the figure using Mermaid CLI
                 cmd_parts = ["mmdc", "-i", str(mmd_file), "-o", str(output_file)]
 
-                # Add Puppeteer configuration with proper browser executable and emoji support
+                # Add Puppeteer configuration with proper browser executable and
+                # emoji support
                 puppeteer_config = {
                     "args": [
                         "--no-sandbox",
                         "--disable-dev-shm-usage",
                         "--font-render-hinting=none",
                         "--disable-font-subpixel-positioning",
-                        "--disable-features=VizDisplayCompositor"
+                        "--disable-features=VizDisplayCompositor",
                     ]
                 }
 
                 # Detect if we're in Docker and set the appropriate browser path
                 import os
+
                 if os.path.exists("/.dockerenv"):  # Docker environment
                     # Check architecture and set appropriate browser path
                     import subprocess
+
                     try:
-                        arch_result = subprocess.run(["dpkg", "--print-architecture"],
-                                                    capture_output=True, text=True)
+                        arch_result = subprocess.run(
+                            ["dpkg", "--print-architecture"],
+                            capture_output=True,
+                            text=True,
+                        )
                         if arch_result.returncode == 0:
                             arch = arch_result.stdout.strip()
-                            if arch == "amd64" and os.path.exists("/usr/bin/google-chrome"):
-                                puppeteer_config["executablePath"] = "/usr/bin/google-chrome"
+                            if arch == "amd64" and os.path.exists(
+                                "/usr/bin/google-chrome"
+                            ):
+                                puppeteer_config["executablePath"] = (
+                                    "/usr/bin/google-chrome"
+                                )
                             elif arch == "arm64":
                                 # For ARM64, use Puppeteer's bundled Chrome
                                 chrome_paths = [
                                     "/root/.cache/puppeteer/chrome/*/chrome-linux64/chrome",
-                                    "/home/*/.cache/puppeteer/chrome/*/chrome-linux64/chrome"
+                                    "/home/*/.cache/puppeteer/chrome/*/chrome-linux64/chrome",
                                 ]
                                 import glob
+
                                 for pattern in chrome_paths:
                                     matches = glob.glob(pattern)
                                     if matches:
@@ -176,20 +192,28 @@ class FigureGenerator:
                                 if "executablePath" not in puppeteer_config:
                                     try:
                                         # Download Chrome using Puppeteer
-                                        download_result = subprocess.run([
-                                            "node", "-e",
-                                            "const puppeteer = require('puppeteer'); " +
-                                            "(async () => { await puppeteer.launch(); })()"
-                                        ], capture_output=True, text=True, timeout=60)
+                                        puppeteer_cmd = (
+                                            "const puppeteer = require('puppeteer'); "
+                                            "(async () => { "
+                                            "await puppeteer.launch(); })()"
+                                        )
+                                        subprocess.run(
+                                            ["node", "-e", puppeteer_cmd],
+                                            capture_output=True,
+                                            text=True,
+                                            timeout=60,
+                                        )
                                         # Try to find Chrome again
                                         for pattern in chrome_paths:
                                             matches = glob.glob(pattern)
                                             if matches:
-                                                puppeteer_config["executablePath"] = matches[0]
+                                                puppeteer_config["executablePath"] = (
+                                                    matches[0]
+                                                )
                                                 break
-                                    except:
+                                    except Exception:
                                         pass
-                    except:
+                    except Exception:
                         pass
 
                 PUPPETEER_CONFIG_PATH.write_text(json.dumps(puppeteer_config))

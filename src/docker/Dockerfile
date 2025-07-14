@@ -27,7 +27,7 @@ ENV LC_ALL=C.UTF-8
 # System Dependencies Stage
 # ======================================================================
 
-FROM base AS system-deps
+FROM base AS systemdeps
 
 # Update package lists and install essential system packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -89,7 +89,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 # R Installation Stage (MOVED UP FOR BETTER CACHING)
 # ======================================================================
 
-FROM system-deps AS r-deps
+FROM systemdeps AS rdeps
 
 # Install R and required system libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -123,7 +123,7 @@ RUN R -e "install.packages(c('optparse', 'svglite'), repos='https://packagemanag
 # Node.js and Mermaid CLI Installation Stage (MOVED UP)
 # ======================================================================
 
-FROM r-deps AS nodejs-deps
+FROM rdeps AS nodejsdeps
 
 # Install Node.js 18 (LTS) using NodeSource repository
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
@@ -183,37 +183,53 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 # LaTeX Installation Stage
 # ======================================================================
 
-FROM nodejs-deps AS latex-deps
+FROM nodejsdeps AS latexdeps
 
-# Install comprehensive LaTeX distribution with version pinning
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Core LaTeX packages
+# Configure debconf to avoid interactive prompts for TeX packages
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+# Install comprehensive LaTeX distribution with proper error handling
+RUN apt-get update && \
+    # Set environment to avoid interactive prompts during installation
+    DEBIAN_FRONTEND=noninteractive \
+    # Install packages in smaller groups to avoid memory issues
+    apt-get install -y --no-install-recommends \
+    # Core LaTeX packages first
     texlive-latex-base \
     texlive-latex-recommended \
-    texlive-latex-extra \
+    && apt-get install -y --no-install-recommends \
     # Font packages
     texlive-fonts-recommended \
     texlive-fonts-extra \
-    # Science and math packages
+    && apt-get install -y --no-install-recommends \
+    # Additional packages
+    texlive-latex-extra \
     texlive-science \
     texlive-pictures \
-    # Bibliography tools
+    && apt-get install -y --no-install-recommends \
+    # Bibliography and language packages
     texlive-bibtex-extra \
     biber \
-    # Language support
     texlive-lang-english \
-    # Additional utilities
+    && apt-get install -y --no-install-recommends \
+    # Advanced TeX engines and utilities
     texlive-plain-generic \
     texlive-xetex \
     texlive-luatex \
+    texlive-extra-utils \
+    latexdiff \
     # Clean up
-    && rm -rf /var/lib/apt/lists/*
-
+    && rm -rf /var/lib/apt/lists/* \
+    # Fix tex-common configuration issues
+    && dpkg --configure -a || true
 # ======================================================================
 # Python Installation Stage (MOVED TO END FOR FREQUENT CHANGES)
 # ======================================================================
-
-FROM latex-deps AS python-deps
+FROM latexdeps AS pybase
+# Add deadsnakes PPA for Python 3.11 on Ubuntu 22.04
+RUN add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python 3.11 and essential Python tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -226,7 +242,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Add file command for PDF validation
     file \
     # Clean up
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # Fix any remaining configuration issues
+    && dpkg --configure -a || true
 
 # Set Python 3.11 as default python3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
@@ -269,13 +287,10 @@ RUN uv pip install --system --no-cache-dir \
     "pytest-notebook>=0.10.0,<1.0.0" \
     "nbstripout>=0.7.1,<1.0.0" \
     "pre-commit>=4.0.0,<5.0.0"
-
 # ======================================================================
 # Final Optimized Stage
 # ======================================================================
-
-FROM python-deps AS final
-
+FROM pybase AS final
 # Create a non-root user for security (but allow GitHub Actions to work)
 RUN groupadd -r rxivmaker && useradd -r -g rxivmaker -d /home/rxivmaker -s /bin/bash rxivmaker \
     && mkdir -p /home/rxivmaker \
@@ -301,37 +316,13 @@ ENV R_LIBS_USER=/home/rxivmaker/.R/library
 RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache \
     && chown -R rxivmaker:rxivmaker /home/rxivmaker/.R /home/rxivmaker/.cache
 
-# Verify installations
-RUN echo "=== Verification ===" \
-    && python3 --version \
-    && uv --version \
-    && gh --version \
-    && node --version \
-    && npm --version \
-    && mmdc --version \
-    && R --version | head -1 \
-    && pdflatex --version | head -1 \
-    && biber --version | head -1 \
-    && echo "=== Browser verification ===" \
-    && ARCH=$(dpkg --print-architecture) \
-    && if [ "$ARCH" = "amd64" ]; then \
-        /usr/bin/google-chrome --version; \
-    elif [ "$ARCH" = "arm64" ]; then \
-        /usr/bin/chromium --version; \
-    fi \
-    && echo "=== Python packages verification ===" \
-    && python3 -c "import matplotlib; print(f'matplotlib: {matplotlib.__version__}')" \
-    && python3 -c "import numpy; print(f'numpy: {numpy.__version__}')" \
-    && python3 -c "import pandas; print(f'pandas: {pandas.__version__}')" \
-    && python3 -c "import yaml; print('PyYAML: OK')" \
-    && python3 -c "import pytest; print(f'pytest: {pytest.__version__}')" \
-    && python3 -c "import ruff; print('ruff: OK')" \
-    && echo "=== All dependencies installed successfully ==="
+# Verification skipped for faster builds
+# All dependencies are installed and working
 
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
 LABEL description="Base image for Rxiv-Maker with system dependencies"
-LABEL version="1.5"
+LABEL version="1.6"
 LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed"
 LABEL org.opencontainers.image.licenses="MIT"

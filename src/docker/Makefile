@@ -45,6 +45,39 @@ image-push:
 	@echo "💡 Ensure you're logged in: docker login"
 	@./build-safe.sh --tag $(DOCKER_IMAGE_TAG) --repo $(DOCKER_HUB_REPO) --platform $(BUILD_PLATFORMS)
 
+# Build and push in background (for very long builds)
+.PHONY: image-push-bg
+image-push-bg:
+	@echo "🐳 Starting background build and push of AMD64 Docker image..."
+	@echo "📋 Image: $(DOCKER_HUB_REPO):$(DOCKER_IMAGE_TAG)"
+	@echo "🏗️  Platforms: $(BUILD_PLATFORMS)"
+	@echo "🚀 Destination: DockerHub"
+	@echo "⏰ Running in background - check logs in src/docker/"
+	@echo "💡 Use 'make build-status' to monitor progress"
+	@echo "💡 Use 'docker images $(DOCKER_HUB_REPO)' to check completion"
+	@nohup ./build-safe.sh --tag $(DOCKER_IMAGE_TAG) --repo $(DOCKER_HUB_REPO) --platform $(BUILD_PLATFORMS) > build-bg-$(shell date +%Y%m%d-%H%M%S).log 2>&1 &
+	@echo "🚀 Background build started! Check status with 'make build-status'"
+
+# Check status of background builds
+.PHONY: build-status
+build-status:
+	@echo "🔍 Checking Docker build status..."
+	@echo ""
+	@echo "📊 Build processes:"
+	@if pgrep -f "build-safe.sh" >/dev/null 2>&1; then \
+		echo "✅ Build process running (PID: $$(pgrep -f "build-safe.sh"))"; \
+	else \
+		echo "❌ No build process found"; \
+	fi
+	@echo ""
+	@echo "📁 Recent build logs:"
+	@ls -lt build-*.log 2>/dev/null | head -5 || echo "No build logs found"
+	@echo ""
+	@echo "🐳 Current Docker images:"
+	@docker images $(DOCKER_HUB_REPO) --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" 2>/dev/null || echo "No images found"
+	@echo ""
+	@echo "💡 To monitor live: tail -f $$(ls -t build-*.log 2>/dev/null | head -1)"
+
 # Build Docker image for local testing only
 .PHONY: image-local
 image-local:
@@ -158,6 +191,8 @@ help:
 	@echo "🚀 ESSENTIAL COMMANDS:"
 	@echo "  make image-build     - Build single-platform image locally (safe mode)"
 	@echo "  make image-push      - Build and push AMD64 image to DockerHub (safe mode)"
+	@echo "  make image-push-bg   - Build and push in background (avoids timeouts)"
+	@echo "  make build-status    - Check status of background builds"
 	@echo "  make image-test      - Build and test image functionality"
 	@echo "  make login           - Login to Docker Hub"
 	@echo "  make help            - Show this help message"

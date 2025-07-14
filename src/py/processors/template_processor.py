@@ -3,21 +3,32 @@
 This module handles template content generation and replacement operations.
 """
 
+import os
 import re
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
+# Add path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import os
+try:
+    from converters.md2tex import extract_content_sections
+    from processors.author_processor import (
+        generate_authors_and_affiliations,
+        generate_corresponding_authors,
+        generate_extended_author_info,
+    )
+except ImportError:
+    # Fallback for when run as script
+    sys.path.insert(0, str(Path(__file__).parent))
+    from author_processor import (
+        generate_authors_and_affiliations,
+        generate_corresponding_authors,
+        generate_extended_author_info,
+    )
 
-from converters.md2tex import extract_content_sections
-from processors.author_processor import (
-    generate_authors_and_affiliations,
-    generate_corresponding_authors,
-    generate_extended_author_info,
-)
+    sys.path.insert(0, str(Path(__file__).parent.parent / "converters"))
+    from md2tex import extract_content_sections
 
 
 def get_template_path():

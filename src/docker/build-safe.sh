@@ -16,8 +16,8 @@
 set -e
 
 # Configuration
-MAX_BUILD_TIME="10800"  # 3 hours maximum (multi-platform builds take longer)
-PROGRESS_INTERVAL="30" # Report progress every 30 seconds
+MAX_BUILD_TIME="${MAX_BUILD_TIME:-7200}"  # 2 hours maximum (multi-platform builds take longer)
+PROGRESS_INTERVAL="${PROGRESS_INTERVAL:-60}" # Report progress every 60 seconds to reduce noise
 LOG_FILE="build-$(date +%Y%m%d-%H%M%S).log"
 
 # Colors for output
@@ -46,90 +46,74 @@ print_error() {
 # Function to check system resources
 check_system_resources() {
     print_info "Checking system resources..."
-    
+
     # Check available disk space (need at least 5GB)
     AVAILABLE_SPACE=$(df . | awk 'NR==2 {print $4}')
     if [ "$AVAILABLE_SPACE" -lt 5242880 ]; then  # 5GB in KB
         print_warning "Low disk space detected. Docker build may fail."
         print_warning "Available: $(($AVAILABLE_SPACE / 1024))MB, Recommended: 5GB+"
     fi
-    
+
     # Check if Docker daemon is responsive
     if ! docker info >/dev/null 2>&1; then
         print_error "Docker daemon is not running or not accessible"
         exit 1
     fi
-    
+
     print_success "System resources check passed"
 }
 
 # Function to clean up Docker resources before build
 cleanup_docker_resources() {
     print_info "Cleaning up Docker resources to free space..."
-    
+
     # Remove dangling images
     if docker images -f "dangling=true" -q | grep -q .; then
         docker rmi $(docker images -f "dangling=true" -q) 2>/dev/null || true
         print_info "Removed dangling images"
     fi
-    
+
     # Clean build cache (keep last 24h)
     docker builder prune -f --filter "until=24h" 2>/dev/null || true
     print_info "Cleaned old build cache"
 }
 
-# Function to run build with resource monitoring
+# Function to run build with simplified monitoring
 run_build_with_monitoring() {
     local build_cmd="$1"
     local log_file="$2"
-    
-    print_info "Starting monitored Docker build..."
+
+    print_info "Starting Docker build..."
     print_info "Build log: $log_file"
     print_info "Maximum build time: $((MAX_BUILD_TIME / 60)) minutes"
-    
-    # Start build in background with timeout
-    timeout "$MAX_BUILD_TIME" bash -c "$build_cmd" > "$log_file" 2>&1 &
-    BUILD_PID=$!
-    
-    # Monitor progress
-    local elapsed=0
-    while kill -0 $BUILD_PID 2>/dev/null; do
-        sleep $PROGRESS_INTERVAL
-        elapsed=$((elapsed + PROGRESS_INTERVAL))
-        
-        # Show progress
-        local minutes=$((elapsed / 60))
-        local seconds=$((elapsed % 60))
-        printf "\r${BLUE}[PROGRESS]${NC} Build running: %02d:%02d" $minutes $seconds
-        
+
+    # Use a simpler approach to avoid process management issues
+    local start_time=$(date +%s)
+
+    # Execute build with timeout but simpler monitoring
+    if timeout "$MAX_BUILD_TIME" bash -c "$build_cmd >> '$log_file' 2>&1"; then
+        local end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+        print_success "Build completed successfully in $((duration / 60))m $((duration % 60))s"
+        return 0
+    else
+        local exit_code=$?
+        local end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+
+        if [ $exit_code -eq 124 ]; then
+            print_error "Build timed out after $((MAX_BUILD_TIME / 60)) minutes"
+        else
+            print_error "Build failed with exit code: $exit_code after $((duration / 60))m $((duration % 60))s"
+        fi
+
         # Check for common error patterns in log
         if grep -q "No space left on device" "$log_file" 2>/dev/null; then
-            print_error "Build failed: No space left on device"
-            kill $BUILD_PID 2>/dev/null || true
-            return 1
+            print_error "Issue detected: No space left on device"
+        elif grep -q "killed" "$log_file" 2>/dev/null; then
+            print_error "Issue detected: Process was killed (likely out of memory)"
         fi
-        
-        if grep -q "killed" "$log_file" 2>/dev/null; then
-            print_error "Build was killed (likely out of memory)"
-            kill $BUILD_PID 2>/dev/null || true
-            return 1
-        fi
-    done
-    
-    echo  # New line after progress
-    
-    # Wait for build to complete and get exit code
-    wait $BUILD_PID
-    local exit_code=$?
-    
-    if [ $exit_code -eq 0 ]; then
-        print_success "Build completed successfully!"
-        return 0
-    elif [ $exit_code -eq 124 ]; then
-        print_error "Build timed out after $((MAX_BUILD_TIME / 60)) minutes"
-        return 1
-    else
-        print_error "Build failed with exit code: $exit_code"
+
         return 1
     fi
 }
@@ -138,13 +122,13 @@ run_build_with_monitoring() {
 show_build_summary() {
     local log_file="$1"
     local success="$2"
-    
+
     if [ "$success" = "true" ]; then
         # Extract build time from log
         if grep -q "Successfully tagged" "$log_file"; then
             print_success "Docker image built successfully!"
         fi
-        
+
         # Show image size if available
         local image_name=$(grep -o "Successfully tagged .*" "$log_file" | cut -d' ' -f3 | head -1)
         if [ -n "$image_name" ]; then
@@ -163,27 +147,27 @@ show_build_summary() {
 # Main execution
 main() {
     print_info "Starting safe Docker build process..."
-    
+
     # Check prerequisites
     check_system_resources
     cleanup_docker_resources
-    
+
     # Build the actual build command
     BUILD_CMD="./build.sh $*"
-    
+
     print_info "Build command: $BUILD_CMD"
     print_info "Working directory: $(pwd)"
-    
+
     # Execute build with monitoring
     if run_build_with_monitoring "$BUILD_CMD" "$LOG_FILE"; then
         show_build_summary "$LOG_FILE" "true"
         print_success "Safe build process completed successfully!"
-        
+
         # Clean up log file on success (optional)
         if [ "${KEEP_LOGS:-false}" != "true" ]; then
             rm -f "$LOG_FILE"
         fi
-        
+
         exit 0
     else
         show_build_summary "$LOG_FILE" "false"

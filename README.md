@@ -1,17 +1,6 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15752358.svg)](https://doi.org/10.5281/zenodo.15752358)
 [![License](https://img.shields.io/github/license/henriqueslab/rxiv-maker?color=Green)](https://github.com/henriqueslab/rxiv-maker/blob/main/LICENSE)
-[![Contributors](https://img.shields.io/github/contributors-anon/henriqueslab/rxiv-maker)](https://github.com/henriqueslab/rxiv-maker/graphs/contributors)
 [![GitHub stars](https://img.shields.io/github/stars/henriqueslab/rxiv-maker?style=social)](https://github.com/HenriquesLab/rxiv-maker/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/henriqueslab/rxiv-maker?style=social)](https://github.com/henriqueslab/rxiv-maker/forks)
-
-![Enhanced Markdown (rxiv-markdown)](https://img.shields.io/badge/rxiv_markdown-20+_features-blue?labelColor=white&color=gray)
-![Figure Generation](https://img.shields.io/badge/figures-python_&_R_&_mermaid-blue?labelColor=white&color=gray)
-![Cross References](https://img.shields.io/badge/cross_refs-automated-blue?labelColor=white&color=gray)
-![Citations](https://img.shields.io/badge/citations-bibtex-blue?labelColor=white&color=gray)
-![LaTeX Output](https://img.shields.io/badge/output-professional_pdf-blue?labelColor=white&color=gray)
-![Docker Support](https://img.shields.io/badge/docker-containerized_builds-blue?labelColor=white&color=gray)
-![GitHub Actions](https://img.shields.io/badge/deployment-cloud_&_local-blue?labelColor=white&color=gray)
-![VS Code Extension](https://img.shields.io/badge/VS_Code-extension_available-blue?labelColor=white&color=gray)
 
 # Rxiv-Maker
 
@@ -25,172 +14,151 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 
 ## Key Features
 
-- **20+ Enhanced Markdown Features** - Scientific cross-references, citations, subscript/superscript, and programmatic figure generation. A new standard for scientific Markdown writing dubbed **rxiv-markdown**.
-- **Intelligent Validation System** - Pre-build validation catches errors with actionable feedback and suggestions
-- **Automated Figure Generation** - Python scripts, R scripts, and Mermaid diagrams with smart caching
-- **GitHub Actions Integration** - Cloud-based PDF generation with manual triggers
-- **Professional LaTeX Templates** - Various citation styles and academic formatting
-- **Version Control Friendly** - Git-based workflows and reproducible builds
-- **Multi-Environment Support** - Local, Docker containers, Google Colab, and GitHub Actions
-- **VS Code Integration** - Dedicated extension with syntax highlighting, IntelliSense, and project commands
+- **20+ Enhanced Markdown Features** - Scientific cross-references, citations, subscript/superscript (**rxiv-markdown**)
+- **Automated Figure Generation** - Python/R scripts and Mermaid diagrams with smart caching
+- **Intelligent Validation** - Pre-build error detection with actionable feedback
+- **Professional Output** - LaTeX-quality PDFs with various citation styles
+- **Multi-Environment** - Local, Docker, Google Colab, and GitHub Actions support
+- **Change Tracking** - Visual diff PDFs against git tags
+- **VS Code Integration** - Dedicated extension with syntax highlighting
+
+**Key rxiv-markdown features:** Scientific cross-references (`@fig:label`, `@eq:label`), citations (`@citation`), text formatting (`~subscript~`, `^superscript^`), document control (`<newpage>`), and automated figure generation.
+
+## Key Benefits
+
+- **Accessibility** - Write in Markdown without LaTeX expertise
+- **Reproducibility** - Automated figures and version control ensure consistent results
+- **Flexibility** - Generate PDFs locally, in Docker, or via GitHub Actions
+- **Professional Output** - LaTeX-quality formatting with automated bibliography management
+- **Collaboration** - Git-based workflows with automated PDF generation
+
+## System Requirements
 
 <details>
-<summary><strong>📋 Complete Rxiv-Markdown Feature List</strong></summary>
+<summary><strong>📋 Dependencies & Requirements</strong></summary>
 
-| **Markdown Element** | **LaTeX Equivalent** | **Description** |
-|------------------|------------------|-------------|
-| **Basic Text Formatting** | | |
-| `**bold text**` | `\textbf{bold text}` | Bold formatting for emphasis |
-| `*italic text*` | `\textit{italic text}` | Italic formatting for emphasis |
-| `~subscript~` | `\textsubscript{subscript}` | Subscript formatting (H~2~O, CO~2~) |
-| `^superscript^` | `\textsuperscript{superscript}` | Superscript formatting (E=mc^2^, x^n^) |
-| **Document Structure** | | |
-| `# Header 1` | `\section{Header 1}` | Top-level section heading |
-| `## Header 2` | `\subsection{Header 2}` | Second-level section heading |
-| `### Header 3` | `\subsubsection{Header 3}` | Third-level section heading |
-| **Lists** | | |
-| `- list item` | `\begin{itemize}\item...\end{itemize}` | Unordered list |
-| `1. list item` | `\begin{enumerate}\item...\end{enumerate}` | Ordered list |
-| **Links and URLs** | | |
-| `[link text](url)` | `\href{url}{link text}` | Hyperlink with custom text |
-| `https://example.com` | `\url{https://example.com}` | Bare URL |
-| **Citations** | | |
-| `@citation` | `\cite{citation}` | Single citation reference |
-| `[@cite1;@cite2]` | `\cite{cite1,cite2}` | Multiple citation references |
-| **Cross-References** | | |
-| `@fig:label` | `\ref{fig:label}` | Figure cross-reference |
-| `@sfig:label` | `\ref{sfig:label}` | Supplementary figure cross-reference |
-| `@table:label` | `\ref{table:label}` | Table cross-reference |
-| `@stable:label` | `\ref{stable:label}` | Supplementary table cross-reference |
-| `@eq:label` | `\eqref{eq:label}` | Equation cross-reference |
-| `@snote:label` | `\ref{snote:label}` | Supplement note cross-reference |
-| **Tables and Figures** | | |
-| Markdown table | `\begin{table}...\end{table}` | Table with automatic formatting |
-| Image with caption | `\begin{figure}...\end{figure}` | Figure with separate caption |
-| **Document Control** | | |
-| `<!-- comment -->` | `% comment` | Comments (converted to LaTeX style) |
-| `<newpage>` | `\newpage` | Manual page break control |
-| `<clearpage>` | `\clearpage` | Page break with float clearing |
-| `<float-barrier>` | `\FloatBarrier` | Prevent floats from crossing this point |
+### Core Requirements
+- **Python**: 3.11+ (automatically handled in Docker/Colab modes)
+- **Git**: For repository management
+- **Make**: Build automation (see [platform-specific installation](docs/getting-started/installation.md))
+
+### Python Dependencies
+Automatically installed with `make setup`:
+```
+matplotlib>=3.7.0    # Figure generation
+seaborn>=0.12.0      # Statistical plotting  
+numpy>=1.24.0        # Numerical computing
+pandas>=2.0.0        # Data manipulation
+PyYAML>=6.0.0        # Configuration parsing
+pypdf>=3.0.0         # PDF processing
+crossref-commons     # Citation validation
+```
+
+### Optional Dependencies (Local Development Only Without Docker)
+- **LaTeX**: For PDF generation (TeX Live, MacTeX, or MikTeX)
+- **Node.js**: For Mermaid diagram generation
+- **R**: For R-based figure scripts
+
+### Platform-Specific Setup
+- **Docker Mode**: Only Docker Desktop + Make required
+- **Google Colab**: Zero local installation needed
+- **GitHub Actions**: Zero local installation needed
+- **Local Development**: Full dependency stack required
+
+### Quick Troubleshooting
+- **Permission errors**: Ensure user has write access to project directory
+- **LaTeX not found**: Use Docker mode or install platform-specific LaTeX
+- **Python version issues**: Use Docker mode or upgrade to Python 3.11+
+- **Make command not found**: Install build tools for your platform
+
+**📖 Full Installation Guide**: [Complete platform-specific instructions](docs/getting-started/installation.md)
 
 </details>
-
-## Key Benefits of Rxiv-Maker
-
-- **Accessibility:** Write in familiar Markdown syntax without LaTeX expertise. Interactive workflows lower barriers for researchers.
-- **Reproducibility:** Automated figure generation and version control ensure consistent results across builds.
-- **Flexibility:** Generate PDFs locally, in the cloud, or via GitHub Actions. No vendor lock-in.
-- **Professional Output:** LaTeX-quality formatting with automated bibliography and cross-reference management.
-- **Collaboration:** Git-based workflows enable team editing with automated PDF generation for reviews.
-- **Extensibility:** Modular architecture supports custom templates, styles, and figure generation scripts.
-
-## What is Rxiv-Maker?
-
-- A comprehensive manuscript generation system combining Markdown simplicity with LaTeX professionalism.
-- Fully automated figure generation from Python scripts, R scripts, and Mermaid diagrams integrated into the document build process.
-- GitHub Actions workflows provide cloud-based PDF generation with dependency caching and artifact management.
-- Professional templates supporting academic publishing conventions, including author affiliations, ORCID integration, and citation styles.
-- Version-controlled workflow enabling collaborative writing with automated quality checks and build validation.
 
 ## Quickstart
 
-### 🎯 **Choose Your Setup Method (Pick ONE)**
+### Setup Options
 
-<details>
-<summary><strong>🆕 New Users → Start Here (2-5 minutes)</strong></summary>
+**🌐 Google Colab** (Easiest - no installation)
+- **Prerequisites**: Google account only
+- **Setup Time**: 2 minutes
+- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)
 
-**Recommended for first-time users:**
-
-**🌐 Google Colab** (No installation required)
-- Build manuscripts in your browser [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)
-- Perfect for: Trying Rxiv-Maker, quick experiments, collaborative editing
-- [Complete Tutorial →](docs/tutorials/google_colab.md)
-
-**🐳 Docker Engine** (Only Docker + Make required)
-- No LaTeX, Python, or R installation needed
-- Cross-platform consistency (Windows, macOS, Linux)
-- [Setup Guide →](docs/docker-engine-mode.md)
-
-</details>
-
-<details>  
-<summary><strong>🔧 Developers & Power Users (5-30 minutes)</strong></summary>
-
-**For ongoing development work:**
-
-**🏠 Local Development** (Full control)
-- Complete local environment setup
-- Best for: Advanced users, offline work, custom modifications
-- [Platform-Specific Setup →](docs/platforms/LOCAL_DEVELOPMENT.md)
-
-**⚡ GitHub Actions** (Automated cloud builds)
-- Automatic PDF generation on every commit
-- 5x faster builds with pre-compiled Docker images
-- [Workflow Setup →](docs/github-actions-guide.md)
-
-</details>
-
-<details>
-<summary><strong>📝 VS Code Users (Enhanced editing)</strong></summary>
-
-**After choosing any setup method above:**
-- Install [VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker) for syntax highlighting and IntelliSense
-- Intelligent autocompletion for citations and cross-references
-- Integrated commands for validation and PDF generation
-
-</details>
-
-### 🚀 First PDF in 2 Minutes
-
-Once you've chosen your method above, generate your first PDF:
-
+**🐳 Docker** (Minimal dependencies)
+- **Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop) + Make
+- **Setup Time**: 3-5 minutes
 ```bash
-# For all local methods (add RXIV_ENGINE=DOCKER for Docker mode)
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
-make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
-
-# For Google Colab: just click the badge above
-# For GitHub Actions: fork repo → Actions tab → "Run workflow"
+make pdf RXIV_ENGINE=DOCKER
 ```
+
+**🏠 Local Development** (Full control)
+- **Prerequisites**: Python 3.11+, LaTeX, Make ([platform guide](docs/getting-started/installation.md))
+- **Setup Time**: 10-30 minutes
+```bash
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+make setup && make pdf
+```
+
+**⚡ GitHub Actions** (Team collaboration)
+- **Prerequisites**: GitHub account only
+- **Setup Time**: 5 minutes
+- **Guide**: [Automated cloud builds guide](docs/workflows/github-actions.md)
+
+**📝 VS Code** (Enhanced editing)
+- **Prerequisites**: VS Code editor
+- **Extension**: [VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker) for syntax highlighting
 
 ## Core Workflow
 
-1. **Write** your manuscript in Markdown (`01_MAIN.md`)
-2. **Configure** metadata in YAML (`00_CONFIG.yml`). Directly or using our notebook 
-3. **Create** figures with Python scripts, R scripts, Mermaid diagrams or upload images
-4. **Validate** your manuscript (`make validate`) to catch issues early
-5. **Build** your PDF locally (`make pdf`) or via GitHub Actions
-6. **Collaborate** using Git workflows with automated PDF generation
+1. **Write** manuscript in Markdown (`01_MAIN.md`)
+2. **Configure** metadata in YAML (`00_CONFIG.yml`)
+3. **Create** figures with Python/R scripts or Mermaid diagrams
+4. **Validate** with `make validate`
+5. **Build** PDF with `make pdf`
 
 ## Documentation
 
-### Essential Guides
-- **[Google Colab Tutorial](docs/tutorials/google_colab.md)** – Browser-based PDF generation (no installation required)
-- **[GitHub Actions Tutorial](docs/tutorials/github_actions.md)** – Automated PDF generation and team workflows
-- **[GitHub Actions Guide](docs/github-actions-guide.md)** – Complete cloud PDF generation tutorial
-- **[User Guide](docs/user_guide.md)** – Comprehensive usage instructions and troubleshooting
-- **[Architecture Overview](docs/architecture.md)** – System design and technical details
+<details>
+<summary><strong>📚 Complete Documentation Index</strong></summary>
 
-### Editor Integration
-- **[VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)** – Enhanced editing with syntax highlighting and IntelliSense
+### Getting Started
+- **[Installation Guide](docs/getting-started/installation.md)** - Complete setup for all platforms
+- **[User Guide](docs/getting-started/user_guide.md)** - Complete usage instructions
 
-### Platform-Specific Setup
-- **[Windows/macOS/Linux Setup](docs/platforms/LOCAL_DEVELOPMENT.md)** – Complete installation guides for all platforms
+### Platform Guides  
+- **[Local Development Setup](docs/platforms/LOCAL_DEVELOPMENT.md)** - Platform-specific installation
+- **[Docker Engine Mode](docs/workflows/docker-engine-mode.md)** - Containerized development
+- **[Google Colab Tutorial](docs/tutorials/google_colab.md)** - Browser-based PDF generation
+- **[GitHub Actions Guide](docs/workflows/github-actions.md)** - Automated cloud builds
 
-### Reference Documentation
-- **[API Reference](docs/api/README.md)** – Python API documentation
+### Advanced Features
+- **[Change Tracking](docs/workflows/change-tracking.md)** - Version diff PDFs
+- **[Troubleshooting](docs/troubleshooting/troubleshooting-missing-figures.md)** - Common issues and fixes
 
-### Quick Reference
-| Task | Command | Documentation |
-|------|---------|---------------|
-| Generate PDF | `make pdf` | [User Guide](docs/user_guide.md) |
-| Validate Manuscript | `make validate` | [Validation Guide](docs/validate_manuscript.md) |
-| Fix Bibliography | `make fix-bibliography` | [User Guide](docs/user_guide.md) |
-| Add Bibliography Entry | `make add-bibliography 10.1000/doi` | [User Guide](docs/user_guide.md) |
-| Cloud PDF Generation | Actions → "Run workflow" | [GitHub Actions Guide](docs/github-actions-guide.md) |
-| Custom Manuscript | `make pdf MANUSCRIPT_PATH=MY_PAPER` | [User Guide](docs/user_guide.md) |
-| Force Figure Regeneration | `make pdf FORCE_FIGURES=true` | [User Guide](docs/user_guide.md) |
+### Development
+- **[VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)** - Enhanced editing experience
+- **[API Documentation](docs/api/)** - Code reference
+
+</details>
+
+### Quick Commands
+```bash
+make pdf                              # Generate PDF
+make validate                         # Validate manuscript  
+make pdf MANUSCRIPT_PATH=MY_PAPER     # Custom manuscript
+make pdf FORCE_FIGURES=true           # Force figure regeneration
+make pdf-track-changes TAG=v1.0.0     # Track changes vs git tag
+make clean                            # Clean output files
+make setup                            # Install dependencies
+```
+
+### Quick Help
+- **Issues?** Check [Troubleshooting Guide](docs/troubleshooting/troubleshooting-missing-figures.md)
+- **Platform problems?** See [Installation Guide](docs/getting-started/installation.md) 
+- **Need help?** Visit [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
 
 ## Project Structure
 
@@ -207,17 +175,13 @@ rxiv-maker/
 └── docs/                   # Documentation
 ```
 
-For troubleshooting, advanced features, and detailed guides, see the [User Guide](docs/user_guide.md).
-
 ## Contributing
 
-We welcome contributions! Check out our [contributing guidelines](CONTRIBUTING.md) and help improve Rxiv-Maker.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
-# Development setup
 git clone https://github.com/henriqueslab/rxiv-maker.git
-pip install -e ".[dev]"
-pre-commit install
+pip install -e ".[dev]" && pre-commit install
 ```
 
 ## How to Cite

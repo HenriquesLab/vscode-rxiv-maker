@@ -310,3 +310,12 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
 - [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues)
 - [Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
 - [Contributing Guide](../CONTRIBUTING.md)
+
+---
+
+## Related Documentation
+- [Command Reference](../reference/commands.md) - Complete command documentation
+- [GitHub Actions Guide](../workflows/github-actions.md) - Automated cloud builds
+- [Docker Guide](../workflows/docker-engine-mode.md) - Containerized builds
+- [Change Tracking Guide](../workflows/change-tracking.md) - Version comparison
+- [Local Development Setup](../platforms/LOCAL_DEVELOPMENT.md) - Platform-specific installation

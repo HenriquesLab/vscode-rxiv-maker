@@ -17,10 +17,11 @@ suggestions for fixes, and optional detailed statistics.
 import argparse
 import os
 import sys
+from pathlib import Path
 from typing import Any
 
-# Add src/py to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Add path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     from validators.base_validator import ValidationLevel
@@ -33,7 +34,20 @@ try:
 
     VALIDATORS_AVAILABLE = True
 except ImportError:
-    VALIDATORS_AVAILABLE = False
+    # Fallback for when run as script
+    try:
+        sys.path.insert(0, str(Path(__file__).parent.parent / "validators"))
+        from base_validator import ValidationLevel
+        from citation_validator import CitationValidator
+        from figure_validator import FigureValidator
+        from latex_error_parser import LaTeXErrorParser
+        from math_validator import MathValidator
+        from reference_validator import ReferenceValidator
+        from syntax_validator import SyntaxValidator
+
+        VALIDATORS_AVAILABLE = True
+    except ImportError:
+        VALIDATORS_AVAILABLE = False
 
 
 class UnifiedValidator:

@@ -16,18 +16,27 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+try:
+    # Relative imports for when run as module
+    from ..utils.figure_checksum import get_figure_checksum_manager
+    from ..utils.platform import platform_detector
+except ImportError:
+    # Fallback for when run as script
+    import sys
+    from pathlib import Path
 
-from utils.figure_checksum import get_figure_checksum_manager
-from utils.platform import platform_detector
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from utils.figure_checksum import get_figure_checksum_manager
+    from utils.platform import platform_detector
 
 
 # Import FigureGenerator dynamically to avoid import issues
 def get_figure_generator():
     """Get FigureGenerator class with lazy import."""
-    from commands.generate_figures import FigureGenerator
-
+    try:
+        from .generate_figures import FigureGenerator
+    except ImportError:
+        from generate_figures import FigureGenerator
     return FigureGenerator
 
 
@@ -164,12 +173,19 @@ class BuildManager:
         # Only create FIGURES directory if we're in a valid manuscript directory
         # that's being actively processed. Don't create FIGURES in default
         # "MANUSCRIPT" directory unless it's explicitly being used
-        should_create_figures = (
-            not self.figures_dir.exists() and
-            (self.manuscript_path != "MANUSCRIPT" or
-             (self.manuscript_path == "MANUSCRIPT" and
-              len([f for f in self.manuscript_dir.iterdir()
-                   if f.suffix in ['.md', '.yml', '.bib']]) > 2))
+        should_create_figures = not self.figures_dir.exists() and (
+            self.manuscript_path != "MANUSCRIPT"
+            or (
+                self.manuscript_path == "MANUSCRIPT"
+                and len(
+                    [
+                        f
+                        for f in self.manuscript_dir.iterdir()
+                        if f.suffix in [".md", ".yml", ".bib"]
+                    ]
+                )
+                > 2
+            )
         )
 
         if should_create_figures:
@@ -789,10 +805,39 @@ def main():
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
+    parser.add_argument(
+        "--track-changes", metavar="TAG", help="Track changes against specified git tag"
+    )
 
     args = parser.parse_args()
 
     try:
+        # Handle track changes mode
+        if args.track_changes:
+            try:
+                from commands.track_changes import TrackChangesManager
+            except ImportError:
+                # Fallback import
+                sys.path.insert(0, str(Path(__file__).parent))
+                from track_changes import TrackChangesManager
+
+            track_changes = TrackChangesManager(
+                manuscript_path=args.manuscript_path
+                or os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT"),
+                output_dir=args.output_dir,
+                git_tag=args.track_changes,
+                verbose=args.verbose,
+            )
+
+            success = track_changes.generate_change_tracked_pdf()
+
+            if success:
+                return 0
+            else:
+                print("❌ Change tracking failed!")
+                return 1
+
+        # Normal build mode
         build_manager = BuildManager(
             manuscript_path=args.manuscript_path,
             output_dir=args.output_dir,

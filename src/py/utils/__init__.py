@@ -18,7 +18,7 @@ from .email_encoder import (
 
 def safe_print(message: str, emoji: str = "", fallback: str = ""):
     """Print a message with emoji, falling back to ASCII on Windows console encoding errors.
-    
+
     Args:
         message: The main message to print
         emoji: The emoji to prefix (e.g., "✅", "⚠️", "❌")
@@ -36,10 +36,9 @@ def safe_print(message: str, emoji: str = "", fallback: str = ""):
         else:
             print(message)
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from utils import (
+    from ..utils import (
         copy_pdf_to_manuscript_folder,
         create_output_dir,
         find_manuscript_md,
@@ -127,7 +126,9 @@ except ImportError:
 
         try:
             shutil.copy2(output_pdf, manuscript_pdf_path)
-            safe_print(f"PDF copied to manuscript folder: {manuscript_pdf_path}", "✅", "[OK]")
+            safe_print(
+                f"PDF copied to manuscript folder: {manuscript_pdf_path}", "✅", "[OK]"
+            )
             return manuscript_pdf_path
         except Exception as e:
             print(f"Error copying PDF: {e}")
