@@ -10,7 +10,7 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +35,9 @@ class FigureChecksumManager:
         self.figures_dir = self.manuscript_path / "FIGURES"
 
         # Load existing checksums
-        self._checksums: Dict[str, str] = self._load_checksums()
+        self._checksums: dict[str, str] = self._load_checksums()
 
-    def _load_checksums(self) -> Dict[str, str]:
+    def _load_checksums(self) -> dict[str, str]:
         """Load existing checksums from cache file."""
         if not self.checksum_file.exists():
             logger.debug(f"No existing checksum file found at {self.checksum_file}")
@@ -80,7 +80,7 @@ class FigureChecksumManager:
             logger.error(f"Failed to calculate checksum for {file_path}: {e}")
             return ""
 
-    def get_figure_source_files(self) -> List[Path]:
+    def get_figure_source_files(self) -> list[Path]:
         """Get all figure source files in the FIGURES directory.
 
         Returns:
@@ -95,7 +95,7 @@ class FigureChecksumManager:
 
         return sorted(source_files)
 
-    def get_changed_files(self) -> List[Path]:
+    def get_changed_files(self) -> list[Path]:
         """Get list of figure source files that have changed.
 
         Returns:
@@ -142,7 +142,7 @@ class FigureChecksumManager:
             logger.info("All figure source files are up to date")
             return False
 
-    def update_checksums(self, files: Optional[List[Path]] = None) -> None:
+    def update_checksums(self, files: Optional[list[Path]] = None) -> None:
         """Update checksums for specified files or all source files.
 
         Args:
@@ -192,7 +192,7 @@ class FigureChecksumManager:
             self._save_checksums()
             logger.info(f"Cleaned up {len(orphaned_files)} orphaned checksums")
 
-    def get_cache_stats(self) -> Dict[str, any]:
+    def get_cache_stats(self) -> dict[str, any]:
         """Get statistics about the checksum cache.
 
         Returns:

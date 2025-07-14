@@ -10,7 +10,7 @@ from .types import LatexContent, MarkdownContent
 
 
 def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
-    """Convert subscript and superscript markdown syntax to LaTeX.
+    r"""Convert subscript and superscript markdown syntax to LaTeX.
 
     Avoids converting inside LaTeX commands like \\texttt{}.
 

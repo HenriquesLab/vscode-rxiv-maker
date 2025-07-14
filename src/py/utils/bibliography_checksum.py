@@ -10,7 +10,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +35,9 @@ class BibliographyChecksumManager:
         self.bibliography_file = self.manuscript_path / "03_REFERENCES.bib"
 
         # Load existing checksum
-        self._checksum_data: Dict[str, any] = self._load_checksum()
+        self._checksum_data: dict[str, any] = self._load_checksum()
 
-    def _load_checksum(self) -> Dict[str, any]:
+    def _load_checksum(self) -> dict[str, any]:
         """Load existing checksum from cache file."""
         if not self.checksum_file.exists():
             logger.debug(f"No existing bibliography checksum file found at {self.checksum_file}")
@@ -80,12 +80,12 @@ class BibliographyChecksumManager:
             logger.error(f"Failed to calculate checksum for {file_path}: {e}")
             return ""
 
-    def _extract_doi_entries(self, content: str) -> Dict[str, str]:
+    def _extract_doi_entries(self, content: str) -> dict[str, str]:
         """Extract DOI entries from bibliography content.
-        
+
         Args:
             content: Bibliography file content
-            
+
         Returns:
             Dictionary mapping DOI strings to their context for validation
         """
@@ -106,7 +106,7 @@ class BibliographyChecksumManager:
 
         return doi_entries
 
-    def bibliography_has_changed(self) -> Tuple[bool, Optional[str]]:
+    def bibliography_has_changed(self) -> tuple[bool, Optional[str]]:
         """Check if bibliography file has changed since last validation.
 
         Returns:
@@ -135,7 +135,7 @@ class BibliographyChecksumManager:
             logger.debug("Bibliography file unchanged")
             return False, current_checksum
 
-    def doi_entries_have_changed(self) -> Tuple[bool, Optional[Dict[str, str]]]:
+    def doi_entries_have_changed(self) -> tuple[bool, Optional[dict[str, str]]]:
         """Check if DOI entries in bibliography have changed.
 
         Returns:
@@ -224,7 +224,7 @@ class BibliographyChecksumManager:
         self._checksum_data.clear()
         self._save_checksum()
 
-    def get_cache_stats(self) -> Dict[str, any]:
+    def get_cache_stats(self) -> dict[str, any]:
         """Get statistics about the bibliography checksum cache.
 
         Returns:

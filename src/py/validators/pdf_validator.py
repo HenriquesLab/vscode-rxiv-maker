@@ -13,7 +13,7 @@ This validator extracts text from the generated PDF and verifies that:
 import logging
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 try:
     import pypdf
@@ -107,7 +107,7 @@ class PDFValidator(BaseValidator):
 
         return None
 
-    def _extract_pdf_text(self, pdf_path: Path) -> Tuple[str, List[str]]:
+    def _extract_pdf_text(self, pdf_path: Path) -> tuple[str, list[str]]:
         """Extract text from PDF file.
 
         Args:
@@ -143,7 +143,7 @@ class PDFValidator(BaseValidator):
             logger.error(f"Failed to read PDF file {pdf_path}: {e}")
             return "", []
 
-    def _validate_citations(self) -> List[ValidationError]:
+    def _validate_citations(self) -> list[ValidationError]:
         """Validate citations in PDF text."""
         errors = []
 
@@ -191,7 +191,7 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _validate_equations(self) -> List[ValidationError]:
+    def _validate_equations(self) -> list[ValidationError]:
         """Validate equations in PDF text."""
         errors = []
 
@@ -231,7 +231,7 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _validate_figures(self) -> List[ValidationError]:
+    def _validate_figures(self) -> list[ValidationError]:
         """Validate figure references in PDF text."""
         errors = []
 
@@ -266,7 +266,7 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _validate_tables(self) -> List[ValidationError]:
+    def _validate_tables(self) -> list[ValidationError]:
         """Validate table references in PDF text."""
         errors = []
 
@@ -288,7 +288,7 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _validate_sections(self) -> List[ValidationError]:
+    def _validate_sections(self) -> list[ValidationError]:
         """Validate section references in PDF text."""
         errors = []
 
@@ -310,7 +310,7 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _validate_bibliography(self) -> List[ValidationError]:
+    def _validate_bibliography(self) -> list[ValidationError]:
         """Validate bibliography presence in PDF text."""
         errors = []
 
@@ -340,7 +340,7 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _validate_page_structure(self) -> List[ValidationError]:
+    def _validate_page_structure(self) -> list[ValidationError]:
         """Validate basic page structure."""
         errors = []
 
@@ -372,7 +372,7 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _get_validation_statistics(self) -> Dict[str, any]:
+    def _get_validation_statistics(self) -> dict[str, any]:
         """Get validation statistics from PDF text."""
         stats = {
             "total_pages": len(self.pdf_pages),

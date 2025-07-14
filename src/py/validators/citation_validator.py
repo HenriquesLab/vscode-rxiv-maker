@@ -272,11 +272,7 @@ class CitationValidator(BaseValidator):
                     in_backtick = False
 
         # Check if position is inside any backtick range
-        for start, end in backtick_ranges:
-            if start <= position <= end:
-                return True
-
-        return False
+        return any(start <= position <= end for start, end in backtick_ranges)
 
     def _validate_citation_key(
         self, key: str, file_path: str, line_num: int, column: int, context: str

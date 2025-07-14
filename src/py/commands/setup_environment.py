@@ -246,9 +246,8 @@ class EnvironmentSetup:
                 return False
 
         # Step 2: Remove existing environment if reinstalling
-        if self.reinstall:
-            if not self.remove_existing_venv():
-                return False
+        if self.reinstall and not self.remove_existing_venv():
+            return False
 
         # Step 3: Check/install uv
         if not self.check_uv_installation():

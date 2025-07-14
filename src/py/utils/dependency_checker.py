@@ -9,7 +9,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 # Handle imports when run as script or module
 try:
@@ -29,7 +29,7 @@ class DependencyInfo:
     found: bool
     version: Optional[str] = None
     path: Optional[str] = None
-    install_commands: Dict[str, str] = None
+    install_commands: dict[str, str] = None
     description: str = ""
     alternative: Optional[str] = None
 
@@ -39,13 +39,13 @@ class DependencyChecker:
 
     def __init__(self, verbose: bool = False):
         """Initialize dependency checker.
-        
+
         Args:
             verbose: Whether to show verbose output
         """
         self.verbose = verbose
         self.platform = platform_detector
-        self.dependencies: List[DependencyInfo] = []
+        self.dependencies: list[DependencyInfo] = []
 
     def log(self, message: str, level: str = "INFO"):
         """Log a message if verbose mode is enabled."""
@@ -61,13 +61,13 @@ class DependencyChecker:
             else:
                 print(message)
 
-    def check_command_version(self, command: str, version_flag: str = "--version") -> Tuple[bool, Optional[str], Optional[str]]:
+    def check_command_version(self, command: str, version_flag: str = "--version") -> tuple[bool, Optional[str], Optional[str]]:
         """Check if a command exists and get its version.
-        
+
         Args:
             command: Command to check
             version_flag: Flag to get version (default: --version)
-            
+
         Returns:
             Tuple of (found, version, path)
         """
@@ -250,9 +250,9 @@ class DependencyChecker:
             description=description
         )
 
-    def check_all_dependencies(self) -> List[DependencyInfo]:
+    def check_all_dependencies(self) -> list[DependencyInfo]:
         """Check all system dependencies.
-        
+
         Returns:
             List of dependency information
         """
@@ -269,11 +269,11 @@ class DependencyChecker:
 
         return self.dependencies
 
-    def get_missing_required_dependencies(self) -> List[DependencyInfo]:
+    def get_missing_required_dependencies(self) -> list[DependencyInfo]:
         """Get list of missing required dependencies."""
         return [dep for dep in self.dependencies if dep.required and not dep.found]
 
-    def get_missing_optional_dependencies(self) -> List[DependencyInfo]:
+    def get_missing_optional_dependencies(self) -> list[DependencyInfo]:
         """Get list of missing optional dependencies."""
         return [dep for dep in self.dependencies if not dep.required and not dep.found]
 
@@ -319,7 +319,7 @@ class DependencyChecker:
         # Summary and recommendations
         self._print_summary_and_recommendations()
 
-    def _print_installation_instructions(self, dependencies: List[DependencyInfo]):
+    def _print_installation_instructions(self, dependencies: list[DependencyInfo]):
         """Print installation instructions for missing dependencies."""
         platform_name = self.platform.platform
 
@@ -362,10 +362,10 @@ class DependencyChecker:
 
 def check_system_dependencies(verbose: bool = False) -> DependencyChecker:
     """Check all system dependencies and return checker instance.
-    
+
     Args:
         verbose: Whether to show verbose output
-        
+
     Returns:
         DependencyChecker instance with results
     """
@@ -376,7 +376,7 @@ def check_system_dependencies(verbose: bool = False) -> DependencyChecker:
 
 def print_dependency_report(verbose: bool = False):
     """Check and print a comprehensive dependency report.
-    
+
     Args:
         verbose: Whether to show verbose output during checks
     """
