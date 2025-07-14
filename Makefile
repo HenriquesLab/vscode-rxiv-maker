@@ -94,13 +94,10 @@ RXIV_ENGINE ?= LOCAL
 DOCKER_IMAGE ?= henriqueslab/rxiv-maker-base:latest
 DOCKER_HUB_REPO ?= henriqueslab/rxiv-maker-base
 
-# Platform detection for Docker (use appropriate architecture)
-DOCKER_PLATFORM := $(shell \
-    if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then \
-        echo "linux/arm64"; \
-    else \
-        echo "linux/amd64"; \
-    fi)
+# Platform detection for Docker 
+# NOTE: rxiv-maker-base image is AMD64-only due to Chrome ARM64 Linux limitations
+# ARM64 users run with Rosetta emulation for full compatibility
+DOCKER_PLATFORM := linux/amd64
 
 # Engine-specific command configuration
 ifeq ($(RXIV_ENGINE),DOCKER)
@@ -226,7 +223,7 @@ pdf-no-validate:
 .PHONY: arxiv
 arxiv: pdf
 	@echo "Preparing arXiv submission package..."
-	@$(PYTHON_CMD) src/py/commands/prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --zip
+	@$(PYTHON_CMD) src/py/commands/prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --zip
 	@echo "✅ arXiv package ready: $(OUTPUT_DIR)/for_arxiv.zip"
 	@echo "Copying arXiv package to manuscript directory with naming convention..."
 	@YEAR=$$($(PYTHON_CMD) -c "import yaml; import sys; sys.path.insert(0, 'src/py'); config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \

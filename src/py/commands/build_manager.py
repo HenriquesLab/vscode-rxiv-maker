@@ -161,22 +161,25 @@ class BuildManager:
             self.log(f"Missing required files: {', '.join(missing_files)}", "ERROR")
             return False
 
-        # Only create FIGURES directory if we're in a valid manuscript directory that's being actively processed
-        # Don't create FIGURES in default "MANUSCRIPT" directory unless it's explicitly being used
+        # Only create FIGURES directory if we're in a valid manuscript directory
+        # that's being actively processed. Don't create FIGURES in default
+        # "MANUSCRIPT" directory unless it's explicitly being used
         should_create_figures = (
-            not self.figures_dir.exists() and 
-            (self.manuscript_path != "MANUSCRIPT" or 
-             (self.manuscript_path == "MANUSCRIPT" and 
-              len([f for f in self.manuscript_dir.iterdir() if f.suffix in ['.md', '.yml', '.bib']]) > 2))
+            not self.figures_dir.exists() and
+            (self.manuscript_path != "MANUSCRIPT" or
+             (self.manuscript_path == "MANUSCRIPT" and
+              len([f for f in self.manuscript_dir.iterdir()
+                   if f.suffix in ['.md', '.yml', '.bib']]) > 2))
         )
-        
+
         if should_create_figures:
             self.log("FIGURES directory not found, creating it...", "WARNING")
             try:
                 self.figures_dir.mkdir(parents=True, exist_ok=True)
                 self.log(f"Created FIGURES directory: {self.figures_dir}")
                 self.log(
-                    "💡 Add figure generation scripts (.py) or Mermaid diagrams (.mmd) to this directory"
+                    "💡 Add figure generation scripts (.py) or Mermaid diagrams "
+                    "(.mmd) to this directory"
                 )
             except Exception as e:
                 self.log(f"Failed to create FIGURES directory: {e}", "ERROR")
@@ -508,7 +511,8 @@ class BuildManager:
                 text=True,
             )
 
-            # Run bibtex if references exist (check in current working directory which is output_dir)
+            # Run bibtex if references exist (check in current working directory)
+            # which is output_dir
             output_references = Path("03_REFERENCES.bib")
             if output_references.exists():
                 self.log("Running BibTeX to process bibliography...")
@@ -536,7 +540,8 @@ class BuildManager:
                     bbl_file = Path(f"{self.manuscript_name}.bbl")
                     if not bbl_file.exists():
                         self.log(
-                            "BibTeX failed to create .bbl file - citations will appear as ?",
+                            "BibTeX failed to create .bbl file - citations will "
+                            "appear as ?",
                             "ERROR",
                         )
                         return False
@@ -564,7 +569,8 @@ class BuildManager:
                 text=True,
             )
 
-            # Check if compilation was successful (PDF exists is more reliable than return code)
+            # Check if compilation was successful
+            # (PDF exists is more reliable than return code)
             # Check for PDF in current directory (we're in output_dir)
             pdf_file = Path(f"{self.manuscript_name}.pdf")
 

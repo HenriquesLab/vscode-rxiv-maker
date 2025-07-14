@@ -194,7 +194,7 @@ make clean-figures
 # Test figure generation in isolation
 cd MANUSCRIPT/FIGURES
 source ../../.venv/bin/activate  # If using local development
-python Figure_1.py              # Test specific figure script
+python Figure__example.py        # Test specific figure script
 ```
 
 ### Docker Mode Figure Generation
@@ -479,7 +479,7 @@ pdflatex manuscript.tex
 # Test figure generation in isolation
 cd MANUSCRIPT/FIGURES
 source ../../.venv/bin/activate
-python Figure_1.py
+python Figure__example.py
 
 # Check for missing dependencies
 python -c "import matplotlib; print('matplotlib OK')"

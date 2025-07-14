@@ -241,7 +241,3 @@ textColor = "#ffffff"
 fontFamily = "Arial, sans-serif"
 fontSize = "16px"
 
-[dependency-groups]
-dev = [
-    "pytest>=7.4.4",
-]

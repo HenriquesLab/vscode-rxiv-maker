@@ -499,7 +499,7 @@ class FigureValidator(BaseValidator):
         if expected_outputs:
             subdir_outputs = []
             for output in expected_outputs:
-                # Add subdirectory version (e.g., SFigure_3/SFigure_3.svg)
+                # Add subdirectory version (e.g., SFigure__example/SFigure__example.svg)
                 subdir_path = f"{base_name}/{os.path.basename(output)}"
                 subdir_outputs.append(subdir_path)
             expected_outputs.extend(subdir_outputs)

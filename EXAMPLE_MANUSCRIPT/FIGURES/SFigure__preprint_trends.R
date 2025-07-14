@@ -11,12 +11,18 @@
 #   Rscript SFigure__preprint_trends.R --show    # Display plot and save files
 #   Rscript SFigure__preprint_trends.R --help    # Show help message
 
-# Function to check and install required packages
+# Function to check and install required packages with error handling
 check_and_install_packages <- function(packages) {
   for (pkg in packages) {
-    if (!require(pkg, character.only = TRUE)) {
-      install.packages(pkg, repos = "https://cloud.r-project.org/")
-      library(pkg, character.only = TRUE)
+    if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+      message(paste("Installing package:", pkg))
+      tryCatch({
+        install.packages(pkg, repos = "https://cloud.r-project.org/", dependencies = TRUE)
+        library(pkg, character.only = TRUE)
+        message(paste("Successfully installed and loaded:", pkg))
+      }, error = function(e) {
+        stop(paste("Failed to install package", pkg, ":", e$message))
+      })
     }
   }
 }
@@ -77,15 +83,18 @@ load_and_process_data <- function() {
   return(df)
 }
 
-# Create the figure
+# Create the figure with modern styling
 create_figure <- function(df) {
+  # Define a modern color palette
+  colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
+  
   p <- ggplot(df, aes(x = date, y = submissions, color = source, fill = source)) +
-    geom_line(size = 0.6, alpha = 0.8) +
-    geom_area(alpha = 0.2, position = "identity") +  # Use "identity" to avoid stacking
+    geom_line(size = 1.2, alpha = 0.9) +
+    geom_area(alpha = 0.15, position = "identity") +
     labs(
-      title = "PubMed Preprints by Year and Source",
+      title = "Preprint Submissions by Year and Source",
       x = "Year",
-      y = "Submissions",
+      y = "Annual Submissions",
       color = "Source",
       fill = "Source"
     ) +
@@ -94,16 +103,23 @@ create_figure <- function(df) {
       date_labels = "%Y"
     ) +
     scale_y_continuous(
-      labels = scales::comma,
+      labels = scales::comma_format(),
       expand = expansion(mult = c(0, 0.05))
     ) +
-    theme_minimal(base_size = 8) +
+    scale_color_manual(values = colors) +
+    scale_fill_manual(values = colors) +
+    theme_minimal(base_size = 9) +
     theme(
-      axis.title = element_text(face = "bold"),
-      plot.title = element_text(face = "bold", size = 10, hjust = 0.5),
-      panel.grid.minor = element_line(size = 0.3, linetype = "dotted"),
-      panel.grid.major = element_line(size = 0.3),
-      axis.text.x = element_text(angle = 45, hjust = 1)
+      axis.title = element_text(face = "bold", color = "#333333"),
+      plot.title = element_text(face = "bold", size = 11, hjust = 0.5, color = "#333333"),
+      panel.grid.minor = element_line(size = 0.25, color = "#E0E0E0"),
+      panel.grid.major = element_line(size = 0.4, color = "#D0D0D0"),
+      axis.text.x = element_text(angle = 45, hjust = 1, color = "#333333"),
+      axis.text.y = element_text(color = "#333333"),
+      legend.position = "bottom",
+      legend.title = element_text(face = "bold"),
+      panel.background = element_rect(fill = "#FAFAFA", color = NA),
+      plot.background = element_rect(fill = "white", color = NA)
     )
   return(p)
 }

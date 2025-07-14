@@ -17,8 +17,8 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.platform import platform_detector
 from utils.dependency_checker import DependencyChecker
+from utils.platform import platform_detector
 
 
 class EnvironmentSetup:
@@ -135,16 +135,16 @@ class EnvironmentSetup:
         """Check system dependencies and provide guidance."""
         if not self.check_system_deps:
             return True
-            
+
         self.log("Checking system dependencies...", "STEP")
-        
+
         # Check all dependencies
         self.dependency_checker.check_all_dependencies()
-        
+
         # Get missing required dependencies
         missing_required = self.dependency_checker.get_missing_required_dependencies()
         missing_optional = self.dependency_checker.get_missing_optional_dependencies()
-        
+
         if missing_required:
             self.log("Missing required system dependencies detected", "WARNING")
             print()
@@ -154,7 +154,7 @@ class EnvironmentSetup:
             return False
         else:
             self.log("All required system dependencies found")
-            
+
             if missing_optional and self.verbose:
                 print()
                 self.log("Some optional dependencies are missing:", "WARNING")
@@ -162,7 +162,7 @@ class EnvironmentSetup:
                     print(f"  • {dep.name} - {dep.description}")
                 print("  Use 'make check-deps' for detailed installation instructions")
                 print()
-            
+
         return True
 
     def validate_environment(self) -> bool:
@@ -200,12 +200,12 @@ class EnvironmentSetup:
         print("  📚 Run 'make help' to see all available commands")
         print("  🔧 Run 'make check-deps' to verify system dependencies")
         print()
-        
+
         # Check if we have missing dependencies to show appropriate guidance
         if self.check_system_deps and hasattr(self, 'dependency_checker'):
             missing_required = self.dependency_checker.get_missing_required_dependencies()
             missing_optional = self.dependency_checker.get_missing_optional_dependencies()
-            
+
             if missing_required:
                 print("⚠️  Some required dependencies are missing. Check them with:")
                 print("   make check-deps")
@@ -217,7 +217,7 @@ class EnvironmentSetup:
         else:
             print("💡 Note: System dependencies (LaTeX, Node.js, R) may be required")
             print("   Run 'make check-deps' to verify your system is ready")
-        
+
         print()
         print(f"🌐 Platform: {self.platform.platform}")
         print(f"🐍 Python: {self.platform.python_cmd}")
@@ -306,9 +306,9 @@ def main():
             from utils.dependency_checker import print_dependency_report
             print_dependency_report(verbose=args.verbose)
             return 0
-        
+
         setup = EnvironmentSetup(
-            reinstall=args.reinstall, 
+            reinstall=args.reinstall,
             verbose=args.verbose,
             check_system_deps=not args.no_check_system_deps
         )

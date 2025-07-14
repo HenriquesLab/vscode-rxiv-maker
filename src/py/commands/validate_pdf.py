@@ -23,26 +23,26 @@ def main():
     parser.add_argument("--pdf-path", help="Path to PDF file (optional)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--detailed", "-d", action="store_true", help="Detailed output with statistics")
-    
+
     args = parser.parse_args()
-    
+
     try:
         # Create validator
         validator = PDFValidator(args.manuscript_path, args.pdf_path)
-        
+
         # Run validation
         result = validator.validate()
-        
+
         # Display results
         if args.detailed:
             print(f"\nPDF Validation Results for {args.manuscript_path}")
             print("=" * 60)
-        
+
         # Count issues by level
         error_count = sum(1 for e in result.errors if e.level == ValidationLevel.ERROR)
         warning_count = sum(1 for e in result.errors if e.level == ValidationLevel.WARNING)
         success_count = sum(1 for e in result.errors if e.level == ValidationLevel.SUCCESS)
-        
+
         # Print errors and warnings
         if result.errors:
             for error in result.errors:
@@ -54,7 +54,7 @@ def main():
                     print(f"✅ SUCCESS: {error.message}")
                 elif error.level == ValidationLevel.INFO:
                     print(f"ℹ️  INFO: {error.message}")
-                
+
                 if args.verbose:
                     if error.context:
                         print(f"   Context: {error.context}")
@@ -65,7 +65,7 @@ def main():
                     if error.line_number:
                         print(f"   Line: {error.line_number}")
                     print()
-        
+
         # Print statistics if detailed mode
         if args.detailed and result.metadata:
             print("\n📊 PDF Statistics:")
@@ -89,17 +89,17 @@ def main():
                     print(f"📖 Section References: {value}")
                 elif key.startswith("avg_") or key.startswith("min_") or key.startswith("max_"):
                     print(f"📏 {key.replace('_', ' ').title()}: {value:.0f}")
-        
+
         # Summary
         if args.detailed:
             print("\n📋 Summary:")
             print(f"   Errors: {error_count}")
             print(f"   Warnings: {warning_count}")
             print(f"   Success: {success_count}")
-        
+
         # Exit with appropriate code
         return 1 if error_count > 0 else 0
-        
+
     except Exception as e:
         print(f"❌ PDF validation failed: {e}")
         if args.verbose:

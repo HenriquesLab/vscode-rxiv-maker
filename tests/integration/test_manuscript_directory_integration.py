@@ -69,7 +69,7 @@ Our methodology builds on established practices @smith2023.
 
 We collected data from multiple sources as shown in @fig:data_overview.
 
-![Data Overview](FIGURES/Figure_1/Figure_1.png){#fig:data_overview width="0.8"}
+![Data Overview](FIGURES/Figure__example/Figure__example.png){#fig:data_overview width="0.8"}
 
 ## Results
 
@@ -114,11 +114,11 @@ This work demonstrates successful custom manuscript directory handling.
         bib_file.write_text(bib_content)
 
         # Create a sample figure directory and placeholder image
-        figure1_dir = figures_dir / "Figure_1"
+        figure1_dir = figures_dir / "Figure__example"
         figure1_dir.mkdir()
 
         # Create a placeholder image file (simulate PNG content)
-        figure1_file = figure1_dir / "Figure_1.png"
+        figure1_file = figure1_dir / "Figure__example.png"
         figure1_file.write_text("fake_png_content")
 
         # Create output directory

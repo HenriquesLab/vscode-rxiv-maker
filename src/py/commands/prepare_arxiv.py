@@ -17,13 +17,15 @@ import zipfile
 from pathlib import Path
 
 
-def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
+def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path=None):
     """Prepare arXiv submission package.
 
     Args:
         output_dir (str): Path to the Rxiv-Maker output directory
         arxiv_dir (str): Path where arXiv submission files will be created
                         If None, defaults to {output_dir}/arxiv_submission
+        manuscript_path (str): Path to the source manuscript directory
+                              (for context and naming)
     """
     output_path = Path(output_dir)
 
@@ -38,15 +40,40 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
         shutil.rmtree(arxiv_path)
     arxiv_path.mkdir(parents=True)
 
-    print(f"Preparing arXiv submission package in {arxiv_path}")
+    manuscript_name = Path(manuscript_path).name if manuscript_path else "manuscript"
+    print(f"Preparing arXiv submission package for '{manuscript_name}' in {arxiv_path}")
 
     # Copy the unified style file (already arXiv-compatible)
-    style_source = Path("src/tex/style/rxiv_maker_style.cls")
-    if not style_source.exists():
-        raise FileNotFoundError(f"Style file not found: {style_source}")
+    # Try multiple possible locations for the style file
+    style_candidates = [
+        Path("src/tex/style/rxiv_maker_style.cls"),  # From repository root
+        (
+            Path(__file__).parent.parent.parent
+            / "tex/style/rxiv_maker_style.cls"
+        ),  # Relative to script
+        (
+            Path(__file__).parent.parent.parent.parent
+            / "src/tex/style/rxiv_maker_style.cls"
+        ),  # Alternative relative
+        output_path / "rxiv_maker_style.cls",  # Already in output directory
+    ]
+
+    style_source = None
+    for candidate in style_candidates:
+        if candidate.exists():
+            style_source = candidate
+            break
+
+    if style_source is None:
+        raise FileNotFoundError(
+            "Style file not found. Searched locations:\n" +
+            "\n".join(f"  - {candidate}" for candidate in style_candidates) +
+            "\nEnsure the script is run from the repository root or that "
+            "the style file exists in the output directory."
+        )
 
     shutil.copy2(style_source, arxiv_path / "rxiv_maker_style.cls")
-    print("✓ Copied unified arXiv-compatible style file")
+    print(f"✓ Copied unified arXiv-compatible style file from {style_source}")
 
     # Determine the main manuscript file name by looking for .tex files
     tex_files = list(output_path.glob("*.tex"))
@@ -59,7 +86,12 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
             break
 
     if not main_tex_file:
-        raise FileNotFoundError("No main LaTeX file found in output directory")
+        output_files = list(output_path.glob("*"))
+        raise FileNotFoundError(
+            f"No main LaTeX file found in output directory: {output_path}\n"
+            f"Found files: {[f.name for f in output_files]}\n"
+            f"Expected: A .tex file (not Supplementary.tex) from manuscript compilation"
+        )
 
     # Base name without extension for .bbl file
     main_name = main_tex_file.replace(".tex", "")
@@ -128,7 +160,7 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
     print(f"\n📦 arXiv package prepared in {arxiv_path}")
 
     # Verify all required files are present
-    package_valid = verify_package(arxiv_path)
+    package_valid = verify_package(arxiv_path, manuscript_path)
 
     if not package_valid:
         print("⚠️  Package verification failed - some files are missing")
@@ -151,9 +183,10 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
     return arxiv_path
 
 
-def verify_package(arxiv_path):
+def verify_package(arxiv_path, manuscript_path=None):
     """Verify that the arXiv package contains all necessary files."""
-    print("\n🔍 Verifying package contents...")
+    manuscript_name = Path(manuscript_path).name if manuscript_path else "manuscript"
+    print(f"\n🔍 Verifying package contents for '{manuscript_name}'...")
 
     # Find the main manuscript file dynamically
     tex_files = list(arxiv_path.glob("*.tex"))
@@ -175,12 +208,28 @@ def verify_package(arxiv_path):
         "03_REFERENCES.bib",
     ]
 
-    required_figures = [
-        "Figures/Figure_1/Figure_1.png",
-        "Figures/Figure_2/Figure_2.png",
-        "Figures/SFigure_1/SFigure_1.png",
-        "Figures/SFigure_2/SFigure_2.png",
-    ]
+    # Dynamic figure detection - scan for actual figure directories
+    required_figures = []
+    figures_dir = arxiv_path / "Figures"
+    if figures_dir.exists():
+        # Find all figure directories and check for PNG/PDF files
+        for figure_dir in figures_dir.iterdir():
+            if figure_dir.is_dir() and not figure_dir.name.startswith("."):
+                # Look for PNG files first (preferred by arXiv)
+                png_files = list(figure_dir.glob("*.png"))
+                pdf_files = list(figure_dir.glob("*.pdf"))
+
+                if png_files:
+                    # Use first PNG file found
+                    required_figures.append(f"Figures/{figure_dir.name}/{png_files[0].name}")
+                elif pdf_files:
+                    # Fallback to PDF if no PNG
+                    required_figures.append(f"Figures/{figure_dir.name}/{pdf_files[0].name}")
+                else:
+                    # Directory exists but no suitable figure files
+                    required_figures.append(
+                        f"Figures/{figure_dir.name}/<missing figure files>"
+                    )
 
     missing_files = []
 
@@ -203,10 +252,16 @@ def verify_package(arxiv_path):
             missing_files.append(figure_path)
 
     if missing_files:
-        print(f"\n⚠ Warning: {len(missing_files)} files are missing!")
+        print(
+            f"\n⚠ Warning: {len(missing_files)} files are missing from "
+            f"'{manuscript_name}' package!"
+        )
         print("The package may not compile correctly on arXiv.")
+        print("Missing files:")
+        for missing in missing_files:
+            print(f"  - {missing}")
     else:
-        print("\n✅ All required files present!")
+        print(f"\n✅ All required files present for '{manuscript_name}' package!")
 
     return len(missing_files) == 0
 
@@ -330,8 +385,13 @@ def test_arxiv_compilation(arxiv_path):
         os.chdir(original_cwd)
 
 
-def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip"):
+def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip", manuscript_path=None):
     """Create a ZIP file for arXiv submission."""
+    # Use manuscript-aware naming if manuscript path is provided
+    if manuscript_path and zip_filename == "for_arxiv.zip":
+        manuscript_name = Path(manuscript_path).name
+        zip_filename = f"{manuscript_name}_for_arxiv.zip"
+
     zip_path = Path(zip_filename).resolve()
 
     print(f"\n📁 Creating ZIP package: {zip_path}")
@@ -364,6 +424,11 @@ def main():
         help="Path for arXiv submission files (default: {output_dir}/arxiv_submission)",
     )
     parser.add_argument(
+        "--manuscript-path",
+        default=None,
+        help="Path to source manuscript directory (for context and smart naming)",
+    )
+    parser.add_argument(
         "--zip", action="store_true", help="Create ZIP file for submission"
     )
     parser.add_argument(
@@ -376,21 +441,25 @@ def main():
 
     try:
         # Prepare the package
-        arxiv_path = prepare_arxiv_package(args.output_dir, args.arxiv_dir)
+        arxiv_path = prepare_arxiv_package(
+            args.output_dir, args.arxiv_dir, args.manuscript_path
+        )
 
         # Create ZIP if requested (only if compilation was successful)
         if args.zip:
             # Check if compilation test was run and passed
             if hasattr(prepare_arxiv_package, "compilation_success"):
                 if prepare_arxiv_package.compilation_success:
-                    create_zip_package(arxiv_path, args.zip_filename)
+                    create_zip_package(
+                        arxiv_path, args.zip_filename, args.manuscript_path
+                    )
                 else:
                     print("⚠️  Skipping ZIP creation due to compilation test failure")
                     print("   Fix the LaTeX errors and try again")
                     return 1
             else:
                 # If no test was run, create ZIP anyway (backward compatibility)
-                create_zip_package(arxiv_path, args.zip_filename)
+                create_zip_package(arxiv_path, args.zip_filename, args.manuscript_path)
 
     except Exception as e:
         print(f"Error: {e}")

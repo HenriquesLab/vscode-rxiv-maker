@@ -140,21 +140,21 @@ class FigureGenerator:
                 # Add Puppeteer configuration with proper browser executable and emoji support
                 puppeteer_config = {
                     "args": [
-                        "--no-sandbox", 
+                        "--no-sandbox",
                         "--disable-dev-shm-usage",
                         "--font-render-hinting=none",
                         "--disable-font-subpixel-positioning",
                         "--disable-features=VizDisplayCompositor"
                     ]
                 }
-                
+
                 # Detect if we're in Docker and set the appropriate browser path
                 import os
                 if os.path.exists("/.dockerenv"):  # Docker environment
                     # Check architecture and set appropriate browser path
                     import subprocess
                     try:
-                        arch_result = subprocess.run(["dpkg", "--print-architecture"], 
+                        arch_result = subprocess.run(["dpkg", "--print-architecture"],
                                                     capture_output=True, text=True)
                         if arch_result.returncode == 0:
                             arch = arch_result.stdout.strip()
@@ -177,7 +177,7 @@ class FigureGenerator:
                                     try:
                                         # Download Chrome using Puppeteer
                                         download_result = subprocess.run([
-                                            "node", "-e", 
+                                            "node", "-e",
                                             "const puppeteer = require('puppeteer'); " +
                                             "(async () => { await puppeteer.launch(); })()"
                                         ], capture_output=True, text=True, timeout=60)
@@ -191,7 +191,7 @@ class FigureGenerator:
                                         pass
                     except:
                         pass
-                
+
                 PUPPETEER_CONFIG_PATH.write_text(json.dumps(puppeteer_config))
                 cmd_parts.extend(["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)])
 
@@ -258,8 +258,8 @@ class FigureGenerator:
                 if result.stderr:
                     print(f"     {result.stderr}")
                 return
-            
-            print(f"     Debug: Script executed successfully, now checking for files...")
+
+            print("     Debug: Script executed successfully, now checking for files...")
 
             # Check for generated files by scanning the figure subdirectory
             # Add a small delay to ensure files are fully written in CI environments
@@ -278,7 +278,7 @@ class FigureGenerator:
                 dir_contents = list(figure_dir.iterdir())
                 print(f"     Debug: Directory contents: {dir_contents}")
             else:
-                print(f"     Debug: Directory does not exist!")
+                print("     Debug: Directory does not exist!")
 
             current_files = set()
             for ext in ["png", "pdf", "svg", "eps"]:

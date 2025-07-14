@@ -29,11 +29,11 @@ class BibliographyChecksumManager:
         self.manuscript_name = self.manuscript_path.name
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Cache file specific to this manuscript
         self.checksum_file = self.cache_dir / f"bibliography_checksum_{self.manuscript_name}.json"
         self.bibliography_file = self.manuscript_path / "03_REFERENCES.bib"
-        
+
         # Load existing checksum
         self._checksum_data: Dict[str, any] = self._load_checksum()
 
@@ -42,13 +42,13 @@ class BibliographyChecksumManager:
         if not self.checksum_file.exists():
             logger.debug(f"No existing bibliography checksum file found at {self.checksum_file}")
             return {}
-        
+
         try:
-            with open(self.checksum_file, 'r') as f:
+            with open(self.checksum_file) as f:
                 checksum_data = json.load(f)
             logger.debug(f"Loaded bibliography checksum from {self.checksum_file}")
             return checksum_data
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             logger.warning(f"Failed to load bibliography checksum from {self.checksum_file}: {e}")
             return {}
 
@@ -58,7 +58,7 @@ class BibliographyChecksumManager:
             with open(self.checksum_file, 'w') as f:
                 json.dump(self._checksum_data, f, indent=2, sort_keys=True)
             logger.debug(f"Saved bibliography checksum to {self.checksum_file}")
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to save bibliography checksum to {self.checksum_file}: {e}")
 
     def _calculate_file_checksum(self, file_path: Path) -> str:
@@ -76,7 +76,7 @@ class BibliographyChecksumManager:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hasher.update(chunk)
             return hasher.hexdigest()
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to calculate checksum for {file_path}: {e}")
             return ""
 
@@ -90,10 +90,10 @@ class BibliographyChecksumManager:
             Dictionary mapping DOI strings to their context for validation
         """
         import re
-        
+
         # Pattern to match DOI fields in BibTeX entries
         doi_pattern = re.compile(r'doi\s*=\s*[{"\'](.*?)[}"\']', re.IGNORECASE)
-        
+
         doi_entries = {}
         for match in doi_pattern.finditer(content):
             doi = match.group(1).strip()
@@ -103,7 +103,7 @@ class BibliographyChecksumManager:
                 end = min(len(content), match.end() + 200)
                 context = content[start:end]
                 doi_entries[doi] = context
-        
+
         return doi_entries
 
     def bibliography_has_changed(self) -> Tuple[bool, Optional[str]]:
@@ -115,16 +115,16 @@ class BibliographyChecksumManager:
         if not self.bibliography_file.exists():
             logger.debug("Bibliography file does not exist")
             return False, None
-        
+
         current_checksum = self._calculate_file_checksum(self.bibliography_file)
         if not current_checksum:
             logger.warning("Failed to calculate checksum for bibliography file")
             return True, None  # Assume changed if we can't calculate checksum
-        
+
         cached_checksum = self._checksum_data.get("bibliography_checksum")
-        
+
         if cached_checksum != current_checksum:
-            logger.debug(f"Bibliography file changed")
+            logger.debug("Bibliography file changed")
             if cached_checksum:
                 logger.debug(f"  Old checksum: {cached_checksum}")
                 logger.debug(f"  New checksum: {current_checksum}")
@@ -143,19 +143,19 @@ class BibliographyChecksumManager:
         """
         if not self.bibliography_file.exists():
             return False, None
-        
+
         try:
-            with open(self.bibliography_file, 'r', encoding='utf-8') as f:
+            with open(self.bibliography_file, encoding='utf-8') as f:
                 content = f.read()
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to read bibliography file: {e}")
             return True, None
-        
+
         current_doi_entries = self._extract_doi_entries(content)
         cached_doi_entries = self._checksum_data.get("doi_entries", {})
-        
+
         if current_doi_entries != cached_doi_entries:
-            logger.debug(f"DOI entries changed")
+            logger.debug("DOI entries changed")
             logger.debug(f"  Current DOIs: {list(current_doi_entries.keys())}")
             logger.debug(f"  Cached DOIs: {list(cached_doi_entries.keys())}")
             return True, current_doi_entries
@@ -171,17 +171,17 @@ class BibliographyChecksumManager:
         """
         # Check if bibliography file has changed
         bib_changed, _ = self.bibliography_has_changed()
-        
+
         # Check if DOI entries have changed
         doi_changed, _ = self.doi_entries_have_changed()
-        
+
         needs_validation = bib_changed or doi_changed
-        
+
         if needs_validation:
             logger.info("Bibliography needs DOI validation")
         else:
             logger.info("Bibliography DOI validation is up to date")
-        
+
         return needs_validation
 
     def update_checksum(self, validation_completed: bool = True) -> None:
@@ -193,28 +193,28 @@ class BibliographyChecksumManager:
         if not self.bibliography_file.exists():
             logger.warning("Bibliography file not found for checksum update")
             return
-        
+
         current_checksum = self._calculate_file_checksum(self.bibliography_file)
         if not current_checksum:
             logger.error("Failed to calculate checksum for bibliography file")
             return
-        
+
         try:
-            with open(self.bibliography_file, 'r', encoding='utf-8') as f:
+            with open(self.bibliography_file, encoding='utf-8') as f:
                 content = f.read()
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to read bibliography file: {e}")
             return
-        
+
         current_doi_entries = self._extract_doi_entries(content)
-        
+
         self._checksum_data.update({
             "bibliography_checksum": current_checksum,
             "doi_entries": current_doi_entries,
             "last_validation_completed": validation_completed,
             "last_validation_timestamp": int(time.time()) if validation_completed else None
         })
-        
+
         self._save_checksum()
         logger.info(f"Updated bibliography checksum for {len(current_doi_entries)} DOI entries")
 

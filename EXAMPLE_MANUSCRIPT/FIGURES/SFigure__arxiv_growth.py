@@ -25,24 +25,29 @@ import pandas as pd
 if "--show" not in sys.argv:
     matplotlib.use("Agg")  # Use non-interactive backend for headless operation
 
-# Set up publication-quality plotting parameters for column format
+# Set up modern publication-quality plotting parameters
 plt.rcParams.update(
     {
-        "font.size": 8,
+        "font.size": 9,
         "font.family": "sans-serif",
-        "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
-        "axes.linewidth": 0.6,
+        "font.sans-serif": ["Helvetica", "Arial", "DejaVu Sans"],
+        "axes.linewidth": 0.8,
         "axes.spines.top": False,
         "axes.spines.right": False,
-        "xtick.major.size": 3,
-        "xtick.minor.size": 1.5,
-        "ytick.major.size": 3,
-        "ytick.minor.size": 1.5,
+        "axes.edgecolor": "#333333",
+        "xtick.major.size": 4,
+        "xtick.minor.size": 2,
+        "ytick.major.size": 4,
+        "ytick.minor.size": 2,
+        "xtick.color": "#333333",
+        "ytick.color": "#333333",
         "legend.frameon": False,
         "figure.dpi": 300,
         "savefig.dpi": 300,
         "savefig.bbox": "tight",
         "savefig.pad_inches": 0.05,
+        "text.color": "#333333",
+        "axes.labelcolor": "#333333",
     }
 )
 
@@ -71,20 +76,26 @@ def create_figure():
     # Load data
     df = load_and_process_data()
 
-    # Create figure and axis - optimized for single column format
+    # Create figure and axis with modern styling
     fig, ax = plt.subplots(figsize=(3.5, 4))
+    fig.patch.set_facecolor('white')
 
-    # Plot the data with thinner line for compact format
+    # Use a modern colour palette
+    primary_color = "#1f77b4"  # Modern blue
+    secondary_color = "#aec7e8"  # Light blue for fill
+
+    # Plot the data with modern styling
     ax.plot(
         df["date"],
         df["submissions"],
-        linewidth=1.2,
-        color="#2E86AB",  # Professional blue color
-        alpha=0.8,
+        linewidth=1.5,
+        color=primary_color,
+        alpha=0.9,
+        zorder=3
     )
 
-    # Fill area under the curve for visual appeal
-    ax.fill_between(df["date"], df["submissions"], alpha=0.2, color="#2E86AB")
+    # Fill area under the curve with gradient-like effect
+    ax.fill_between(df["date"], df["submissions"], alpha=0.3, color=secondary_color, zorder=1)
 
     # Customize axes with smaller fonts for column format
     ax.set_xlabel("Year", fontsize=9, fontweight="bold")
@@ -110,9 +121,12 @@ def create_figure():
     # Set y-axis to start from 0
     ax.set_ylim(bottom=0)
 
-    # Add grid for better readability with lighter appearance
-    ax.grid(True, alpha=0.2, linestyle="-", linewidth=0.3)
+    # Add modern grid styling
+    ax.grid(True, alpha=0.3, linestyle="-", linewidth=0.5, color="#E0E0E0", zorder=0)
     ax.set_axisbelow(True)
+    
+    # Set background color for better contrast
+    ax.set_facecolor('#FAFAFA')
 
     # Rotate x-axis labels for better readability
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha="center")

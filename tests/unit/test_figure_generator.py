@@ -549,13 +549,13 @@ Also refer to @fig:workflow and @fig:results.
 
     def test_figure_output_path_construction(self):
         """Test figure output path construction."""
-        base_name = "SFigure_3"
+        base_name = "SFigure__example"
         output_formats = ["png", "svg", "pdf"]
         
         expected_paths = [
-            f"SFigure_3/{base_name}.png",
-            f"SFigure_3/{base_name}.svg", 
-            f"SFigure_3/{base_name}.pdf"
+            f"SFigure__example/{base_name}.png",
+            f"SFigure__example/{base_name}.svg", 
+            f"SFigure__example/{base_name}.pdf"
         ]
         
         generated_paths = [f"{base_name}/{base_name}.{fmt}" for fmt in output_formats]
