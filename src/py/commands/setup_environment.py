@@ -24,7 +24,12 @@ from utils.platform import platform_detector
 class EnvironmentSetup:
     """Handle environment setup operations."""
 
-    def __init__(self, reinstall: bool = False, verbose: bool = False, check_system_deps: bool = True):
+    def __init__(
+        self,
+        reinstall: bool = False,
+        verbose: bool = False,
+        check_system_deps: bool = True,
+    ):
         """Initialize environment setup.
 
         Args:
@@ -150,7 +155,10 @@ class EnvironmentSetup:
             print()
             self.dependency_checker.print_dependency_report()
             print()
-            self.log("Please install missing required dependencies before continuing", "ERROR")
+            self.log(
+                "Please install missing required dependencies before continuing",
+                "ERROR",
+            )
             return False
         else:
             self.log("All required system dependencies found")
@@ -202,15 +210,21 @@ class EnvironmentSetup:
         print()
 
         # Check if we have missing dependencies to show appropriate guidance
-        if self.check_system_deps and hasattr(self, 'dependency_checker'):
-            missing_required = self.dependency_checker.get_missing_required_dependencies()
-            missing_optional = self.dependency_checker.get_missing_optional_dependencies()
+        if self.check_system_deps and hasattr(self, "dependency_checker"):
+            missing_required = (
+                self.dependency_checker.get_missing_required_dependencies()
+            )
+            missing_optional = (
+                self.dependency_checker.get_missing_optional_dependencies()
+            )
 
             if missing_required:
                 print("⚠️  Some required dependencies are missing. Check them with:")
                 print("   make check-deps")
             elif missing_optional:
-                print("💡 Some optional dependencies are missing. For full functionality:")
+                print(
+                    "💡 Some optional dependencies are missing. For full functionality:"
+                )
                 print("   make check-deps")
             else:
                 print("✅ All system dependencies are available!")
@@ -241,7 +255,9 @@ class EnvironmentSetup:
                 print()
                 self.log("System dependency check failed. You can:", "WARNING")
                 print("  • Install missing dependencies and run 'make setup' again")
-                print("  • Skip dependency checking with 'python src/py/commands/setup_environment.py --no-check-system-deps'")
+                print(
+                    "  • Skip dependency checking with 'python src/py/commands/setup_environment.py --no-check-system-deps'"
+                )
                 print("  • Use Docker mode instead: 'make pdf RXIV_ENGINE=DOCKER'")
                 return False
 
@@ -303,13 +319,14 @@ def main():
         # Handle check-deps-only mode
         if args.check_deps_only:
             from utils.dependency_checker import print_dependency_report
+
             print_dependency_report(verbose=args.verbose)
             return 0
 
         setup = EnvironmentSetup(
             reinstall=args.reinstall,
             verbose=args.verbose,
-            check_system_deps=not args.no_check_system_deps
+            check_system_deps=not args.no_check_system_deps,
         )
 
         success = setup.run_setup()

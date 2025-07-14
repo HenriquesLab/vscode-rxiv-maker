@@ -44,7 +44,7 @@ To update your manuscript:
    - `FIGURES/` - Figure scripts and data
 
 ## Editing Your Manuscript
-You can edit your manuscript files locally by downloading them from Colab or directly working on them in your Google Drive. The reccomended way to edit is to use a text editor like VSCode, which supports Markdown and LaTeX syntax.  
+You can edit your manuscript files locally by downloading them from Colab or directly working on them in your Google Drive. The recommended way to edit is to use a text editor like VSCode, which supports Markdown and LaTeX syntax.  
 Once you are happy with your changes, upload the updated files back to Colab or Google Drive and run the notebook cells to compile the LaTeX files and generate a Rxiv PDF.
 
 ## Benefits of Using Colab

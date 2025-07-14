@@ -180,32 +180,32 @@ cd "$PROJECT_ROOT"
 # Function to clean up resources
 cleanup_resources() {
     print_info "Cleaning up Docker resources..."
-    
+
     # Stop and remove containers
     if docker ps -a --format '{{.Names}}' | grep -q "$DOCKER_CONTAINER_NAME"; then
         print_info "Stopping and removing container: $DOCKER_CONTAINER_NAME"
         docker stop "$DOCKER_CONTAINER_NAME" 2>/dev/null || true
         docker rm "$DOCKER_CONTAINER_NAME" 2>/dev/null || true
     fi
-    
+
     # Remove test image
     if docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "$DOCKER_TEST_IMAGE"; then
         print_info "Removing test image: $DOCKER_TEST_IMAGE"
         docker rmi "$DOCKER_TEST_IMAGE" 2>/dev/null || true
     fi
-    
+
     # Clean up volumes
     if docker volume ls --format '{{.Name}}' | grep -q "rxiv-maker-test"; then
         print_info "Removing test volumes..."
         docker volume ls --format '{{.Name}}' | grep "rxiv-maker-test" | xargs -r docker volume rm 2>/dev/null || true
     fi
-    
+
     # Docker system prune
     if [[ "$NO_CACHE" == true ]]; then
         print_info "Pruning Docker system (no cache mode)..."
         docker system prune -f
     fi
-    
+
     print_success "Cleanup completed"
 }
 
@@ -218,7 +218,7 @@ fi
 # Function to determine manuscript path (mirrors GitHub Actions logic)
 determine_manuscript_path() {
     local manuscript_path=""
-    
+
     # 1. Command line argument takes precedence
     if [[ -n "$MANUSCRIPT_PATH" ]]; then
         manuscript_path="$MANUSCRIPT_PATH"
@@ -236,7 +236,7 @@ determine_manuscript_path() {
         manuscript_path="$DEFAULT_MANUSCRIPT"
         print_info "Using default manuscript path: $manuscript_path" >&2
     fi
-    
+
     # Validate manuscript directory exists
     if [[ ! -d "$manuscript_path" ]]; then
         print_error "Manuscript directory not found: $manuscript_path" >&2
@@ -244,7 +244,7 @@ determine_manuscript_path() {
         ls -la . | grep '^d' | sed 's/^/  /' >&2
         exit 1
     fi
-    
+
     echo "$manuscript_path"
 }
 
@@ -269,7 +269,7 @@ setup_base_image() {
 # Function to build test image
 build_test_image() {
     print_step "Building test Docker image: $DOCKER_TEST_IMAGE"
-    
+
     # Build context is project root
     docker build \
         -f src/docker/test-dockerfile \
@@ -283,9 +283,9 @@ build_test_image() {
 # Function to run Docker container (mirrors GitHub Actions steps)
 run_test_container() {
     local manuscript_path="$1"
-    
+
     print_step "Running test container with manuscript: $manuscript_path"
-    
+
     # Prepare environment variables
     local env_args=(
         -e "MANUSCRIPT_PATH=$manuscript_path"
@@ -293,7 +293,7 @@ run_test_container() {
         -e "TEXMFVAR=/tmp/texmf-var"
         -e "R_LIBS_USER=/home/rxivmaker/.R/library"
     )
-    
+
     # Add debug environment if enabled
     if [[ "$DEBUG" == true ]]; then
         env_args+=(
@@ -301,14 +301,14 @@ run_test_container() {
             -e "VERBOSE=true"
         )
     fi
-    
+
     # Volume mounts
     local volume_args=(
         -v "$PROJECT_ROOT:/workspace"
         -v "rxiv-maker-test-cache:/home/rxivmaker/.cache"
         -v "rxiv-maker-test-r-libs:/home/rxivmaker/.R/library"
     )
-    
+
     # Run container
     local docker_args=(
         --name "$DOCKER_CONTAINER_NAME"
@@ -318,27 +318,27 @@ run_test_container() {
         "${env_args[@]}"
         "${volume_args[@]}"
     )
-    
+
     # Add interactive mode if requested
     if [[ "$INTERACTIVE" == true ]]; then
         docker_args+=(-it)
     fi
-    
+
     # Execute the container
     print_info "Docker command: docker run ${docker_args[*]} $DOCKER_TEST_IMAGE"
-    
+
     if docker run "${docker_args[@]}" "$DOCKER_TEST_IMAGE" /usr/local/bin/test-script.sh; then
         print_success "Docker test completed successfully!"
         return 0
     else
         local exit_code=$?
         print_error "Docker test failed with exit code: $exit_code"
-        
+
         if [[ "$INTERACTIVE" == true ]]; then
             print_info "Dropping into interactive shell for debugging..."
             docker run "${docker_args[@]}" -it "$DOCKER_TEST_IMAGE" /bin/bash
         fi
-        
+
         return $exit_code
     fi
 }
@@ -347,9 +347,9 @@ run_test_container() {
 validate_results() {
     local manuscript_path="$1"
     local expected_pdf="output/${manuscript_path}.pdf"
-    
+
     print_step "Validating results..."
-    
+
     # Check if PDF was generated
     if [[ -f "$expected_pdf" ]]; then
         print_success "PDF generated successfully: $expected_pdf"
@@ -357,48 +357,48 @@ validate_results() {
         print_info "PDF info: $(file "$expected_pdf")"
     else
         print_error "PDF not found at expected location: $expected_pdf"
-        
+
         # Search for any PDF files
         print_info "Searching for PDF files..."
         find . -name "*.pdf" -type f 2>/dev/null | head -10 | sed 's/^/  /' || print_info "No PDF files found"
-        
+
         return 1
     fi
-    
+
     # Check output directory
     if [[ -d "output" ]]; then
         print_info "Output directory contents:"
         ls -la output/ | sed 's/^/  /'
     fi
-    
+
     return 0
 }
 
 # Function to collect debug information
 collect_debug_info() {
     print_step "Collecting debug information..."
-    
+
     echo "=== Docker Environment ==="
     docker --version
     docker info | head -20
-    
+
     echo "=== System Information ==="
     uname -a
     df -h .
-    
+
     echo "=== Project Structure ==="
     ls -la
-    
+
     echo "=== Output Directory ==="
     if [[ -d "output" ]]; then
         find output/ -type f | head -20
     else
         echo "Output directory not found"
     fi
-    
+
     echo "=== Docker Images ==="
     docker images | grep -E "(rxiv-maker|henriqueslab)"
-    
+
     echo "=== Docker Containers ==="
     docker ps -a | grep "rxiv-maker"
 }
@@ -408,11 +408,11 @@ main() {
     print_info "=================================================="
     print_info "🐳 Rxiv-Maker Local Docker Testing"
     print_info "=================================================="
-    
+
     # Determine manuscript path
     local manuscript_path
     manuscript_path=$(determine_manuscript_path)
-    
+
     print_info "Configuration:"
     echo "  - Manuscript Path: $manuscript_path"
     echo "  - Base Image: $DOCKER_BASE_IMAGE"
@@ -424,16 +424,16 @@ main() {
     echo "  - Force Figures: $FORCE_FIGURES"
     echo "  - Use Compose: $USE_COMPOSE"
     echo ""
-    
+
     # Cleanup previous runs
     cleanup_resources
-    
+
     # Setup base image
     setup_base_image
-    
+
     # Build test image
     build_test_image
-    
+
     # Run test container
     if run_test_container "$manuscript_path"; then
         # Validate results
@@ -451,7 +451,7 @@ main() {
         fi
         exit 1
     fi
-    
+
     print_info "=================================================="
     print_success "🎉 Local Docker testing completed successfully!"
     print_info "=================================================="

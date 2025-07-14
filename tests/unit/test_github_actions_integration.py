@@ -7,11 +7,10 @@ handling, caching strategies, and CI/CD pipeline behavior.
 import os
 import tempfile
 import unittest
-import yaml
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
-import pytest
+import yaml
 
 
 class TestGitHubActionsWorkflow(unittest.TestCase):
@@ -20,7 +19,9 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
     def setUp(self):
         """Set up test environment."""
         self.temp_dir = tempfile.mkdtemp()
-        self.workflow_file = Path(__file__).parent.parent.parent / ".github/workflows/build-pdf.yml"
+        self.workflow_file = (
+            Path(__file__).parent.parent.parent / ".github/workflows/build-pdf.yml"
+        )
 
     def test_workflow_file_exists(self):
         """Test that the GitHub Actions workflow file exists."""
@@ -32,31 +33,31 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
             self.skipTest("Workflow file not found")
 
         try:
-            with open(self.workflow_file, 'r') as f:
+            with open(self.workflow_file) as f:
                 workflow = yaml.safe_load(f)
         except Exception as e:
             self.skipTest(f"Could not parse workflow YAML: {e}")
 
         # Test basic structure
-        self.assertIn('name', workflow)
+        self.assertIn("name", workflow)
         # Handle YAML parsing edge case where 'on:' becomes True
-        self.assertTrue('on' in workflow or True in workflow)
-        self.assertIn('jobs', workflow)
+        self.assertTrue("on" in workflow or True in workflow)
+        self.assertIn("jobs", workflow)
 
         # Test workflow name
-        self.assertEqual(workflow['name'], 'Build and Release PDF')
+        self.assertEqual(workflow["name"], "Build and Release PDF")
 
         # Test trigger events - handle YAML parsing edge case
-        trigger_section = workflow.get('on') or workflow.get(True)
+        trigger_section = workflow.get("on") or workflow.get(True)
         self.assertIsNotNone(trigger_section, "No trigger section found")
-        
-        self.assertIn('push', trigger_section)
-        self.assertIn('workflow_dispatch', trigger_section)
+
+        self.assertIn("push", trigger_section)
+        self.assertIn("workflow_dispatch", trigger_section)
 
         # Test tag-based trigger (handle different formats)
-        push_triggers = trigger_section['push']
-        if 'tags' in push_triggers:
-            tags = push_triggers['tags']
+        push_triggers = trigger_section["push"]
+        if "tags" in push_triggers:
+            tags = push_triggers["tags"]
             if isinstance(tags, list):
                 self.assertIn("v*", tags)
             else:
@@ -68,87 +69,94 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
             self.skipTest("Workflow file not found")
 
         try:
-            with open(self.workflow_file, 'r') as f:
+            with open(self.workflow_file) as f:
                 workflow = yaml.safe_load(f)
         except Exception as e:
             self.skipTest(f"Could not parse workflow YAML: {e}")
 
         # Test workflow_dispatch structure - handle YAML parsing edge case
-        trigger_section = workflow.get('on') or workflow.get(True)
-        if not trigger_section or 'workflow_dispatch' not in trigger_section:
+        trigger_section = workflow.get("on") or workflow.get(True)
+        if not trigger_section or "workflow_dispatch" not in trigger_section:
             self.skipTest("workflow_dispatch not found in workflow")
-        
-        workflow_dispatch = trigger_section['workflow_dispatch']
-        if 'inputs' not in workflow_dispatch:
-            self.skipTest("inputs not found in workflow_dispatch")
-            
-        dispatch_inputs = workflow_dispatch['inputs']
-        self.assertIn('manuscript_path', dispatch_inputs)
 
-        manuscript_input = dispatch_inputs['manuscript_path']
-        self.assertEqual(manuscript_input['default'], 'MANUSCRIPT')
-        self.assertEqual(manuscript_input['type'], 'string')
-        self.assertFalse(manuscript_input['required'])
+        workflow_dispatch = trigger_section["workflow_dispatch"]
+        if "inputs" not in workflow_dispatch:
+            self.skipTest("inputs not found in workflow_dispatch")
+
+        dispatch_inputs = workflow_dispatch["inputs"]
+        self.assertIn("manuscript_path", dispatch_inputs)
+
+        manuscript_input = dispatch_inputs["manuscript_path"]
+        self.assertEqual(manuscript_input["default"], "MANUSCRIPT")
+        self.assertEqual(manuscript_input["type"], "string")
+        self.assertFalse(manuscript_input["required"])
 
     def test_jobs_configuration(self):
         """Test jobs configuration in the workflow."""
         if not self.workflow_file.exists():
             self.skipTest("Workflow file not found")
 
-        with open(self.workflow_file, 'r') as f:
+        with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        jobs = workflow['jobs']
-        
+        jobs = workflow["jobs"]
+
         # Test job presence
-        self.assertIn('prepare', jobs)
-        self.assertIn('build-pdf', jobs)
+        self.assertIn("prepare", jobs)
+        self.assertIn("build-pdf", jobs)
 
         # Test prepare job
-        prepare_job = jobs['prepare']
-        self.assertEqual(prepare_job['runs-on'], 'ubuntu-latest')
-        self.assertIn('outputs', prepare_job)
-        self.assertIn('manuscript_path', prepare_job['outputs'])
+        prepare_job = jobs["prepare"]
+        self.assertEqual(prepare_job["runs-on"], "ubuntu-latest")
+        self.assertIn("outputs", prepare_job)
+        self.assertIn("manuscript_path", prepare_job["outputs"])
 
         # Test build-pdf job
-        build_job = jobs['build-pdf']
-        self.assertEqual(build_job['runs-on'], 'ubuntu-latest')
-        self.assertIn('needs', build_job)
-        self.assertEqual(build_job['needs'], 'prepare')
+        build_job = jobs["build-pdf"]
+        self.assertEqual(build_job["runs-on"], "ubuntu-latest")
+        self.assertIn("needs", build_job)
+        self.assertEqual(build_job["needs"], "prepare")
 
     def test_docker_container_configuration(self):
         """Test Docker container configuration in build job."""
         if not self.workflow_file.exists():
             self.skipTest("Workflow file not found")
 
-        with open(self.workflow_file, 'r') as f:
+        with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        build_job = workflow['jobs']['build-pdf']
-        container = build_job['container']
+        build_job = workflow["jobs"]["build-pdf"]
+        container = build_job["container"]
 
-        self.assertEqual(container['image'], 'henriqueslab/rxiv-maker-base:latest')
-        self.assertIn('--platform linux/amd64', container['options'])
-        self.assertIn('--user root', container['options'])
+        self.assertEqual(container["image"], "henriqueslab/rxiv-maker-base:latest")
+        self.assertIn("--platform linux/amd64", container["options"])
+        self.assertIn("--user root", container["options"])
 
     def test_caching_strategies(self):
         """Test caching strategies in the workflow."""
         if not self.workflow_file.exists():
             self.skipTest("Workflow file not found")
 
-        with open(self.workflow_file, 'r') as f:
+        with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        build_steps = workflow['jobs']['build-pdf']['steps']
-        cache_steps = [step for step in build_steps if step.get('name', '').startswith('Cache')]
+        build_steps = workflow["jobs"]["build-pdf"]["steps"]
+        cache_steps = [
+            step for step in build_steps if step.get("name", "").startswith("Cache")
+        ]
 
         # Test that we have cache steps
         self.assertGreater(len(cache_steps), 0)
 
         # Test specific cache configurations
-        cache_names = [step['name'] for step in cache_steps]
-        expected_caches = ['Cache Python dependencies', 'Cache R packages', 'Cache LaTeX outputs', 'Cache processed figures']
-        
+        cache_names = [step["name"] for step in cache_steps]
+        expected_caches = [
+            "Cache Python dependencies",
+            "Cache R packages",
+            "Cache LaTeX outputs",
+            "Cache processed figures",
+        ]
+
         for expected_cache in expected_caches:
             self.assertIn(expected_cache, cache_names)
 
@@ -157,26 +165,26 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         # Test manuscript path environment variable logic
         test_cases = [
             {
-                'event_name': 'workflow_dispatch',
-                'input_path': 'CUSTOM_MANUSCRIPT',
-                'expected': 'CUSTOM_MANUSCRIPT'
+                "event_name": "workflow_dispatch",
+                "input_path": "CUSTOM_MANUSCRIPT",
+                "expected": "CUSTOM_MANUSCRIPT",
             },
             {
-                'event_name': 'push',
-                'env_path': 'EXAMPLE_MANUSCRIPT',
-                'expected': 'EXAMPLE_MANUSCRIPT'
-            }
+                "event_name": "push",
+                "env_path": "EXAMPLE_MANUSCRIPT",
+                "expected": "EXAMPLE_MANUSCRIPT",
+            },
         ]
 
         for case in test_cases:
             with self.subTest(case=case):
                 # Simulate manuscript path determination logic
-                if case.get('event_name') == 'workflow_dispatch':
-                    manuscript_path = case.get('input_path', 'MANUSCRIPT')
+                if case.get("event_name") == "workflow_dispatch":
+                    manuscript_path = case.get("input_path", "MANUSCRIPT")
                 else:
-                    manuscript_path = case.get('env_path', 'EXAMPLE_MANUSCRIPT')
-                
-                self.assertEqual(manuscript_path, case['expected'])
+                    manuscript_path = case.get("env_path", "EXAMPLE_MANUSCRIPT")
+
+                self.assertEqual(manuscript_path, case["expected"])
 
 
 class TestWorkflowStepSimulation(unittest.TestCase):
@@ -186,26 +194,35 @@ class TestWorkflowStepSimulation(unittest.TestCase):
         """Set up test environment."""
         self.temp_dir = tempfile.mkdtemp()
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_git_configuration_step(self, mock_run):
         """Test Git configuration step simulation."""
         mock_run.return_value = Mock(returncode=0)
 
         # Simulate Git configuration commands
         commands = [
-            ['git', 'config', '--global', '--add', 'safe.directory', '/__w/rxiv-maker/rxiv-maker'],
-            ['git', 'config', 'user.name', 'github-actions'],
-            ['git', 'config', 'user.email', 'github-actions@github.com']
+            [
+                "git",
+                "config",
+                "--global",
+                "--add",
+                "safe.directory",
+                "/__w/rxiv-maker/rxiv-maker",
+            ],
+            ["git", "config", "user.name", "github-actions"],
+            ["git", "config", "user.email", "github-actions@github.com"],
         ]
 
         for cmd in commands:
             result = mock_run.return_value
             self.assertEqual(result.returncode, 0)
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_python_setup_step(self, mock_run):
         """Test Python setup step simulation."""
-        mock_run.return_value = Mock(returncode=0, stdout="Setup completed successfully")
+        mock_run.return_value = Mock(
+            returncode=0, stdout="Setup completed successfully"
+        )
 
         # Simulate make setup command
         result = mock_run.return_value
@@ -236,42 +253,42 @@ class TestWorkflowStepSimulation(unittest.TestCase):
         self.assertEqual(timeout_minutes, 15)
         self.assertGreater(timeout_minutes, 10)  # Should be reasonable timeout
 
-    @patch.dict(os.environ, {'R_LIBS_USER': '~/.R/library'})
+    @patch.dict(os.environ, {"R_LIBS_USER": "~/.R/library"})
     def test_r_environment_setup(self):
         """Test R environment setup."""
-        r_libs_path = os.environ.get('R_LIBS_USER')
-        self.assertEqual(r_libs_path, '~/.R/library')
+        r_libs_path = os.environ.get("R_LIBS_USER")
+        self.assertEqual(r_libs_path, "~/.R/library")
 
     def test_build_configuration_logging(self):
         """Test build configuration logging."""
         config_info = {
-            'manuscript_path': 'EXAMPLE_MANUSCRIPT',
-            'python_version': '3.11.0',
-            'latex_version': 'pdfTeX 3.141592653',
-            'current_directory': '/workspace',
-            'available_memory': '7.0Gi',
-            'available_space': '10G'
+            "manuscript_path": "EXAMPLE_MANUSCRIPT",
+            "python_version": "3.11.0",
+            "latex_version": "pdfTeX 3.141592653",
+            "current_directory": "/workspace",
+            "available_memory": "7.0Gi",
+            "available_space": "10G",
         }
 
         # Test that all required configuration items are present
-        required_keys = ['manuscript_path', 'python_version', 'latex_version']
+        required_keys = ["manuscript_path", "python_version", "latex_version"]
         for key in required_keys:
             self.assertIn(key, config_info)
 
     def test_output_directory_structure(self):
         """Test expected output directory structure."""
         expected_outputs = [
-            'output/manuscript.pdf',
-            'output/manuscript.tex', 
-            'output/manuscript.aux',
-            'output/manuscript.bbl',
-            'output/manuscript.blg'
+            "output/manuscript.pdf",
+            "output/manuscript.tex",
+            "output/manuscript.aux",
+            "output/manuscript.bbl",
+            "output/manuscript.blg",
         ]
 
         for output_file in expected_outputs:
             # Test that expected files have proper extensions
             file_path = Path(output_file)
-            self.assertIn(file_path.suffix, ['.pdf', '.tex', '.aux', '.bbl', '.blg'])
+            self.assertIn(file_path.suffix, [".pdf", ".tex", ".aux", ".bbl", ".blg"])
 
 
 class TestArtifactHandling(unittest.TestCase):
@@ -280,22 +297,22 @@ class TestArtifactHandling(unittest.TestCase):
     def test_artifact_paths(self):
         """Test artifact path construction."""
         base_paths = {
-            'pdf': 'output/*.pdf',
-            'tex': 'output/*.tex',
-            'logs': 'output/*.log',
-            'figures': 'output/Figures/**/*'
+            "pdf": "output/*.pdf",
+            "tex": "output/*.tex",
+            "logs": "output/*.log",
+            "figures": "output/Figures/**/*",
         }
 
         for artifact_type, path_pattern in base_paths.items():
             self.assertIsInstance(path_pattern, str)
-            self.assertIn('output/', path_pattern)
+            self.assertIn("output/", path_pattern)
 
     def test_release_artifact_naming(self):
         """Test release artifact naming convention."""
         # Test tag-based release naming
         tag_name = "v1.2.3"
         manuscript_name = "example_manuscript"
-        
+
         expected_artifact_name = f"{manuscript_name}_{tag_name}.pdf"
         self.assertIn(tag_name, expected_artifact_name)
         self.assertIn(manuscript_name, expected_artifact_name)
@@ -303,10 +320,10 @@ class TestArtifactHandling(unittest.TestCase):
     def test_pdf_validation_requirements(self):
         """Test PDF validation requirements."""
         pdf_validation_checks = [
-            'file_exists',
-            'file_size_reasonable',
-            'pdf_format_valid',
-            'page_count_positive'
+            "file_exists",
+            "file_size_reasonable",
+            "pdf_format_valid",
+            "page_count_positive",
         ]
 
         for check in pdf_validation_checks:
@@ -317,36 +334,34 @@ class TestArtifactHandling(unittest.TestCase):
 class TestErrorHandlingScenarios(unittest.TestCase):
     """Test error handling scenarios in GitHub Actions workflow."""
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_latex_compilation_failure(self, mock_run):
         """Test handling of LaTeX compilation failures."""
         mock_run.return_value = Mock(
-            returncode=1,
-            stderr="! LaTeX Error: File `missing.sty' not found."
+            returncode=1, stderr="! LaTeX Error: File `missing.sty' not found."
         )
 
         result = mock_run.return_value
         self.assertEqual(result.returncode, 1)
         self.assertIn("LaTeX Error", result.stderr)
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_python_dependency_failure(self, mock_run):
         """Test handling of Python dependency installation failures."""
         mock_run.return_value = Mock(
             returncode=1,
-            stderr="ERROR: Could not find a version that satisfies the requirement"
+            stderr="ERROR: Could not find a version that satisfies the requirement",
         )
 
         result = mock_run.return_value
         self.assertEqual(result.returncode, 1)
         self.assertIn("Could not find a version", result.stderr)
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_r_package_installation_failure(self, mock_run):
         """Test handling of R package installation failures."""
         mock_run.return_value = Mock(
-            returncode=1,
-            stderr="ERROR: dependency 'package' is not available"
+            returncode=1, stderr="ERROR: dependency 'package' is not available"
         )
 
         result = mock_run.return_value
@@ -356,15 +371,15 @@ class TestErrorHandlingScenarios(unittest.TestCase):
     def test_timeout_scenario(self):
         """Test timeout scenario handling."""
         import subprocess
-        
+
         # Simulate timeout exception
         timeout_error = subprocess.TimeoutExpired(
-            cmd=['make', 'pdf'],
-            timeout=900  # 15 minutes
+            cmd=["make", "pdf"],
+            timeout=900,  # 15 minutes
         )
 
         self.assertEqual(timeout_error.timeout, 900)
-        self.assertIn('make', timeout_error.cmd)
+        self.assertIn("make", timeout_error.cmd)
 
     def test_disk_space_exhaustion(self):
         """Test disk space exhaustion scenario."""
@@ -379,7 +394,7 @@ class TestErrorHandlingScenarios(unittest.TestCase):
         """Test memory exhaustion scenario."""
         # Simulate memory usage check
         available_memory_gb = 1.0  # Limited memory
-        estimated_usage_gb = 2.0   # Process needs more memory
+        estimated_usage_gb = 2.0  # Process needs more memory
 
         memory_sufficient = available_memory_gb >= estimated_usage_gb
         self.assertFalse(memory_sufficient)
@@ -393,17 +408,19 @@ class TestContainerizedBuildOptimizations(unittest.TestCase):
         # Comparison of build times
         traditional_build_time_minutes = 10
         containerized_build_time_minutes = 2
-        
-        performance_improvement = traditional_build_time_minutes / containerized_build_time_minutes
+
+        performance_improvement = (
+            traditional_build_time_minutes / containerized_build_time_minutes
+        )
         self.assertGreaterEqual(performance_improvement, 4.0)  # ~5x improvement
 
     def test_dependency_caching_effectiveness(self):
         """Test dependency caching effectiveness."""
         cache_categories = [
-            'python_dependencies',
-            'r_packages', 
-            'latex_outputs',
-            'processed_figures'
+            "python_dependencies",
+            "r_packages",
+            "latex_outputs",
+            "processed_figures",
         ]
 
         for category in cache_categories:
@@ -414,11 +431,11 @@ class TestContainerizedBuildOptimizations(unittest.TestCase):
     def test_docker_image_optimization(self):
         """Test Docker image optimization features."""
         optimizations = [
-            'pre_installed_latex',
-            'pre_installed_r_packages',
-            'pre_installed_python_packages',
-            'pre_installed_nodejs',
-            'optimized_layer_structure'
+            "pre_installed_latex",
+            "pre_installed_r_packages",
+            "pre_installed_python_packages",
+            "pre_installed_nodejs",
+            "optimized_layer_structure",
         ]
 
         for optimization in optimizations:
@@ -428,9 +445,9 @@ class TestContainerizedBuildOptimizations(unittest.TestCase):
         """Test build reproducibility across runs."""
         # Test deterministic build inputs
         build_inputs = {
-            'docker_image_tag': 'henriqueslab/rxiv-maker-base:latest',
-            'platform': 'linux/amd64',
-            'user': 'root'
+            "docker_image_tag": "henriqueslab/rxiv-maker-base:latest",
+            "platform": "linux/amd64",
+            "user": "root",
         }
 
         for key, value in build_inputs.items():
@@ -444,32 +461,30 @@ class TestWorkflowIntegrationScenarios(unittest.TestCase):
     def test_manual_trigger_workflow(self):
         """Test manual workflow trigger scenario."""
         workflow_trigger = {
-            'event_name': 'workflow_dispatch',
-            'inputs': {
-                'manuscript_path': 'CUSTOM_MANUSCRIPT'
-            }
+            "event_name": "workflow_dispatch",
+            "inputs": {"manuscript_path": "CUSTOM_MANUSCRIPT"},
         }
 
-        self.assertEqual(workflow_trigger['event_name'], 'workflow_dispatch')
-        self.assertIn('manuscript_path', workflow_trigger['inputs'])
+        self.assertEqual(workflow_trigger["event_name"], "workflow_dispatch")
+        self.assertIn("manuscript_path", workflow_trigger["inputs"])
 
     def test_tag_based_release_workflow(self):
         """Test tag-based release workflow scenario."""
         release_trigger = {
-            'event_name': 'push',
-            'ref': 'refs/tags/v1.0.0',
-            'tag_name': 'v1.0.0'
+            "event_name": "push",
+            "ref": "refs/tags/v1.0.0",
+            "tag_name": "v1.0.0",
         }
 
-        self.assertEqual(release_trigger['event_name'], 'push')
-        self.assertTrue(release_trigger['ref'].startswith('refs/tags/'))
+        self.assertEqual(release_trigger["event_name"], "push")
+        self.assertTrue(release_trigger["ref"].startswith("refs/tags/"))
 
     def test_multi_manuscript_support(self):
         """Test multi-manuscript directory support."""
         supported_manuscripts = [
-            'MANUSCRIPT',
-            'EXAMPLE_MANUSCRIPT', 
-            'custom/path/to/manuscript'
+            "MANUSCRIPT",
+            "EXAMPLE_MANUSCRIPT",
+            "custom/path/to/manuscript",
         ]
 
         for manuscript_path in supported_manuscripts:
@@ -480,26 +495,26 @@ class TestWorkflowIntegrationScenarios(unittest.TestCase):
         """Test cross-platform compatibility in CI."""
         # GitHub Actions runs on ubuntu-latest
         platform_config = {
-            'runner_os': 'ubuntu-latest',
-            'container_platform': 'linux/amd64',
-            'arch_support': ['amd64', 'arm64_via_emulation']
+            "runner_os": "ubuntu-latest",
+            "container_platform": "linux/amd64",
+            "arch_support": ["amd64", "arm64_via_emulation"],
         }
 
-        self.assertEqual(platform_config['runner_os'], 'ubuntu-latest')
-        self.assertIn('amd64', platform_config['arch_support'])
+        self.assertEqual(platform_config["runner_os"], "ubuntu-latest")
+        self.assertIn("amd64", platform_config["arch_support"])
 
     def test_environment_isolation(self):
         """Test environment isolation in containerized builds."""
         isolation_features = [
-            'containerized_execution',
-            'isolated_file_system',
-            'controlled_dependencies',
-            'reproducible_environment'
+            "containerized_execution",
+            "isolated_file_system",
+            "controlled_dependencies",
+            "reproducible_environment",
         ]
 
         for feature in isolation_features:
             self.assertIsInstance(feature, str)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

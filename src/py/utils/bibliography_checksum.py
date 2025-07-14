@@ -31,7 +31,9 @@ class BibliographyChecksumManager:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Cache file specific to this manuscript
-        self.checksum_file = self.cache_dir / f"bibliography_checksum_{self.manuscript_name}.json"
+        self.checksum_file = (
+            self.cache_dir / f"bibliography_checksum_{self.manuscript_name}.json"
+        )
         self.bibliography_file = self.manuscript_path / "03_REFERENCES.bib"
 
         # Load existing checksum
@@ -40,7 +42,9 @@ class BibliographyChecksumManager:
     def _load_checksum(self) -> dict[str, any]:
         """Load existing checksum from cache file."""
         if not self.checksum_file.exists():
-            logger.debug(f"No existing bibliography checksum file found at {self.checksum_file}")
+            logger.debug(
+                f"No existing bibliography checksum file found at {self.checksum_file}"
+            )
             return {}
 
         try:
@@ -49,17 +53,21 @@ class BibliographyChecksumManager:
             logger.debug(f"Loaded bibliography checksum from {self.checksum_file}")
             return checksum_data
         except (OSError, json.JSONDecodeError) as e:
-            logger.warning(f"Failed to load bibliography checksum from {self.checksum_file}: {e}")
+            logger.warning(
+                f"Failed to load bibliography checksum from {self.checksum_file}: {e}"
+            )
             return {}
 
     def _save_checksum(self) -> None:
         """Save checksum to cache file."""
         try:
-            with open(self.checksum_file, 'w') as f:
+            with open(self.checksum_file, "w") as f:
                 json.dump(self._checksum_data, f, indent=2, sort_keys=True)
             logger.debug(f"Saved bibliography checksum to {self.checksum_file}")
         except OSError as e:
-            logger.error(f"Failed to save bibliography checksum to {self.checksum_file}: {e}")
+            logger.error(
+                f"Failed to save bibliography checksum to {self.checksum_file}: {e}"
+            )
 
     def _calculate_file_checksum(self, file_path: Path) -> str:
         """Calculate SHA256 checksum for a file.
@@ -72,7 +80,7 @@ class BibliographyChecksumManager:
         """
         hasher = hashlib.sha256()
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hasher.update(chunk)
             return hasher.hexdigest()
@@ -145,7 +153,7 @@ class BibliographyChecksumManager:
             return False, None
 
         try:
-            with open(self.bibliography_file, encoding='utf-8') as f:
+            with open(self.bibliography_file, encoding="utf-8") as f:
                 content = f.read()
         except OSError as e:
             logger.error(f"Failed to read bibliography file: {e}")
@@ -200,7 +208,7 @@ class BibliographyChecksumManager:
             return
 
         try:
-            with open(self.bibliography_file, encoding='utf-8') as f:
+            with open(self.bibliography_file, encoding="utf-8") as f:
                 content = f.read()
         except OSError as e:
             logger.error(f"Failed to read bibliography file: {e}")
@@ -208,15 +216,21 @@ class BibliographyChecksumManager:
 
         current_doi_entries = self._extract_doi_entries(content)
 
-        self._checksum_data.update({
-            "bibliography_checksum": current_checksum,
-            "doi_entries": current_doi_entries,
-            "last_validation_completed": validation_completed,
-            "last_validation_timestamp": int(time.time()) if validation_completed else None
-        })
+        self._checksum_data.update(
+            {
+                "bibliography_checksum": current_checksum,
+                "doi_entries": current_doi_entries,
+                "last_validation_completed": validation_completed,
+                "last_validation_timestamp": int(time.time())
+                if validation_completed
+                else None,
+            }
+        )
 
         self._save_checksum()
-        logger.info(f"Updated bibliography checksum for {len(current_doi_entries)} DOI entries")
+        logger.info(
+            f"Updated bibliography checksum for {len(current_doi_entries)} DOI entries"
+        )
 
     def force_validation(self) -> None:
         """Force validation by clearing cached checksum."""
@@ -235,10 +249,16 @@ class BibliographyChecksumManager:
             "cache_file": str(self.checksum_file),
             "cache_exists": self.checksum_file.exists(),
             "bibliography_file_exists": self.bibliography_file.exists(),
-            "has_cached_checksum": bool(self._checksum_data.get("bibliography_checksum")),
+            "has_cached_checksum": bool(
+                self._checksum_data.get("bibliography_checksum")
+            ),
             "cached_doi_count": len(self._checksum_data.get("doi_entries", {})),
-            "last_validation_completed": self._checksum_data.get("last_validation_completed"),
-            "last_validation_timestamp": self._checksum_data.get("last_validation_timestamp"),
+            "last_validation_completed": self._checksum_data.get(
+                "last_validation_completed"
+            ),
+            "last_validation_timestamp": self._checksum_data.get(
+                "last_validation_timestamp"
+            ),
         }
 
     def clear_cache(self) -> None:
@@ -249,7 +269,9 @@ class BibliographyChecksumManager:
         logger.info("Cleared bibliography checksum cache")
 
 
-def get_bibliography_checksum_manager(manuscript_path: str) -> BibliographyChecksumManager:
+def get_bibliography_checksum_manager(
+    manuscript_path: str,
+) -> BibliographyChecksumManager:
     """Get a BibliographyChecksumManager instance for the given manuscript.
 
     Args:

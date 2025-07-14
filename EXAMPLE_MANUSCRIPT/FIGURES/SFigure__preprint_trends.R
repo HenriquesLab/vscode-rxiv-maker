@@ -87,7 +87,7 @@ load_and_process_data <- function() {
 create_figure <- function(df) {
   # Define a modern color palette
   colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
-  
+
   p <- ggplot(df, aes(x = date, y = submissions, color = source, fill = source)) +
     geom_line(size = 1.2, alpha = 0.9) +
     geom_area(alpha = 0.15, position = "identity") +

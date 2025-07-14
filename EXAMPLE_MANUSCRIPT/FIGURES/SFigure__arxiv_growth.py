@@ -56,7 +56,10 @@ def load_and_process_data():
     """Load and process the arXiv submission data."""
     # Define the path to the data file
     data_path = (
-        Path(__file__).parent / "DATA" / "SFigure__arxiv_growth" / "arxiv_monthly_submissions.csv"
+        Path(__file__).parent
+        / "DATA"
+        / "SFigure__arxiv_growth"
+        / "arxiv_monthly_submissions.csv"
     )
 
     # Load the data
@@ -78,7 +81,7 @@ def create_figure():
 
     # Create figure and axis with modern styling
     fig, ax = plt.subplots(figsize=(3.5, 4))
-    fig.patch.set_facecolor('white')
+    fig.patch.set_facecolor("white")
 
     # Use a modern colour palette
     primary_color = "#1f77b4"  # Modern blue
@@ -91,11 +94,13 @@ def create_figure():
         linewidth=1.5,
         color=primary_color,
         alpha=0.9,
-        zorder=3
+        zorder=3,
     )
 
     # Fill area under the curve with gradient-like effect
-    ax.fill_between(df["date"], df["submissions"], alpha=0.3, color=secondary_color, zorder=1)
+    ax.fill_between(
+        df["date"], df["submissions"], alpha=0.3, color=secondary_color, zorder=1
+    )
 
     # Customize axes with smaller fonts for column format
     ax.set_xlabel("Year", fontsize=9, fontweight="bold")
@@ -124,9 +129,9 @@ def create_figure():
     # Add modern grid styling
     ax.grid(True, alpha=0.3, linestyle="-", linewidth=0.5, color="#E0E0E0", zorder=0)
     ax.set_axisbelow(True)
-    
+
     # Set background color for better contrast
-    ax.set_facecolor('#FAFAFA')
+    ax.set_facecolor("#FAFAFA")
 
     # Rotate x-axis labels for better readability
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha="center")

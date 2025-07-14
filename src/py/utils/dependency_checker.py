@@ -61,7 +61,9 @@ class DependencyChecker:
             else:
                 print(message)
 
-    def check_command_version(self, command: str, version_flag: str = "--version") -> tuple[bool, Optional[str], Optional[str]]:
+    def check_command_version(
+        self, command: str, version_flag: str = "--version"
+    ) -> tuple[bool, Optional[str], Optional[str]]:
         """Check if a command exists and get its version.
 
         Args:
@@ -79,14 +81,11 @@ class DependencyChecker:
 
             # Get version
             result = subprocess.run(
-                [command, version_flag],
-                capture_output=True,
-                text=True,
-                timeout=10
+                [command, version_flag], capture_output=True, text=True, timeout=10
             )
 
             if result.returncode == 0:
-                version = result.stdout.strip().split('\n')[0]
+                version = result.stdout.strip().split("\n")[0]
                 return True, version, cmd_path
             else:
                 return True, None, cmd_path
@@ -109,7 +108,7 @@ class DependencyChecker:
         install_commands = {
             "Windows": "choco install -y miktex",
             "macOS": "brew install --cask mactex-no-gui",
-            "Linux": "sudo apt install -y texlive-latex-recommended texlive-fonts-recommended"
+            "Linux": "sudo apt install -y texlive-latex-recommended texlive-fonts-recommended",
         }
 
         description = "LaTeX distribution for PDF compilation"
@@ -123,7 +122,7 @@ class DependencyChecker:
             path=path,
             install_commands=install_commands,
             description=description,
-            alternative=alternative
+            alternative=alternative,
         )
 
     def check_make(self) -> DependencyInfo:
@@ -136,7 +135,7 @@ class DependencyChecker:
         install_commands = {
             "Windows": "choco install -y make (or scoop install make)",
             "macOS": "xcode-select --install",
-            "Linux": "sudo apt install -y make"
+            "Linux": "sudo apt install -y make",
         }
 
         description = "Build automation tool (required for Makefile commands)"
@@ -148,7 +147,7 @@ class DependencyChecker:
             version=version,
             path=path,
             install_commands=install_commands,
-            description=description
+            description=description,
         )
 
     def check_nodejs(self) -> DependencyInfo:
@@ -161,7 +160,7 @@ class DependencyChecker:
         install_commands = {
             "Windows": "choco install -y nodejs",
             "macOS": "brew install node@20",
-            "Linux": "sudo apt install -y nodejs npm"
+            "Linux": "sudo apt install -y nodejs npm",
         }
 
         description = "JavaScript runtime (required for Mermaid diagram generation)"
@@ -175,7 +174,7 @@ class DependencyChecker:
             path=path,
             install_commands=install_commands,
             description=description,
-            alternative=alternative
+            alternative=alternative,
         )
 
     def check_r(self) -> DependencyInfo:
@@ -188,7 +187,7 @@ class DependencyChecker:
         install_commands = {
             "Windows": "choco install -y r.project",
             "macOS": "brew install r",
-            "Linux": "sudo apt install -y r-base r-base-dev"
+            "Linux": "sudo apt install -y r-base r-base-dev",
         }
 
         description = "R statistical software (optional, for R figure scripts)"
@@ -202,7 +201,7 @@ class DependencyChecker:
             path=path,
             install_commands=install_commands,
             description=description,
-            alternative=alternative
+            alternative=alternative,
         )
 
     def check_python(self) -> DependencyInfo:
@@ -222,7 +221,7 @@ class DependencyChecker:
             found=found,
             version=version,
             path=path,
-            description=description
+            description=description,
         )
 
     def check_git(self) -> DependencyInfo:
@@ -235,7 +234,7 @@ class DependencyChecker:
         install_commands = {
             "Windows": "choco install -y git",
             "macOS": "xcode-select --install (or brew install git)",
-            "Linux": "sudo apt install -y git"
+            "Linux": "sudo apt install -y git",
         }
 
         description = "Version control system (recommended)"
@@ -247,7 +246,7 @@ class DependencyChecker:
             version=version,
             path=path,
             install_commands=install_commands,
-            description=description
+            description=description,
         )
 
     def check_all_dependencies(self) -> list[DependencyInfo]:
@@ -340,22 +339,32 @@ class DependencyChecker:
 
         print("\n📊 Summary:")
         print(f"  • Platform: {self.platform.platform}")
-        print(f"  • Required dependencies: {len([d for d in self.dependencies if d.required and d.found])}/{len([d for d in self.dependencies if d.required])}")
-        print(f"  • Optional dependencies: {len([d for d in self.dependencies if not d.required and d.found])}/{len([d for d in self.dependencies if not d.required])}")
+        print(
+            f"  • Required dependencies: {len([d for d in self.dependencies if d.required and d.found])}/{len([d for d in self.dependencies if d.required])}"
+        )
+        print(
+            f"  • Optional dependencies: {len([d for d in self.dependencies if not d.required and d.found])}/{len([d for d in self.dependencies if not d.required])}"
+        )
 
         if missing_required:
-            print(f"\n⚠️  You have {len(missing_required)} missing required dependencies.")
+            print(
+                f"\n⚠️  You have {len(missing_required)} missing required dependencies."
+            )
             print("   Please install them before running 'make pdf'.")
         else:
             print("\n✅ All required dependencies are available!")
             print("   You can run 'make pdf' to generate PDFs.")
 
         if missing_optional:
-            print(f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality.")
+            print(
+                f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality."
+            )
 
         # Docker recommendation
         if missing_required or len(missing_optional) > 1:
-            print("\n🐳 Alternative: Use Docker mode to avoid local dependency installation:")
+            print(
+                "\n🐳 Alternative: Use Docker mode to avoid local dependency installation:"
+            )
             print("   make pdf RXIV_ENGINE=DOCKER")
             print("   (Only requires Docker and Make to be installed)")
 
@@ -390,9 +399,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Check Rxiv-Maker system dependencies")
     parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Show verbose output during checks"
+        "--verbose", "-v", action="store_true", help="Show verbose output during checks"
     )
 
     args = parser.parse_args()

@@ -16,7 +16,7 @@ class DOICache:
         self,
         cache_dir: str = ".cache",
         cache_filename: Optional[str] = None,
-        manuscript_name: Optional[str] = None
+        manuscript_name: Optional[str] = None,
     ):
         """Initialize DOI cache.
 

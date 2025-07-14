@@ -201,7 +201,7 @@ if docker buildx build "${BUILD_ARGS[@]}" "$CONTEXT_DIR"; then
     if [[ "$LOCAL_ONLY" == true ]]; then
         print_info "Image built locally: $IMAGE_NAME"
         print_info "To push later, run: docker push $IMAGE_NAME"
-        
+
         # Quick verification for local builds
         print_info "Verifying image functionality..."
         if docker run --rm "$IMAGE_NAME" python --version >/dev/null 2>&1; then

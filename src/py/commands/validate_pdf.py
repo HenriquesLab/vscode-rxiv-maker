@@ -22,7 +22,9 @@ def main():
     parser.add_argument("manuscript_path", help="Path to manuscript directory")
     parser.add_argument("--pdf-path", help="Path to PDF file (optional)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
-    parser.add_argument("--detailed", "-d", action="store_true", help="Detailed output with statistics")
+    parser.add_argument(
+        "--detailed", "-d", action="store_true", help="Detailed output with statistics"
+    )
 
     args = parser.parse_args()
 
@@ -40,8 +42,12 @@ def main():
 
         # Count issues by level
         error_count = sum(1 for e in result.errors if e.level == ValidationLevel.ERROR)
-        warning_count = sum(1 for e in result.errors if e.level == ValidationLevel.WARNING)
-        success_count = sum(1 for e in result.errors if e.level == ValidationLevel.SUCCESS)
+        warning_count = sum(
+            1 for e in result.errors if e.level == ValidationLevel.WARNING
+        )
+        success_count = sum(
+            1 for e in result.errors if e.level == ValidationLevel.SUCCESS
+        )
 
         # Print errors and warnings
         if result.errors:
@@ -87,7 +93,11 @@ def main():
                     print(f"🔢 Equation References: {value}")
                 elif key == "section_references":
                     print(f"📖 Section References: {value}")
-                elif key.startswith("avg_") or key.startswith("min_") or key.startswith("max_"):
+                elif (
+                    key.startswith("avg_")
+                    or key.startswith("min_")
+                    or key.startswith("max_")
+                ):
                     print(f"📏 {key.replace('_', ' ').title()}: {value:.0f}")
 
         # Summary
@@ -104,6 +114,7 @@ def main():
         print(f"❌ PDF validation failed: {e}")
         if args.verbose:
             import traceback
+
             traceback.print_exc()
         return 1
 

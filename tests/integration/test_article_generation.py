@@ -33,7 +33,7 @@ keywords: ["test", "article"]
         # Create main manuscript file with correct name
         manuscript_file = manuscript_dir / "01_MAIN.md"
         manuscript_file.write_text(sample_markdown)
-        
+
         # Create minimal bibliography file
         bib_file = manuscript_dir / "03_REFERENCES.bib"
         bib_content = """@article{test2023,
@@ -43,7 +43,7 @@ keywords: ["test", "article"]
     year = {2023}
 }"""
         bib_file.write_text(bib_content)
-        
+
         output_dir = temp_dir / "output"
 
         # Change to test directory and run generation

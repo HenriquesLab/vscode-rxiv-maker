@@ -48,8 +48,7 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
     style_candidates = [
         Path("src/tex/style/rxiv_maker_style.cls"),  # From repository root
         (
-            Path(__file__).parent.parent.parent
-            / "tex/style/rxiv_maker_style.cls"
+            Path(__file__).parent.parent.parent / "tex/style/rxiv_maker_style.cls"
         ),  # Relative to script
         (
             Path(__file__).parent.parent.parent.parent
@@ -66,9 +65,9 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
 
     if style_source is None:
         raise FileNotFoundError(
-            "Style file not found. Searched locations:\n" +
-            "\n".join(f"  - {candidate}" for candidate in style_candidates) +
-            "\nEnsure the script is run from the repository root or that "
+            "Style file not found. Searched locations:\n"
+            + "\n".join(f"  - {candidate}" for candidate in style_candidates)
+            + "\nEnsure the script is run from the repository root or that "
             "the style file exists in the output directory."
         )
 
@@ -221,10 +220,14 @@ def verify_package(arxiv_path, manuscript_path=None):
 
                 if png_files:
                     # Use first PNG file found
-                    required_figures.append(f"Figures/{figure_dir.name}/{png_files[0].name}")
+                    required_figures.append(
+                        f"Figures/{figure_dir.name}/{png_files[0].name}"
+                    )
                 elif pdf_files:
                     # Fallback to PDF if no PNG
-                    required_figures.append(f"Figures/{figure_dir.name}/{pdf_files[0].name}")
+                    required_figures.append(
+                        f"Figures/{figure_dir.name}/{pdf_files[0].name}"
+                    )
                 else:
                     # Directory exists but no suitable figure files
                     required_figures.append(

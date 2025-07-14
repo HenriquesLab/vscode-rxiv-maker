@@ -31,7 +31,9 @@ class FigureChecksumManager:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Cache file specific to this manuscript
-        self.checksum_file = self.cache_dir / f"figure_checksums_{self.manuscript_name}.json"
+        self.checksum_file = (
+            self.cache_dir / f"figure_checksums_{self.manuscript_name}.json"
+        )
         self.figures_dir = self.manuscript_path / "FIGURES"
 
         # Load existing checksums
@@ -55,9 +57,11 @@ class FigureChecksumManager:
     def _save_checksums(self) -> None:
         """Save checksums to cache file."""
         try:
-            with open(self.checksum_file, 'w') as f:
+            with open(self.checksum_file, "w") as f:
                 json.dump(self._checksums, f, indent=2, sort_keys=True)
-            logger.debug(f"Saved {len(self._checksums)} checksums to {self.checksum_file}")
+            logger.debug(
+                f"Saved {len(self._checksums)} checksums to {self.checksum_file}"
+            )
         except OSError as e:
             logger.error(f"Failed to save checksums to {self.checksum_file}: {e}")
 
@@ -72,7 +76,7 @@ class FigureChecksumManager:
         """
         hasher = hashlib.sha256()
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hasher.update(chunk)
             return hasher.hexdigest()
@@ -180,7 +184,9 @@ class FigureChecksumManager:
                 logger.info("Cleared all checksums - FIGURES directory not found")
             return
 
-        current_files = {str(f.relative_to(self.figures_dir)) for f in self.get_figure_source_files()}
+        current_files = {
+            str(f.relative_to(self.figures_dir)) for f in self.get_figure_source_files()
+        }
         cached_files = set(self._checksums.keys())
         orphaned_files = cached_files - current_files
 

@@ -127,27 +127,27 @@ check_environment() {
 # Function to install Python dependencies (mirrors GitHub Actions)
 install_dependencies() {
     print_step "Installing Python dependencies..."
-    
+
     # Set up environment
     export TEXMFVAR=/tmp/texmf-var
     export R_LIBS_USER=/home/rxivmaker/.R/library
-    
+
     # Create necessary directories
     mkdir -p /tmp/texmf-var output
-    
+
     # Ensure cache directories have proper permissions (in case of volume mounts)
     mkdir -p /home/rxivmaker/.cache /home/rxivmaker/.R/library
-    
+
     # Install Python dependencies using make setup
     make setup
-    
+
     print_success "Python dependencies installed"
 }
 
 # Function to check manuscript directory (mirrors GitHub Actions)
 check_manuscript() {
     local manuscript_path="${MANUSCRIPT_PATH:-MANUSCRIPT}"
-    
+
     print_step "Checking manuscript directory..."
     if [[ -d "$manuscript_path" ]]; then
         print_success "Manuscript directory exists: $manuscript_path"
@@ -174,37 +174,37 @@ check_python_deps() {
 # Function to run PDF generation (mirrors GitHub Actions)
 generate_pdf() {
     print_step "Generating PDF..."
-    
+
     # Set environment variables
     export MANUSCRIPT_PATH="${MANUSCRIPT_PATH:-MANUSCRIPT}"
     export TEXMFVAR=/tmp/texmf-var
     export FORCE_FIGURES="${FORCE_FIGURES:-true}"
     export R_LIBS_USER=/home/rxivmaker/.R/library
-    
+
     print_info "Environment variables set:"
     echo "  - MANUSCRIPT_PATH: $MANUSCRIPT_PATH"
     echo "  - TEXMFVAR: $TEXMFVAR"
     echo "  - FORCE_FIGURES: $FORCE_FIGURES"
     echo "  - R_LIBS_USER: $R_LIBS_USER"
-    
+
     # Clean figures first
     print_info "Step 1: Cleaning figures..."
     make clean-figures 2>&1 | sed 's/^/  /' || print_warning "clean-figures failed or not available"
-    
+
     # Generate PDF
     print_info "Step 2: Generating PDF..."
     echo "  Command: make pdf"
     echo "  Working directory: $(pwd)"
     echo "  Start time: $(date)"
-    
+
     # Run make pdf with detailed output
     set -o pipefail
     make pdf 2>&1 | tee /tmp/make_pdf_output.log | sed 's/^/  /'
     MAKE_EXIT_CODE=$?
-    
+
     echo "  End time: $(date)"
     echo "  Exit code: $MAKE_EXIT_CODE"
-    
+
     if [[ $MAKE_EXIT_CODE -ne 0 ]]; then
         print_error "make pdf failed with exit code $MAKE_EXIT_CODE"
         print_info "Last 50 lines of output:"
@@ -219,10 +219,10 @@ generate_pdf() {
 # Function to check PDF generation (mirrors GitHub Actions)
 check_pdf() {
     print_step "Checking PDF generation results..."
-    
+
     local manuscript_path="${MANUSCRIPT_PATH:-MANUSCRIPT}"
     local expected_pdf="output/${manuscript_path}.pdf"
-    
+
     # Check output directory
     print_info "Output directory contents:"
     if [[ -d "output" ]]; then
@@ -231,10 +231,10 @@ check_pdf() {
         print_error "Output directory not found"
         return 1
     fi
-    
+
     # Check for expected PDF
     print_info "Looking for PDF at: $expected_pdf"
-    
+
     if [[ -f "$expected_pdf" ]]; then
         print_success "PDF generated successfully!"
         print_info "PDF Details:"
@@ -246,13 +246,13 @@ check_pdf() {
         print_error "PDF not found at expected location"
         print_info "Searching for any PDF files..."
         find . -name "*.pdf" -type f 2>/dev/null | sed 's/^/  /' || echo "  No PDF files found anywhere"
-        
+
         print_info "All output files:"
         find output/ -type f 2>/dev/null | sed 's/^/  /' || echo "  No files found in output/"
-        
+
         print_info "LaTeX log files analysis:"
         find output/ -name "*.log" -exec echo "  === {} ===" \; -exec tail -20 {} \; 2>/dev/null || echo "  No log files found"
-        
+
         return 1
     fi
 }
@@ -260,23 +260,23 @@ check_pdf() {
 # Function to collect debug information
 collect_debug_info() {
     print_step "Collecting debug information..."
-    
+
     echo "=== System Information ==="
     uname -a
     free -h
     df -h
-    
+
     echo "=== Python Environment ==="
     python3 --version
     python3 -c "import sys; print('Python path:', sys.path)"
-    
+
     echo "=== LaTeX Environment ==="
     which pdflatex
     which bibtex || echo "bibtex not found"
-    
+
     echo "=== Environment Variables ==="
     env | grep -E "^(PATH|MANUSCRIPT_PATH|TEXMF|R_LIBS)" || echo "No relevant environment variables found"
-    
+
     echo "=== Build Files ==="
     find . -name "*.pdf" -o -name "*.log" -o -name "*.aux" | head -20
 }
@@ -286,14 +286,14 @@ main() {
     print_info "=================================================="
     print_info "🐳 Running Rxiv-Maker Test Inside Container"
     print_info "=================================================="
-    
+
     # Execute workflow steps (mirrors GitHub Actions)
     configure_git
     check_environment
     install_dependencies
     check_manuscript
     check_python_deps
-    
+
     # Generate PDF
     if generate_pdf; then
         # Check results
