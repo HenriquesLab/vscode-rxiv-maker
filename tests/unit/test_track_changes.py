@@ -525,8 +525,8 @@ affiliations:
             "\\documentclass{article}\\begin{document}Test\\end{document}"
         )
 
-        # Create bibliography file
-        bib_file = self.output_dir / "03_REFERENCES.bib"
+        # Create bibliography file - needs to be in current directory for bibtex to find it
+        bib_file = Path(self.temp_dir) / "03_REFERENCES.bib"
         bib_file.write_text(
             "@article{test2023, title={Test}, author={Author}, year={2023}}"
         )
@@ -550,6 +550,9 @@ affiliations:
 
         # Find bibtex call
         bibtex_calls = [call for call in calls if "bibtex" in str(call)]
+        # Debug: print all calls to see what's happening
+        if len(bibtex_calls) == 0:
+            print(f"Debug: All calls made: {[str(call) for call in calls]}")
         self.assertGreater(
             len(bibtex_calls), 0, "BibTeX should be called when bibliography exists"
         )
@@ -643,7 +646,7 @@ affiliations:
             "\\documentclass{article}\\begin{document}Test\\end{document}"
         )
 
-        bib_file = self.output_dir / "03_REFERENCES.bib"
+        bib_file = Path(self.temp_dir) / "03_REFERENCES.bib"
         bib_file.write_text(
             "@article{test2023, title={Test}, author={Author}, year={2023}}"
         )
