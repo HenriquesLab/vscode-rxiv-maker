@@ -234,18 +234,30 @@ jobs:
           ls -la . | sed 's/^/    /'
         fi
 
-        # Check for expected PDF
-        PDF_PATH="output/${MANUSCRIPT_PATH}.pdf"
-        echo "🔍 Looking for PDF at: $PDF_PATH"
-
-        if [ -f "$PDF_PATH" ]; then
+        # Check for expected PDF - try both possible names for robustness
+        PRIMARY_PDF_PATH="output/${MANUSCRIPT_PATH}.pdf"
+        FALLBACK_PDF_PATH="output/MANUSCRIPT.pdf"
+        
+        echo "🔍 Looking for PDF at: $PRIMARY_PDF_PATH"
+        
+        if [ -f "$PRIMARY_PDF_PATH" ]; then
+          PDF_PATH="$PRIMARY_PDF_PATH"
           echo "  ✅ PDF generated successfully!"
           echo "  📊 PDF Details:"
           ls -la "$PDF_PATH" | sed 's/^/    /'
           file "$PDF_PATH" | sed 's/^/    /'
           echo "  📏 PDF size: $(du -h "$PDF_PATH" | cut -f1)"
+        elif [ -f "$FALLBACK_PDF_PATH" ]; then
+          PDF_PATH="$FALLBACK_PDF_PATH"
+          echo "  ⚠️  PDF found at fallback location: $FALLBACK_PDF_PATH"
+          echo "  📊 PDF Details:"
+          ls -la "$PDF_PATH" | sed 's/^/    /'
+          file "$PDF_PATH" | sed 's/^/    /'
+          echo "  📏 PDF size: $(du -h "$PDF_PATH" | cut -f1)"
         else
-          echo "  ❌ ERROR: PDF not found at expected location"
+          echo "  ❌ ERROR: PDF not found at expected locations"
+          echo "  🔍 Tried: $PRIMARY_PDF_PATH"
+          echo "  🔍 Tried: $FALLBACK_PDF_PATH"
           echo "  🔍 Searching for any PDF files..."
           find . -name "*.pdf" -type f 2>/dev/null | sed 's/^/    /' || echo "    No PDF files found anywhere"
 
@@ -343,7 +355,15 @@ jobs:
           cp "${MANUSCRIPT_DIR}/${PDF_NAME}" "release/${PDF_NAME}"
         else
           PDF_NAME="manuscript_${BRANCH_NAME}_${TIMESTAMP}.pdf"
-          cp "output/MANUSCRIPT.pdf" "release/${PDF_NAME}"
+          # Try both possible PDF locations for robustness
+          if [ -f "output/${MANUSCRIPT_DIR}.pdf" ]; then
+            cp "output/${MANUSCRIPT_DIR}.pdf" "release/${PDF_NAME}"
+          elif [ -f "output/MANUSCRIPT.pdf" ]; then
+            cp "output/MANUSCRIPT.pdf" "release/${PDF_NAME}"
+          else
+            echo "❌ ERROR: No PDF found in output directory"
+            exit 1
+          fi
         fi
 
         # Set output for later steps
