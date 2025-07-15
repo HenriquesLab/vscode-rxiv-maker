@@ -120,8 +120,13 @@ class BuildManager:
             return
 
         try:
-            with open(blg_file, encoding="utf-8") as f:
-                blg_content = f.read()
+            # Try UTF-8 first, then fall back to latin-1 for LaTeX log files
+            try:
+                with open(blg_file, encoding="utf-8") as f:
+                    blg_content = f.read()
+            except UnicodeDecodeError:
+                with open(blg_file, encoding="latin-1") as f:
+                    blg_content = f.read()
 
             # Extract warnings
             warnings = []
@@ -227,7 +232,9 @@ class BuildManager:
             if "uv run" in self.platform.python_cmd:
                 cmd = ["uv", "run", "python"] + cmd[1:]
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
+            )
 
             if result.returncode == 0:
                 self.log("Validation completed successfully")
@@ -492,7 +499,14 @@ class BuildManager:
             env = os.environ.copy()
             env["MANUSCRIPT_PATH"] = self.manuscript_path
 
-            result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                env=env,
+                encoding="utf-8",
+                errors="replace",
+            )
 
             if result.returncode == 0:
                 self.log("LaTeX files generated successfully")
@@ -525,6 +539,8 @@ class BuildManager:
                 ["pdflatex", "-interaction=nonstopmode", tex_file],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
 
             # Run bibtex if references exist (check in current working directory)
@@ -533,7 +549,11 @@ class BuildManager:
             if output_references.exists():
                 self.log("Running BibTeX to process bibliography...")
                 bibtex_result = subprocess.run(
-                    ["bibtex", self.manuscript_name], capture_output=True, text=True
+                    ["bibtex", self.manuscript_name],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
                 )
 
                 # Log BibTeX warnings and errors only
@@ -576,6 +596,8 @@ class BuildManager:
                 ["pdflatex", "-interaction=nonstopmode", tex_file],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
 
             # Third pass
@@ -583,6 +605,8 @@ class BuildManager:
                 ["pdflatex", "-interaction=nonstopmode", tex_file],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
 
             # Check if compilation was successful
@@ -637,7 +661,14 @@ class BuildManager:
             env = os.environ.copy()
             env["MANUSCRIPT_PATH"] = self.manuscript_path
 
-            result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                env=env,
+                encoding="utf-8",
+                errors="replace",
+            )
 
             if result.returncode == 0:
                 self.log("PDF copied to manuscript directory")
@@ -667,7 +698,14 @@ class BuildManager:
             env = os.environ.copy()
             env["MANUSCRIPT_PATH"] = self.manuscript_path
 
-            result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                env=env,
+                encoding="utf-8",
+                errors="replace",
+            )
 
             if result.returncode == 0:
                 # Print the word count analysis output
@@ -704,7 +742,9 @@ class BuildManager:
             if "uv run" in self.platform.python_cmd:
                 cmd = ["uv", "run", "python"] + cmd[1:]
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
+            )
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")

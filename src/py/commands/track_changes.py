@@ -258,7 +258,14 @@ class TrackChangesManager:
                 str(new_tex),
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+                encoding="utf-8",
+                errors="replace",
+            )
 
             # Write diff output to file
             diff_tex.write_text(result.stdout, encoding="utf-8")

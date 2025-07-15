@@ -143,7 +143,14 @@ class BaseValidator(ABC):
         try:
             with open(file_path, encoding="utf-8") as f:
                 return f.read()
-        except (OSError, UnicodeDecodeError):
+        except UnicodeDecodeError:
+            # LaTeX log files may be in latin-1 encoding, try fallback
+            try:
+                with open(file_path, encoding="latin-1") as f:
+                    return f.read()
+            except OSError:
+                return None
+        except OSError:
             return None
 
     def _get_line_context(

@@ -83,7 +83,14 @@ class EnvironmentSetup:
             cmd = "curl -LsSf https://astral.sh/uv/install.sh | sh"
 
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
             if result.returncode == 0:
                 self.log("uv installed successfully")
                 return True
