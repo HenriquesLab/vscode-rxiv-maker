@@ -50,7 +50,7 @@ Initialize bibliography adder.
 ### <kbd>function</kbd> `add_entries`
 
 ```python
-add_entries(dois: List[str], overwrite: bool = False) → bool
+add_entries(dois: list[str], overwrite: bool = False) → bool
 ```
 
 Add bibliography entries for the given DOIs. 

@@ -10,7 +10,7 @@ This module handles template content generation and replacement operations.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L23"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_template_path`
 
@@ -23,7 +23,7 @@ Get the path to the template file.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_supplementary_md`
 
@@ -36,7 +36,7 @@ Find supplementary information file in the manuscript directory.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_supplementary_cover_page`
 
@@ -49,7 +49,7 @@ Generate LaTeX code for the supplementary information cover page.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_supplementary_tex`
 
@@ -62,7 +62,7 @@ Generate Supplementary.tex file from supplementary markdown.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_keywords`
 
@@ -75,7 +75,7 @@ Generate LaTeX keywords section from YAML metadata.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_bibliography`
 
@@ -88,7 +88,7 @@ Generate LaTeX bibliography section from YAML metadata.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L281"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `process_template_replacements`
 
@@ -101,7 +101,7 @@ Process all template replacements with metadata and content.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L525"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/processors/template_processor.py#L536"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `parse_supplementary_sections`
 

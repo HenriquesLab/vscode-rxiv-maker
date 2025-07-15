@@ -34,7 +34,7 @@ Initialize citation validator.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/validators/citation_validator.py#L363"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/validators/citation_validator.py#L359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_citation_statistics`
 

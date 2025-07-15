@@ -14,7 +14,7 @@ This script handles cross-platform cleanup operations including:
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L340"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L341"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -30,13 +30,13 @@ Main entry point for cleanup manager.
 ## <kbd>class</kbd> `CleanupManager`
 Handle cleanup operations. 
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
 __init__(
-    manuscript_path: str = None,
+    manuscript_path: Optional[str] = None,
     output_dir: str = 'output',
     verbose: bool = False
 )
@@ -57,7 +57,7 @@ Initialize cleanup manager.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `clean_arxiv_files`
 
@@ -69,7 +69,7 @@ Clean ArXiv-related files.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L269"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `clean_cache_files`
 
@@ -81,7 +81,7 @@ Clean cache files.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L94"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `clean_generated_figures`
 
@@ -93,7 +93,7 @@ Clean generated figures from the FIGURES directory.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `clean_output_directory`
 
@@ -105,7 +105,7 @@ Clean the output directory.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L202"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `clean_temporary_files`
 
@@ -117,7 +117,7 @@ Clean temporary LaTeX and other temporary files.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `log`
 
@@ -129,7 +129,7 @@ Log a message with appropriate formatting.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/cleanup.py#L305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `run_full_cleanup`
 

@@ -22,7 +22,7 @@ The command produces user-friendly output with clear error messages, suggestions
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L366"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -38,7 +38,7 @@ Main entry point for unified validation command.
 ## <kbd>class</kbd> `UnifiedValidator`
 Unified validation system for rxiv-maker manuscripts. 
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -47,7 +47,8 @@ __init__(
     manuscript_path: str,
     verbose: bool = False,
     include_info: bool = False,
-    check_latex: bool = True
+    check_latex: bool = True,
+    enable_doi_validation: bool = True
 )
 ```
 
@@ -61,13 +62,14 @@ Initialize unified validator.
  - <b>`verbose`</b>:  Show detailed output 
  - <b>`include_info`</b>:  Include informational messages 
  - <b>`check_latex`</b>:  Parse LaTeX compilation errors 
+ - <b>`enable_doi_validation`</b>:  Enable DOI validation against CrossRef API 
 
 
 
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `print_detailed_report`
 
@@ -79,7 +81,7 @@ Print detailed validation report.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L258"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L297"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `print_summary`
 
@@ -91,7 +93,7 @@ Print brief validation summary.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/validate.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `validate_all`
 

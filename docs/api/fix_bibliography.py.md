@@ -53,7 +53,7 @@ Initialize bibliography fixer.
 ### <kbd>function</kbd> `fix_bibliography`
 
 ```python
-fix_bibliography(dry_run: bool = False) → Dict[str, Any]
+fix_bibliography(dry_run: bool = False) → dict[str, Any]
 ```
 
 Fix bibliography issues found by validation. 

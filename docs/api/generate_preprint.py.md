@@ -10,7 +10,7 @@
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/generate_preprint.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/generate_preprint.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_preprint`
 
@@ -23,7 +23,7 @@ Generate the preprint using the template.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/generate_preprint.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/commands/generate_preprint.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
