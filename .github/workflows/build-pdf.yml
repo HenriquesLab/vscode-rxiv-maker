@@ -192,13 +192,13 @@ jobs:
         echo "  ✅ Figures cleaned"
 
         echo "📄 Step 2: Generating PDF..."
-        echo "  Command: make pdf"
+        echo "  Command: make pdf MANUSCRIPT_PATH=\"$MANUSCRIPT_PATH\""
         echo "  Working directory: $(pwd)"
         echo "  Start time: $(date)"
 
         # Run make pdf with detailed output
         set -o pipefail
-        make pdf 2>&1 | tee /tmp/make_pdf_output.log | sed 's/^/  /'
+        make pdf MANUSCRIPT_PATH="$MANUSCRIPT_PATH" 2>&1 | tee /tmp/make_pdf_output.log | sed 's/^/  /'
         MAKE_EXIT_CODE=$?
 
         echo "  End time: $(date)"
