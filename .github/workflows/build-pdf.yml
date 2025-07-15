@@ -214,10 +214,15 @@ jobs:
         fi
 
     - name: Check PDF generation
+      env:
+        MANUSCRIPT_PATH: ${{ needs.prepare.outputs.manuscript_path }}
       run: |
         echo "=================================================="
         echo "📋 Checking PDF generation results..."
         echo "=================================================="
+
+        echo "🔍 Using manuscript path: $MANUSCRIPT_PATH"
+        echo "🔍 Expected PDF location: output/${MANUSCRIPT_PATH}.pdf"
 
         # Check output directory
         echo "📁 Output directory contents:"
