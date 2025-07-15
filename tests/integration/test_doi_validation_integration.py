@@ -7,22 +7,24 @@ from unittest.mock import patch
 
 try:
     import pytest
+
     PYTEST_AVAILABLE = True
 except ImportError:
     PYTEST_AVAILABLE = False
-    
+
     class MockPytest:
         class mark:
             @staticmethod
             def integration(cls):
                 return cls
-    
+
     pytest = MockPytest()
 
 try:
     from src.py.commands.validate import UnifiedValidator
-    from src.py.validators.doi_validator import DOIValidator
     from src.py.validators.citation_validator import CitationValidator
+    from src.py.validators.doi_validator import DOIValidator
+
     INTEGRATION_AVAILABLE = True
 except ImportError:
     INTEGRATION_AVAILABLE = False
@@ -32,22 +34,23 @@ except ImportError:
 @unittest.skipUnless(INTEGRATION_AVAILABLE, "Integration components not available")
 class TestDOIValidationIntegration(unittest.TestCase):
     """Test DOI validation in complete manuscript validation workflows."""
-    
+
     def setUp(self):
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
         self.manuscript_dir = os.path.join(self.temp_dir, "manuscript")
         os.makedirs(self.manuscript_dir)
-        
+
         # Create FIGURES directory
         self.figures_dir = os.path.join(self.manuscript_dir, "FIGURES")
         os.makedirs(self.figures_dir)
-    
+
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
-    
+
     def _create_complete_manuscript(self, with_valid_dois=True):
         """Create a complete manuscript for testing."""
         # Create config file
@@ -62,12 +65,12 @@ keywords: ["test", "validation", "doi"]
 """
         with open(os.path.join(self.manuscript_dir, "00_CONFIG.yml"), "w") as f:
             f.write(config_content)
-        
+
         # Create main manuscript
         main_content = """
 # DOI Validation Test
 
-This manuscript tests DOI validation functionality with citations @smith2023 
+This manuscript tests DOI validation functionality with citations @smith2023
 and @jones2022.
 
 Multiple citations work too [@smith2023;@jones2022].
@@ -92,7 +95,7 @@ This concludes our test manuscript.
 """
         with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
             f.write(main_content)
-        
+
         # Create bibliography with DOIs
         if with_valid_dois:
             bib_content = """
@@ -178,302 +181,308 @@ This concludes our test manuscript.
     doi = {10./invalid/format}
 }
 """
-        
+
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
-        
+
         # Create test figure file
         test_fig_path = os.path.join(self.figures_dir, "test.png")
         with open(test_fig_path, "w") as f:
             f.write("fake png content")
-    
-    @patch('crossref_commons.retrieval.get_publication_as_json')
+
+    @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_complete_validation_with_doi_success(self, mock_crossref):
         """Test complete validation workflow with successful DOI validation."""
         # Mock successful CrossRef responses
         mock_responses = {
-            '10.1016/j.jocs.2023.101234': {
-                'message': {
-                    'title': ['Machine Learning Applications in Scientific Computing'],
-                    'container-title': ['Journal of Computational Science'],
-                    'published-print': {'date-parts': [[2023]]},
-                    'author': [
-                        {'family': 'Smith', 'given': 'John A'},
-                        {'family': 'Doe', 'given': 'Jane B'}
-                    ]
+            "10.1016/j.jocs.2023.101234": {
+                "message": {
+                    "title": ["Machine Learning Applications in Scientific Computing"],
+                    "container-title": ["Journal of Computational Science"],
+                    "published-print": {"date-parts": [[2023]]},
+                    "author": [
+                        {"family": "Smith", "given": "John A"},
+                        {"family": "Doe", "given": "Jane B"},
+                    ],
                 }
             },
-            '10.1109/DSR.2022.9876543': {
-                'message': {
-                    'title': ['Advanced Data Analysis Techniques'],
-                    'container-title': ['Data Science Review'],
-                    'published-print': {'date-parts': [[2022]]},
-                    'author': [{'family': 'Jones', 'given': 'Alice M'}]
+            "10.1109/DSR.2022.9876543": {
+                "message": {
+                    "title": ["Advanced Data Analysis Techniques"],
+                    "container-title": ["Data Science Review"],
+                    "published-print": {"date-parts": [[2022]]},
+                    "author": [{"family": "Jones", "given": "Alice M"}],
                 }
             },
-            '10.1007/s11222-021-09999-1': {
-                'message': {
-                    'title': ['Statistical Methods for Large Datasets'],
-                    'container-title': ['Statistics and Computing'],
-                    'published-print': {'date-parts': [[2021]]},
-                    'author': [
-                        {'family': 'Brown', 'given': 'Robert C'},
-                        {'family': 'Lee', 'given': 'Sarah K'}
-                    ]
+            "10.1007/s11222-021-09999-1": {
+                "message": {
+                    "title": ["Statistical Methods for Large Datasets"],
+                    "container-title": ["Statistics and Computing"],
+                    "published-print": {"date-parts": [[2021]]},
+                    "author": [
+                        {"family": "Brown", "given": "Robert C"},
+                        {"family": "Lee", "given": "Sarah K"},
+                    ],
                 }
             },
-            '10.1038/s41592-020-0896-6': {
-                'message': {
-                    'title': ['Reproducible Research Practices'],
-                    'container-title': ['Nature Methods'],
-                    'published-print': {'date-parts': [[2020]]},
-                    'author': [{'family': 'Wilson', 'given': 'Michael P'}]
+            "10.1038/s41592-020-0896-6": {
+                "message": {
+                    "title": ["Reproducible Research Practices"],
+                    "container-title": ["Nature Methods"],
+                    "published-print": {"date-parts": [[2020]]},
+                    "author": [{"family": "Wilson", "given": "Michael P"}],
                 }
-            }
+            },
         }
-        
+
         def mock_crossref_call(doi):
-            return mock_responses.get(doi, None)
-        
+            return mock_responses.get(doi)
+
         mock_crossref.side_effect = mock_crossref_call
-        
+
         self._create_complete_manuscript(with_valid_dois=True)
-        
+
         # Test unified validator with DOI validation enabled
         validator = UnifiedValidator(
             manuscript_path=self.manuscript_dir,
             verbose=True,
-            enable_doi_validation=True
+            enable_doi_validation=True,
         )
-        
+
         validation_passed = validator.validate_all()
-        
+
         # Should pass validation
         self.assertTrue(validation_passed)
-        
+
         # Check that DOI validation was performed
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
-        self.assertIn('doi_validation', citation_result.metadata)
-        
-        doi_metadata = citation_result.metadata['doi_validation']
-        self.assertEqual(doi_metadata['total_dois'], 4)
-        self.assertGreaterEqual(doi_metadata['validated_dois'], 3)
-        self.assertEqual(doi_metadata['invalid_format'], 0)
-    
+        self.assertIn("doi_validation", citation_result.metadata)
+
+        doi_metadata = citation_result.metadata["doi_validation"]
+        self.assertEqual(doi_metadata["total_dois"], 4)
+        self.assertGreaterEqual(doi_metadata["validated_dois"], 3)
+        self.assertEqual(doi_metadata["invalid_format"], 0)
+
     def test_complete_validation_with_doi_disabled(self):
         """Test complete validation workflow with DOI validation disabled."""
         self._create_complete_manuscript(with_valid_dois=True)
-        
+
         # Test unified validator with DOI validation disabled
         validator = UnifiedValidator(
             manuscript_path=self.manuscript_dir,
             verbose=True,
-            enable_doi_validation=False
+            enable_doi_validation=False,
         )
-        
+
         validation_passed = validator.validate_all()
-        
+
         # Should pass validation (no DOI checks)
         self.assertTrue(validation_passed)
-        
+
         # Check that DOI validation was not performed
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
-        self.assertNotIn('doi_validation', citation_result.metadata)
-    
+        self.assertNotIn("doi_validation", citation_result.metadata)
+
     def test_complete_validation_with_doi_format_errors(self):
         """Test complete validation workflow with DOI format errors."""
         self._create_complete_manuscript(with_valid_dois=False)
-        
+
         # Test unified validator with DOI validation enabled
         validator = UnifiedValidator(
             manuscript_path=self.manuscript_dir,
             verbose=True,
-            enable_doi_validation=True
+            enable_doi_validation=True,
         )
-        
+
         validation_passed = validator.validate_all()
-        
+
         # Should fail validation due to DOI format errors
         self.assertFalse(validation_passed)
-        
+
         # Check that DOI validation detected format errors
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
-        self.assertIn('doi_validation', citation_result.metadata)
-        
-        doi_metadata = citation_result.metadata['doi_validation']
-        self.assertGreater(doi_metadata['invalid_format'], 0)
-    
-    @patch('crossref_commons.retrieval.get_publication_as_json')
+        self.assertIn("doi_validation", citation_result.metadata)
+
+        doi_metadata = citation_result.metadata["doi_validation"]
+        self.assertGreater(doi_metadata["invalid_format"], 0)
+
+    @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_complete_validation_with_metadata_mismatches(self, mock_crossref):
         """Test complete validation workflow with metadata mismatches."""
         # Mock CrossRef responses with mismatched metadata
         mock_responses = {
-            '10.1016/j.jocs.2023.101234': {
-                'message': {
-                    'title': ['Completely Different Title'],
-                    'container-title': ['Different Journal'],
-                    'published-print': {'date-parts': [[2022]]},  # Wrong year
-                    'author': [{'family': 'Different', 'given': 'Author'}]
+            "10.1016/j.jocs.2023.101234": {
+                "message": {
+                    "title": ["Completely Different Title"],
+                    "container-title": ["Different Journal"],
+                    "published-print": {"date-parts": [[2022]]},  # Wrong year
+                    "author": [{"family": "Different", "given": "Author"}],
                 }
             },
-            '10.1109/DSR.2022.9876543': {
-                'message': {
-                    'title': ['Another Mismatched Title'],
-                    'container-title': ['Wrong Journal Name'],
-                    'published-print': {'date-parts': [[2021]]},
-                    'author': [{'family': 'Wrong', 'given': 'Author'}]
+            "10.1109/DSR.2022.9876543": {
+                "message": {
+                    "title": ["Another Mismatched Title"],
+                    "container-title": ["Wrong Journal Name"],
+                    "published-print": {"date-parts": [[2021]]},
+                    "author": [{"family": "Wrong", "given": "Author"}],
                 }
-            }
+            },
         }
-        
+
         def mock_crossref_call(doi):
-            return mock_responses.get(doi, None)
-        
+            return mock_responses.get(doi)
+
         mock_crossref.side_effect = mock_crossref_call
-        
+
         self._create_complete_manuscript(with_valid_dois=True)
-        
+
         # Test unified validator with DOI validation enabled
         validator = UnifiedValidator(
             manuscript_path=self.manuscript_dir,
             verbose=True,
-            enable_doi_validation=True
+            enable_doi_validation=True,
         )
-        
+
         validation_passed = validator.validate_all()
-        
+
         # Should still pass overall (warnings, not errors)
         # but should have warnings about metadata mismatches
-        
+
         # Check that DOI validation detected mismatches
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
         self.assertTrue(citation_result.has_warnings)
-        
+
         # Check for mismatch warnings
         warning_messages = [
-            error.message for error in citation_result.errors 
+            error.message
+            for error in citation_result.errors
             if error.level.value == "warning"
         ]
-        mismatch_warnings = [msg for msg in warning_messages if "mismatch" in msg.lower()]
+        mismatch_warnings = [
+            msg for msg in warning_messages if "mismatch" in msg.lower()
+        ]
         self.assertGreater(len(mismatch_warnings), 0)
-    
-    @patch('crossref_commons.retrieval.get_publication_as_json')
+
+    @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_complete_validation_with_api_failures(self, mock_crossref):
         """Test complete validation workflow with API failures."""
         # Mock API failures
         mock_crossref.side_effect = Exception("Network connection failed")
-        
+
         self._create_complete_manuscript(with_valid_dois=True)
-        
+
         # Test unified validator with DOI validation enabled
         validator = UnifiedValidator(
             manuscript_path=self.manuscript_dir,
             verbose=True,
-            enable_doi_validation=True
+            enable_doi_validation=True,
         )
-        
+
         validation_passed = validator.validate_all()
-        
+
         # Should still pass overall validation (API failures are warnings)
-        
+
         # Check that DOI validation detected API failures
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
         self.assertTrue(citation_result.has_warnings)
-        
-        doi_metadata = citation_result.metadata['doi_validation']
+
+        doi_metadata = citation_result.metadata["doi_validation"]
         # Should complete validation (may use cache or offline mode)
-        self.assertGreaterEqual(doi_metadata['api_failures'], 0)
-    
+        self.assertGreaterEqual(doi_metadata["api_failures"], 0)
+
     def test_validation_statistics_reporting(self):
         """Test that DOI validation statistics are properly reported."""
         self._create_complete_manuscript(with_valid_dois=False)
-        
+
         # Test unified validator with detailed output
         validator = UnifiedValidator(
             manuscript_path=self.manuscript_dir,
             verbose=True,
             include_info=True,
-            enable_doi_validation=True
+            enable_doi_validation=True,
         )
-        
+
         validation_passed = validator.validate_all()
-        
+
         # Get citation validation results
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
-        
+
         # Check DOI validation metadata
-        self.assertIn('doi_validation', citation_result.metadata)
-        doi_metadata = citation_result.metadata['doi_validation']
-        
+        self.assertIn("doi_validation", citation_result.metadata)
+        doi_metadata = citation_result.metadata["doi_validation"]
+
         # Verify all expected statistics are present
         expected_stats = [
-            'total_dois', 'validated_dois', 'invalid_format', 
-            'api_failures', 'mismatched_metadata'
+            "total_dois",
+            "validated_dois",
+            "invalid_format",
+            "api_failures",
+            "mismatched_metadata",
         ]
-        
+
         for stat in expected_stats:
             self.assertIn(stat, doi_metadata)
             self.assertIsInstance(doi_metadata[stat], int)
-    
+
     def test_cache_persistence_across_validations(self):
         """Test that DOI cache persists across multiple validations."""
-        with patch('crossref_commons.retrieval.get_publication_as_json') as mock_crossref:
+        with patch(
+            "crossref_commons.retrieval.get_publication_as_json"
+        ) as mock_crossref:
             # Mock successful response
             mock_crossref.return_value = {
-                'message': {
-                    'title': ['Cached Test Article'],
-                    'container-title': ['Cache Journal'],
-                    'published-print': {'date-parts': [[2023]]}
+                "message": {
+                    "title": ["Cached Test Article"],
+                    "container-title": ["Cache Journal"],
+                    "published-print": {"date-parts": [[2023]]},
                 }
             }
-            
+
             self._create_complete_manuscript(with_valid_dois=True)
-            
+
             # First validation - should call API
             validator1 = UnifiedValidator(
-                manuscript_path=self.manuscript_dir,
-                enable_doi_validation=True
+                manuscript_path=self.manuscript_dir, enable_doi_validation=True
             )
             validator1.validate_all()
-            
+
             api_calls_first = mock_crossref.call_count
             # May not make API calls if using cache or offline mode
             self.assertGreaterEqual(api_calls_first, 0)
-            
+
             # Second validation - should use cache
             validator2 = UnifiedValidator(
-                manuscript_path=self.manuscript_dir,
-                enable_doi_validation=True
+                manuscript_path=self.manuscript_dir, enable_doi_validation=True
             )
             validator2.validate_all()
-            
+
             # Should not make additional API calls
             api_calls_second = mock_crossref.call_count
             self.assertEqual(api_calls_first, api_calls_second)
-    
+
     def test_standalone_doi_validator(self):
         """Test DOI validator as standalone component."""
         self._create_complete_manuscript(with_valid_dois=False)
-        
+
         # Test standalone DOI validator
         doi_validator = DOIValidator(
             manuscript_path=self.manuscript_dir,
-            enable_online_validation=False  # Offline mode for testing
+            enable_online_validation=False,  # Offline mode for testing
         )
-        
+
         result = doi_validator.validate()
-        
+
         # Should detect format errors without API calls
         self.assertTrue(result.has_errors)
-        self.assertGreater(result.metadata['invalid_format'], 0)
-        self.assertEqual(result.metadata['api_failures'], 0)
-    
+        self.assertGreater(result.metadata["invalid_format"], 0)
+        self.assertEqual(result.metadata["api_failures"], 0)
+
     def test_mixed_valid_invalid_dois(self):
         """Test validation with mix of valid and invalid DOIs."""
         # Create bibliography with mixed DOI validity
@@ -501,26 +510,27 @@ This concludes our test manuscript.
     year = 2023
 }
 """
-        
+
         # Create basic manuscript structure
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(mixed_bib_content)
-        
+
         with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
             f.write("# Test\n\nCitations: @valid_doi and @invalid_format and @no_doi")
-        
+
         # Test DOI validator
         doi_validator = DOIValidator(
-            manuscript_path=self.manuscript_dir,
-            enable_online_validation=False
+            manuscript_path=self.manuscript_dir, enable_online_validation=False
         )
-        
+
         result = doi_validator.validate()
-        
+
         # Should have some errors (invalid format) but not fail completely
         self.assertTrue(result.has_errors)
-        self.assertEqual(result.metadata['total_dois'], 2)  # Two entries with DOI fields
-        self.assertEqual(result.metadata['invalid_format'], 1)  # One invalid format
+        self.assertEqual(
+            result.metadata["total_dois"], 2
+        )  # Two entries with DOI fields
+        self.assertEqual(result.metadata["invalid_format"], 1)  # One invalid format
 
 
 if __name__ == "__main__":

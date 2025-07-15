@@ -44,9 +44,14 @@ jobs:
           echo "manuscript_path=$MANUSCRIPT_PATH" >> $GITHUB_OUTPUT
 
   # Second job: Build the PDF document
+  # Using pre-compiled Docker image for 5x faster builds (~2 min vs ~10+ min)
+  # Container includes LaTeX, Python scientific stack, R packages, Node.js, and system dependencies
   build-pdf:
     needs: prepare
     runs-on: ubuntu-latest
+    container:
+      image: henriqueslab/rxiv-maker-base:latest  # Pre-compiled image with all dependencies
+      options: --platform linux/amd64 --user root
 
     steps:
     - name: Checkout repository
@@ -57,54 +62,50 @@ jobs:
         echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> $GITHUB_ENV
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
 
-    # Install all required LaTeX packages and Python dependencies
-    - name: Install Node.js for Mermaid CLI
-      uses: actions/setup-node@v4
+    - name: Configure Git
+      run: |
+        git config --global --add safe.directory /__w/rxiv-maker/rxiv-maker
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+    # Cache Python dependencies and virtual environment
+    - name: Cache Python dependencies
+      uses: actions/cache@v4
       with:
-        node-version: '18'
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-python-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-python-
 
-    - name: Install Mermaid CLI
+    # Install Python dependencies only (system dependencies pre-installed in Docker image)
+    # This step is much faster than installing everything from scratch (~30s vs ~8+ min)
+    - name: Install Python dependencies
       run: |
-        echo "Installing Mermaid CLI..."
-        npm install -g @mermaid-js/mermaid-cli
+        echo "Installing Python dependencies..."
+        echo "NOTE: LaTeX, R packages, Node.js, and system dependencies are pre-installed in container"
 
-    - name: Install LaTeX, R and Python dependencies
-      run: |
-        echo "Installing TeXLive, R and Python dependencies..."
+        # Ensure cache directories have proper permissions
+        mkdir -p ~/.cache ~/.R/library
+        chown -R root:root ~/.cache ~/.R/library || true
 
-        # Update and install LaTeX packages and R with required system dependencies
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
-          libfontconfig1-dev \
-          libfreetype6-dev \
-          libharfbuzz-dev \
-          libfribidi-dev \
-          pkg-config \
-          texlive-latex-base \
-          texlive-latex-recommended \
-          texlive-latex-extra \
-          texlive-fonts-recommended \
-          texlive-fonts-extra \
-          texlive-science \
-          texlive-bibtex-extra \
-          texlive-pictures \
-          biber \
-          python3 \
-          python3-pip \
-          python3-venv \
-          make \
-          curl \
-          r-base
+        # Install only Python dependencies (system dependencies already in Docker image)
+        # This is the key performance optimization - no lengthy apt installs or LaTeX setup
+        make setup
 
-        # Install Python dependencies
-        python3 -m pip install --upgrade pip
-        python3 -m pip install -e ".[dev]"
-
-        # Set up a writable R library directory
-        mkdir -p ~/.R/library
+        # Set up a writable R library directory (core R packages already in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
 
-
+    # Cache R library directory
+    - name: Cache R packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.R/library
+        key: ${{ runner.os }}-r-${{ hashFiles('**/DESCRIPTION') }}
+        restore-keys: |
+          ${{ runner.os }}-r-
 
     # Cache LaTeX build outputs from previous runs
     - name: Cache LaTeX outputs
@@ -132,43 +133,193 @@ jobs:
           ${{ runner.os }}-figures-
 
     - name: Generate PDF
+      timeout-minutes: 15
+      shell: bash
       env:
         R_LIBS_USER: ~/.R/library
       run: |
-        echo "✅ Running PDF generation"
+        echo "✅ Running PDF generation with detailed logging"
+        echo "=================================================="
+        echo "📋 Build Configuration:"
+        echo "  - Manuscript Path: ${{ needs.prepare.outputs.manuscript_path }}"
+        echo "  - Python Version: $(python3 --version)"
+        echo "  - LaTeX Version: $(pdflatex --version | head -1)"
+        echo "  - Current Directory: $(pwd)"
+        echo "  - Available Memory: $(free -h | grep '^Mem:' | awk '{print $2}' | tr -d '\n') total, $(free -h | grep '^Mem:' | awk '{print $7}' | tr -d '\n') available"
+        echo "  - Available Space: $(df -h . | tail -1 | awk '{print $4}') free"
+        echo "=================================================="
 
-        # Set up environment
+        # Set up environment with verbose logging
         export MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}
         export TEXMFVAR=/tmp/texmf-var
         export FORCE_FIGURES=true
+        echo "🔧 Environment variables set:"
+        echo "  - MANUSCRIPT_PATH: $MANUSCRIPT_PATH"
+        echo "  - TEXMFVAR: $TEXMFVAR"
+        echo "  - FORCE_FIGURES: $FORCE_FIGURES"
+        echo "  - R_LIBS_USER: $R_LIBS_USER"
 
         # Create necessary directories
-        mkdir -p /tmp/texmf-var output
+        echo "📁 Creating necessary directories..."
+        mkdir -p /tmp/texmf-var output ~/.cache ~/.R/library
+        echo "  - Created /tmp/texmf-var"
+        echo "  - Created output"
+        echo "  - Ensured cache directories exist"
 
-        # Run the build
-        make clean-figures
-        make pdf
+        # Check manuscript directory exists
+        echo "📂 Checking manuscript directory..."
+        if [ -d "$MANUSCRIPT_PATH" ]; then
+          echo "  ✅ Manuscript directory exists: $MANUSCRIPT_PATH"
+          echo "  📋 Contents:"
+          ls -la "$MANUSCRIPT_PATH" | sed 's/^/    /'
+        else
+          echo "  ❌ ERROR: Manuscript directory not found: $MANUSCRIPT_PATH"
+          echo "  📋 Available directories:"
+          ls -la . | grep '^d' | sed 's/^/    /'
+          exit 1
+        fi
+
+        # Check Python dependencies
+        echo "🐍 Checking Python dependencies..."
+        python3 -c "import sys; print(f'  - Python executable: {sys.executable}')"
+        python3 -c "import numpy; print(f'  - NumPy version: {numpy.__version__}')" || echo "  ❌ NumPy not available"
+        python3 -c "import matplotlib; print(f'  - Matplotlib version: {matplotlib.__version__}')" || echo "  ❌ Matplotlib not available"
+        python3 -c "import yaml; print(f'  - PyYAML available')" || echo "  ❌ PyYAML not available"
+
+        # Run the build with step-by-step logging
+        echo "🧹 Step 1: Cleaning figures..."
+        make clean-figures 2>&1 | sed 's/^/  /'
+        echo "  ✅ Figures cleaned"
+
+        echo "📄 Step 2: Generating PDF..."
+        echo "  Command: make pdf"
+        echo "  Working directory: $(pwd)"
+        echo "  Start time: $(date)"
+
+        # Run make pdf with detailed output
+        set -o pipefail
+        make pdf 2>&1 | tee /tmp/make_pdf_output.log | sed 's/^/  /'
+        MAKE_EXIT_CODE=$?
+
+        echo "  End time: $(date)"
+        echo "  Exit code: $MAKE_EXIT_CODE"
+
+        if [ $MAKE_EXIT_CODE -ne 0 ]; then
+          echo "  ❌ make pdf failed with exit code $MAKE_EXIT_CODE"
+          echo "  📋 Last 50 lines of output:"
+          tail -50 /tmp/make_pdf_output.log | sed 's/^/    /'
+          exit $MAKE_EXIT_CODE
+        else
+          echo "  ✅ make pdf completed successfully"
+        fi
 
     - name: Check PDF generation
       run: |
-        echo "Checking output directory contents..."
-        ls -la output/ || echo "Output directory not found"
+        echo "=================================================="
+        echo "📋 Checking PDF generation results..."
+        echo "=================================================="
 
+        # Check output directory
+        echo "📁 Output directory contents:"
+        if [ -d "output" ]; then
+          ls -la output/ | sed 's/^/  /'
+        else
+          echo "  ❌ ERROR: Output directory not found"
+          echo "  📋 Current directory contents:"
+          ls -la . | sed 's/^/    /'
+        fi
+
+        # Check for expected PDF
         PDF_PATH="output/${MANUSCRIPT_PATH}.pdf"
+        echo "🔍 Looking for PDF at: $PDF_PATH"
 
         if [ -f "$PDF_PATH" ]; then
-          echo "✅ PDF generated successfully: $PDF_PATH"
-          ls -la "$PDF_PATH"
-          file "$PDF_PATH"
+          echo "  ✅ PDF generated successfully!"
+          echo "  📊 PDF Details:"
+          ls -la "$PDF_PATH" | sed 's/^/    /'
+          file "$PDF_PATH" | sed 's/^/    /'
+          echo "  📏 PDF size: $(du -h "$PDF_PATH" | cut -f1)"
         else
-          echo "❌ ERROR: PDF not found at $PDF_PATH"
-          echo "Contents of output directory:"
-          find output/ -type f 2>/dev/null || echo "No files found in output/"
+          echo "  ❌ ERROR: PDF not found at expected location"
+          echo "  🔍 Searching for any PDF files..."
+          find . -name "*.pdf" -type f 2>/dev/null | sed 's/^/    /' || echo "    No PDF files found anywhere"
 
-          echo "Checking for LaTeX log files:"
-          find output/ -name "*.log" -exec echo "=== {} ===" \; -exec tail -50 {} \; 2>/dev/null || echo "No log files found"
+          echo "  📋 All output files:"
+          find output/ -type f 2>/dev/null | sed 's/^/    /' || echo "    No files found in output/"
+
+          echo "  📋 LaTeX log files analysis:"
+          find output/ -name "*.log" -exec echo "    === {} ===" \; -exec tail -50 {} \; 2>/dev/null || echo "    No log files found"
+
+          echo "  📋 Make PDF output log (last 100 lines):"
+          if [ -f "/tmp/make_pdf_output.log" ]; then
+            tail -100 /tmp/make_pdf_output.log | sed 's/^/    /'
+          else
+            echo "    No make PDF output log found"
+          fi
+
           exit 1
         fi
+
+    # Always upload debug files for troubleshooting (even on success)
+    - name: Upload debug artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: debug-files
+        path: |
+          /tmp/make_pdf_output.log
+          output/*.log
+          output/*.aux
+          output/*.bbl
+          output/*.blg
+          output/*.out
+          output/*.toc
+          output/*.fls
+          output/*.fdb_latexmk
+          .cache/
+        retention-days: 30
+
+    # Collect system information on failure
+    - name: Collect system debug information
+      if: failure()
+      run: |
+        echo "=================================================="
+        echo "🔍 System Debug Information (Build Failed)"
+        echo "=================================================="
+
+        echo "📊 System Resources:"
+        echo "  Memory usage:"
+        free -h | sed 's/^/    /'
+        echo "  Disk usage:"
+        df -h | sed 's/^/    /'
+        echo "  CPU info:"
+        nproc | sed 's/^/    CPUs: /'
+
+        echo "📋 Process Information:"
+        echo "  Running processes:"
+        ps aux | head -20 | sed 's/^/    /'
+
+        echo "📂 File System State:"
+        echo "  Current directory:"
+        pwd | sed 's/^/    /'
+        echo "  Directory contents:"
+        ls -la | sed 's/^/    /'
+
+        echo "🐍 Python Environment:"
+        python3 --version | sed 's/^/    /'
+        python3 -c "import sys; print('Python path:', sys.path)" | sed 's/^/    /'
+
+        echo "📄 LaTeX Environment:"
+        which pdflatex | sed 's/^/    pdflatex: /'
+        which bibtex | sed 's/^/    bibtex: /' || echo "    bibtex: not found"
+
+        echo "📋 Environment Variables:"
+        env | grep -E "^(PATH|MANUSCRIPT_PATH|TEXMF|R_LIBS)" | sed 's/^/    /'
+
+        echo "🔍 Build Files Search:"
+        find . -name "*.pdf" -o -name "*.log" -o -name "*.aux" | sed 's/^/    /'
+
+        echo "=================================================="
 
     - name: Prepare release assets
       id: prepare-release
@@ -228,7 +379,7 @@ jobs:
           TAG=$(git tag --sort=-creatordate | head -n 1)
           echo "Using most recent tag: $TAG"
         fi
-        
+
         echo "MOST_RECENT_TAG=$TAG" >> $GITHUB_ENV
         echo "MOST_RECENT_TAG=$TAG" >> $GITHUB_OUTPUT
 

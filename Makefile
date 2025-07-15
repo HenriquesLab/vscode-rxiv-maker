@@ -30,101 +30,65 @@ export
 # 🌐 CROSS-PLATFORM COMPATIBILITY
 # ======================================================================
 
-# Detect operating system with GitHub Actions override
+# Detect operating system
 ifdef MAKEFILE_FORCE_UNIX
-    # GitHub Actions environment - force Unix-style even on Windows runners
     DETECTED_OS := GitHub-Actions-Unix
-    PATH_SEP := /
     SHELL_NULL := /dev/null
-    PYTHON_EXEC := python3
     VENV_PYTHON := .venv/bin/python
-    VENV_ACTIVATE := .venv/bin/activate
-    FORCE_UNIX_SHELL := true
 else ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
-    PATH_SEP := \\
     SHELL_NULL := nul
-    PYTHON_EXEC := python
     VENV_PYTHON := .venv\Scripts\python.exe
-    VENV_ACTIVATE := .venv\Scripts\activate
 else
     UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Linux)
-        DETECTED_OS := Linux
-    endif
-    ifeq ($(UNAME_S),Darwin)
-        DETECTED_OS := macOS
-    endif
-    PATH_SEP := /
+    DETECTED_OS := $(if $(findstring Linux,$(UNAME_S)),Linux,$(if $(findstring Darwin,$(UNAME_S)),macOS,Unix))
     SHELL_NULL := /dev/null
-    PYTHON_EXEC := python3
     VENV_PYTHON := .venv/bin/python
-    VENV_ACTIVATE := .venv/bin/activate
-endif
-
-# Check if .env file exists (cross-platform)
-ifdef MAKEFILE_FORCE_UNIX
-    ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
-else ifeq ($(OS),Windows_NT)
-    ENV_FILE_EXISTS := $(shell if exist ".env" (echo true) else (echo false))
-else
-    ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
 endif
 
 # Cross-platform Python command selection (prefer uv, then venv, then system python)
-ifdef MAKEFILE_FORCE_UNIX
-    PYTHON_CMD := $(shell if command -v uv >$(SHELL_NULL) 2>&1; then echo "uv run python"; elif [ -f "$(VENV_PYTHON)" ]; then echo "$(PWD)/$(VENV_PYTHON)"; else echo "$(PYTHON_EXEC)"; fi)
-else ifeq ($(OS),Windows_NT)
-    # Windows detection
-    PYTHON_CMD := $(shell where uv >nul 2>&1 && echo uv run python || (if exist "$(VENV_PYTHON)" (echo $(PWD)\$(VENV_PYTHON)) else (echo $(PYTHON_EXEC))))
+ifeq ($(OS),Windows_NT)
+    PYTHON_CMD := $(shell where uv >nul 2>&1 && echo uv run python || (if exist "$(VENV_PYTHON)" (echo $(VENV_PYTHON)) else (echo python)))
 else
-    # Unix-like systems (macOS, Linux)
-    PYTHON_CMD := $(shell if command -v uv >$(SHELL_NULL) 2>&1; then echo "uv run python"; elif [ -f "$(VENV_PYTHON)" ]; then echo "$(PWD)/$(VENV_PYTHON)"; else echo "$(PYTHON_EXEC)"; fi)
+    PYTHON_CMD := $(shell command -v uv >$(SHELL_NULL) 2>&1 && echo "uv run python" || (test -f "$(VENV_PYTHON)" && echo "$(VENV_PYTHON)" || echo python3))
+endif
+
+# ======================================================================
+# 🐳 ENGINE MODE CONFIGURATION (DOCKER vs LOCAL)
+# ======================================================================
+
+# Engine mode: LOCAL (default) or DOCKER
+# Override with: make pdf RXIV_ENGINE=DOCKER
+RXIV_ENGINE ?= LOCAL
+
+# Docker configuration
+DOCKER_IMAGE ?= henriqueslab/rxiv-maker-base:latest
+DOCKER_HUB_REPO ?= henriqueslab/rxiv-maker-base
+
+# Platform detection for Docker
+# NOTE: rxiv-maker-base image is AMD64-only due to Chrome ARM64 Linux limitations
+# ARM64 users run with Rosetta emulation for full compatibility
+DOCKER_PLATFORM := linux/amd64
+
+# Engine-specific command configuration
+ifeq ($(RXIV_ENGINE),DOCKER)
+    # Docker mode: Run all commands inside containers with platform-specific image
+    DOCKER_RUN_CMD = docker run --rm --platform $(DOCKER_PLATFORM) -v $(PWD):/workspace -w /workspace
+    PYTHON_CMD = $(DOCKER_RUN_CMD) $(DOCKER_IMAGE) python
+    DOCKER_MODE_ACTIVE = true
+    ENGINE_STATUS = 🐳 Docker ($(DOCKER_PLATFORM))
+else
+    # Local mode: Use local installations (existing behavior)
+    DOCKER_MODE_ACTIVE = false
+    ENGINE_STATUS = 💻 Local
 endif
 
 OUTPUT_DIR := output
 
-# Handle MANUSCRIPT_PATH with proper precedence: command line > environment > .env > default
-ifeq ($(origin MANUSCRIPT_PATH), command line)
-    # Command line takes highest precedence - keep the value as is
-else ifeq ($(origin MANUSCRIPT_PATH), environment)
-    # Environment variable (like MANUSCRIPT_PATH=value make pdf) takes precedence
-else
-    # Load from .env file or use default
-    -include .env
-    MANUSCRIPT_PATH ?= $(shell \
-        if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
-            grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
-        else \
-            echo "MANUSCRIPT"; \
-        fi)
-endif
-
-# Export MANUSCRIPT_PATH explicitly after determining its value
+# Simple MANUSCRIPT_PATH handling: command line > environment > .env file > default
+-include .env
+MANUSCRIPT_PATH ?= MANUSCRIPT
 export MANUSCRIPT_PATH
-
-# Default manuscript path if not provided via environment or .env (cross-platform)
-ifdef MAKEFILE_FORCE_UNIX
-    DEFAULT_MANUSCRIPT_PATH := $(shell \
-        if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
-            grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
-        else \
-            echo "MANUSCRIPT"; \
-        fi)
-else ifeq ($(OS),Windows_NT)
-    DEFAULT_MANUSCRIPT_PATH := $(shell if exist ".env" (for /f "tokens=2 delims==" %i in ('findstr /b "MANUSCRIPT_PATH=" .env 2^>nul') do @echo %i) else (echo MANUSCRIPT))
-else
-    DEFAULT_MANUSCRIPT_PATH := $(shell \
-        if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
-            grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
-        else \
-            echo "MANUSCRIPT"; \
-        fi)
-endif
-
-# Simple variable precedence: Use MANUSCRIPT_PATH if defined, otherwise use default
-# This handles both command-line (MANUSCRIPT_PATH=value make target) and environment variables
-MANUSCRIPT_PATH ?= $(DEFAULT_MANUSCRIPT_PATH)
 
 ARTICLE_DIR = $(MANUSCRIPT_PATH)
 FIGURES_DIR = $(ARTICLE_DIR)/FIGURES
@@ -167,21 +131,46 @@ setup:
 setup-reinstall:
 	@$(PYTHON_CMD) src/py/commands/setup_environment.py --reinstall
 
+# Check system dependencies
+.PHONY: check-deps
+check-deps:
+	@echo "🔍 Checking system dependencies..."
+	@$(PYTHON_CMD) src/py/commands/setup_environment.py --check-deps-only
+
+# Check system dependencies (verbose)
+.PHONY: check-deps-verbose
+check-deps-verbose:
+	@echo "🔍 Checking system dependencies (verbose)..."
+	@$(PYTHON_CMD) src/py/commands/setup_environment.py --check-deps-only --verbose
+
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
 pdf:
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/build_manager.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures)
+	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/build_manager.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --verbose $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF without validation (for debugging)
 .PHONY: pdf-no-validate
 pdf-no-validate:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/build_manager.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures)
 
+# Generate PDF with change tracking against a git tag
+.PHONY: pdf-track-changes
+pdf-track-changes:
+ifndef TAG
+	$(error TAG is required. Usage: make pdf-track-changes TAG=v1.0.0)
+endif
+	@echo "🔍 Generating PDF with change tracking against tag: $(TAG)"
+	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/build_manager.py \
+		--manuscript-path "$(MANUSCRIPT_PATH)" \
+		--output-dir $(OUTPUT_DIR) \
+		--track-changes $(TAG) \
+		--verbose $(if $(FORCE_FIGURES),--force-figures)
+
 # Prepare arXiv submission package
 .PHONY: arxiv
 arxiv: pdf
 	@echo "Preparing arXiv submission package..."
-	@$(PYTHON_CMD) src/py/commands/prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --zip
+	@$(PYTHON_CMD) src/py/commands/prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --zip
 	@echo "✅ arXiv package ready: $(OUTPUT_DIR)/for_arxiv.zip"
 	@echo "Copying arXiv package to manuscript directory with naming convention..."
 	@YEAR=$$($(PYTHON_CMD) -c "import yaml; import sys; sys.path.insert(0, 'src/py'); config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \
@@ -352,66 +341,34 @@ clean-temp:
 clean-cache:
 	@$(PYTHON_CMD) src/py/commands/cleanup.py --cache-only
 
+# ======================================================================
+# 🐳 DOCKER ENGINE MODE
+# ======================================================================
+
+# Note: Docker image management commands are in src/docker/Makefile for maintainers.
+# End users can use RXIV_ENGINE=DOCKER with any command for containerized execution.
+
 # Show help
 .PHONY: help
 help:
 	@VERSION=$$($(PYTHON_CMD) -c "import sys; sys.path.insert(0, 'src/py'); from src.py import __version__; print(__version__)" 2>/dev/null || echo "unknown"); \
-	echo "====================================="; \
-	echo "Rxiv-Maker v$$VERSION - Makefile Commands"; \
-	echo "Platform: $(DETECTED_OS)"; \
-	echo "====================================="; \
+	echo "Rxiv-Maker v$$VERSION ($(DETECTED_OS))"; \
 	echo ""; \
-	echo "🚀 ESSENTIAL COMMANDS:"; \
-	echo "  make setup          - Install Python dependencies"; \
-	echo "  make setup-reinstall - Reinstall dependencies (removes .venv and creates new one)"; \
-	echo "  make pdf            - Generate PDF with validation (auto-runs Python figure scripts)"; \
-	echo "  make validate       - Check manuscript for issues"; \
-	echo "  make fix-bibliography - Automatically fix bibliography issues using CrossRef"; \
-	echo "  make add-bibliography - Add bibliography entries from DOI(s)"; \
-	echo "  make arxiv          - Prepare arXiv submission package"; \
-	echo "  make clean          - Remove output directory and clean all files"; \
-	echo "  make clean-output   - Remove only output directory"; \
-	echo "  make clean-figures  - Remove only generated figures"; \
-	echo "  make clean-arxiv    - Remove only ArXiv files"; \
-	echo "  make clean-temp     - Remove only temporary files"; \
-	echo "  make clean-cache    - Remove only cache files"; \
-	echo "  make help           - Show this help message"; \
+	echo "Essential Commands:"; \
+	echo "  make setup      - Install Python dependencies"; \
+	echo "  make pdf        - Generate PDF with validation"; \
+	echo "  make validate   - Check manuscript for issues"; \
+	echo "  make clean      - Remove output files"; \
+	echo "  make arxiv      - Prepare arXiv submission"; \
 	echo ""; \
-	echo "📁 DIRECTORIES:"; \
-	echo "  - Manuscript files: $(ARTICLE_DIR)/"; \
-	echo "  - Figures:          $(FIGURES_DIR)/"; \
-	echo "  - Output:           $(OUTPUT_DIR)/"; \
+	echo "Docker Mode:"; \
+	echo "  make pdf RXIV_ENGINE=DOCKER      - Generate PDF in container"; \
+	echo "  make validate RXIV_ENGINE=DOCKER - Validate in container"; \
 	echo ""; \
-	echo "�️  FIGURES SETUP:"; \
-	echo "   - Create $(FIGURES_DIR)/ directory for figure content"; \
-	echo "   - Add Python scripts (.py) to generate figures programmatically"; \
-	echo "   - Add Mermaid diagrams (.mmd) for flowcharts/diagrams"; \
-	echo "   - Or place static figures in subdirectories (e.g., Figure_1/Figure_1.svg)"; \
-	echo "   - Build system creates FIGURES directory automatically if missing"; \
+	echo "Advanced Options:"; \
+	echo "  make pdf FORCE_FIGURES=true      - Force figure regeneration"; \
+	echo "  make pdf MANUSCRIPT_PATH=MY_PAPER - Use custom manuscript"; \
+	echo "  make pdf-track-changes TAG=v1.0.0 - Track changes vs git tag"; \
 	echo ""; \
-	echo "�💡 TIP: New to Rxiv-Maker?"; \
-	echo "   1. Install LaTeX on your system"; \
-	echo "   2. Run 'make setup' to install Python dependencies"; \
-	echo "   3. Run 'make pdf' to generate your first PDF"; \
-	echo "   4. Edit files in $(ARTICLE_DIR)/ and re-run 'make pdf'"; \
-	echo ""; \
-	echo "💡 ADVANCED OPTIONS:"; \
-	echo "   - Skip validation: make pdf-no-validate"; \
-	echo "   - Force figure regeneration: make pdf FORCE_FIGURES=true (re-runs all Python/Mermaid scripts)"; \
-	echo "   - Use different manuscript folder: MANUSCRIPT_PATH=path/to/folder make -e pdf"; \
-	echo "   - Preview bibliography fixes: make fix-bibliography-dry-run"; \
-	echo "   - Add bibliography: make add-bibliography 10.1000/example"; \
-	echo "   - Multiple DOIs: make add-bibliography 10.1000/ex1 10.1000/ex2"; \
-	echo "   - Validation options: $(PYTHON_EXEC) src/py/commands/validate.py --help"; \
-	echo "   - arXiv files created in: $(OUTPUT_DIR)/arxiv_submission/"; \
-	echo "   - arXiv ZIP file: $(OUTPUT_DIR)/for_arxiv.zip"; \
-	echo ""; \
-	echo "🌐 PLATFORM NOTES:"; \
-	echo "   - Platform detected: $(DETECTED_OS)"; \
-	echo "   - Python command: $(PYTHON_CMD)"; \
-	echo "   - Virtual environment: $(VENV_PYTHON)"; \
-	echo ""; \
-	echo "🔧 PLATFORM-AGNOSTIC IMPLEMENTATION:"; \
-	echo "   - Cross-platform Python commands handle complex operations"; \
-	echo "   - Simplified Makefile delegates to Python modules"; \
-	echo "   - Better error handling and platform compatibility"
+	echo "Directories: $(ARTICLE_DIR)/ → $(OUTPUT_DIR)/"; \
+	echo "Quick Start: make setup && make pdf"

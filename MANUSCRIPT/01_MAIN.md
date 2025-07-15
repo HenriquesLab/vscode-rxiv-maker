@@ -18,7 +18,7 @@ And reference them using @eq:einstein.
 
 Present your results here. Include figures and tables:
 
-![](FIGURES/example_figure/example_figure.png)
+![](FIGURES/Figure__example/Figure__example.png)
 {#fig:example} **Example Figure Caption.** Describe what your figure shows.
 
 | Column 1 | Column 2 | Column 3 |

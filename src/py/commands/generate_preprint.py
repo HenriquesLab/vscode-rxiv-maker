@@ -12,12 +12,25 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from processors.template_processor import (
-    generate_supplementary_tex,
-    get_template_path,
-    process_template_replacements,
-)
-from processors.yaml_processor import extract_yaml_metadata
+# Add path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+try:
+    from processors.template_processor import (
+        generate_supplementary_tex,
+        get_template_path,
+        process_template_replacements,
+    )
+    from processors.yaml_processor import extract_yaml_metadata
+except ImportError:
+    # Fallback for when run as script
+    sys.path.insert(0, str(Path(__file__).parent.parent / "processors"))
+    from template_processor import (
+        generate_supplementary_tex,
+        get_template_path,
+        process_template_replacements,
+    )
+    from yaml_processor import extract_yaml_metadata
 
 # Load utils.py module directly
 utils_path = Path(__file__).parent.parent / "utils.py"

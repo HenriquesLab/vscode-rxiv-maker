@@ -311,7 +311,7 @@ date: "2025-06-25"
         figures_dir.mkdir()
 
         # Create sample figure subdirectory
-        fig1_dir = figures_dir / "Figure_1"
+        fig1_dir = figures_dir / "Figure__example"
         fig1_dir.mkdir()
 
         # Create main manuscript with figure references
@@ -331,7 +331,7 @@ This paper presents our research findings.
 
 Our approach is illustrated in @fig:methodology.
 
-![Methodology Overview](FIGURES/Figure_1/methodology.png){#fig:methodology width="0.8"}
+![Methodology Overview](FIGURES/Figure__example/methodology.png){#fig:methodology width="0.8"}
 
 # Results
 
@@ -411,7 +411,7 @@ Our approach is illustrated in Figure \ref{fig:methodology}.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.8\linewidth]{Figures/Figure_1/methodology.png}
+\includegraphics[width=0.8\linewidth]{Figures/Figure__example/methodology.png}
 \caption{Methodology Overview}
 \label{fig:methodology}
 \end{figure}

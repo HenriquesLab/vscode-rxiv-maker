@@ -75,19 +75,19 @@
 
 {#snote:figure-generation} **Programmatic Figure Generation and Computational Reproducibility**
 
-The technical architecture underlying Rxiv-Maker's figure generation capabilities demonstrates how automated processing pipelines can maintain transparent connections between source data and final visualisations whilst ensuring computational reproducibility. The system supports two primary methodologies for figure creation: Mermaid diagram processing and Python and R-based data visualisation, each addressing distinct requirements within the scientific publishing workflow.
+Rxiv-Maker's figure generation capabilities demonstrate automated processing pipelines maintaining transparent connections between source data and final visualisations whilst ensuring computational reproducibility. The system supports two primary methodologies: Mermaid diagram processing and Python/R-based data visualisation, each addressing distinct requirements within scientific publishing workflows.
 
-Mermaid diagram processing leverages the Mermaid CLI to convert text-based diagram specifications into publication-ready graphics. This approach enables version-controlled diagram creation where complex flowcharts, system architectures, and conceptual models can be specified using intuitive syntax and automatically rendered into multiple output formats. The system generates SVG, PNG, and PDF variants to accommodate different compilation requirements whilst maintaining vector quality where appropriate. This automation eliminates the manual effort traditionally required for diagram creation and updates, whilst ensuring that modifications to diagram specifications are immediately reflected in the final document.
+Mermaid diagram processing leverages the Mermaid CLI to convert text-based specifications into publication-ready graphics. This approach enables version-controlled diagram creation where complex flowcharts, system architectures, and conceptual models are specified using intuitive syntax and automatically rendered into multiple output formats. The system generates SVG, PNG, and PDF variants accommodating different compilation requirements whilst maintaining vector quality. This automation eliminates manual effort for diagram creation and updates, ensuring modifications are immediately reflected in the final document.
 
-Script-based figure generation (Python and R) represents a more sophisticated approach to computational reproducibility, where analytical scripts are executed during document compilation to generate figures directly from source data. This integration ensures that visualisations remain synchronised with the underlying datasets and analytical methods, eliminating the possibility of outdated or inconsistent graphics persisting in the manuscript. The system executes the image generation scripts within the compilation environment, automatically detecting generated image files and incorporating them into the document structure. This approach transforms figures from static illustrations into dynamic, reproducible computational artefacts that enhance the scientific rigour of the publication.
+Script-based figure generation represents computational reproducibility where analytical scripts execute during compilation to generate figures directly from source data. This integration ensures visualisations remain synchronised with underlying datasets and analytical methods, eliminating outdated or inconsistent graphics. The system executes image generation scripts within the compilation environment, automatically detecting generated files and incorporating them into document structure. This approach transforms figures from static illustrations into dynamic, reproducible computational artefacts enhancing scientific rigour.
 
 {#snote:mathematical-formulas} **Mathematical Formula Support and LaTeX Integration**
 
-The Rxiv-Maker framework seamlessly integrates mathematical notation by automatically translating markdown-style mathematical expressions into publication-ready LaTeX mathematics. This capability enables researchers to author complex mathematical content using familiar syntax whilst benefiting from LaTeX's superior mathematical typesetting capabilities.
+Rxiv-Maker integrates mathematical notation by translating markdown-style expressions into publication-ready LaTeX mathematics. This enables researchers to author complex mathematical content using familiar syntax whilst benefiting from LaTeX's superior typesetting capabilities.
 
-Inline mathematical expressions are supported through dollar sign delimiters (`$...$`), enabling simple formulas such as $E = mc^2$ or $\alpha = \frac{\beta}{\gamma}$ to be embedded within narrative text. The conversion system automatically preserves these expressions during the markdown-to-LaTeX transformation, ensuring that mathematical notation maintains proper formatting and spacing according to established typographical conventions.
+Inline mathematical expressions use dollar sign delimiters (`$...$`), enabling formulas such as $E = mc^2$ or $\alpha = \frac{\beta}{\gamma}$ to be embedded within text. The conversion system preserves expressions during markdown-to-LaTeX transformation, ensuring mathematical notation maintains proper formatting and spacing.
 
-Display equations utilise double dollar sign delimiters (`$$...$$`) for prominent mathematical expressions that require centered presentation. Complex equations such as the Schrödinger equation:
+Display equations utilise double dollar delimiters (`$$...$$`) for prominent mathematical expressions requiring centred presentation. Complex equations such as the Schrödinger equation:
 
 $$i\hbar\frac{\partial}{\partial t}\Psi(\mathbf{r},t) = \hat{H}\Psi(\mathbf{r},t)$$
 
@@ -97,24 +97,22 @@ $$\rho\left(\frac{\partial \mathbf{v}}{\partial t} + \mathbf{v} \cdot \nabla \ma
 
 demonstrate the framework's capability to handle sophisticated mathematical typography, including Greek letters, partial derivatives, vector notation, and complex fraction structures.
 
-The system also supports LaTeX's advanced mathematical environments by directly including LaTeX code blocks. This hybrid approach enables authors to utilise simple markdown syntax for straightforward expressions whilst retaining access to LaTeX's full mathematical typesetting capabilities for complex multi-line derivations:
+The system supports LaTeX's mathematical environments by directly including LaTeX code blocks. This hybrid approach enables simple markdown syntax for straightforward expressions whilst retaining access to LaTeX's full capabilities for complex multi-line derivations.
 
-The framework supports Maxwell's equations and complex mathematical expressions in various formats for flexible scientific notation.
+Mathematical expressions within figure captions, table entries, and cross-references are automatically processed, ensuring consistent typography throughout documents. The framework's content protection system preserves mathematical expressions during multi-stage conversion, preventing unwanted modifications.
 
-Mathematical expressions within figure captions, table entries, and cross-references are automatically processed, ensuring consistent mathematical typography throughout the document. The framework's content protection system ensures that mathematical expressions are preserved during the multi-stage conversion pipeline, preventing unwanted modifications to delicate mathematical syntax.
-
-Statistical notation commonly required in scientific manuscripts is fully supported, including confidence intervals $\mu \pm \sigma$, probability distributions $P(X \leq x)$, and statistical tests with significance levels $p < 0.05$. Complex expressions involving summations $\sum_{i=1}^{n} x_i$, integrals $\int_{-\infty}^{\infty} f(x) dx$, and matrix operations $\mathbf{A}^{-1}\mathbf{b} = \mathbf{x}$ are rendered with appropriate spacing and sizing.
+Statistical notation commonly required in manuscripts is supported, including confidence intervals $\mu \pm \sigma$, probability distributions $P(X \leq x)$, and significance levels $p < 0.05$. Complex expressions involving summations $\sum_{i=1}^{n} x_i$, integrals $\int_{-\infty}^{\infty} f(x) dx$, and matrix operations $\mathbf{A}^{-1}\mathbf{b} = \mathbf{x}$ are rendered with appropriate spacing.
 
 <newpage>
 
 ## Supplementary Figures 
 
-![](FIGURES/SFigure_2/SFigure_2.svg)
-{#sfig:arxiv-growth width="100%"} **The growth of preprint submissions on the arXiv server from 1991 to 2025.** The data, sourced from arXiv's public statistics, is plotted using a Python script integrated into our Rxiv-Maker pipeline. This demonstrates the system's capacity for reproducible, data-driven figure generation directly within the publication workflow.
+![](FIGURES/SFigure__arxiv_growth/SFigure__arxiv_growth.svg)
+{#sfig:arxiv_growth width="100%"} **The growth of preprint submissions on the arXiv server from 1991 to 2025.** The data, sourced from arXiv's public statistics, is plotted using a Python script integrated into our Rxiv-Maker pipeline. This demonstrates the system's capacity for reproducible, data-driven figure generation directly within the publication workflow.
 
-![](FIGURES/SFigure_3/SFigure_3.svg)
-{#sfig:preprint-submissions width="100%"} **Preprint Submission Trends Across Multiple Servers (2018–2025).** The figure displays the annual number of preprint submissions to major repositories, including arXiv, bioRxiv, and medRxiv. Data was collected from publically available sources [@PubMedByYear2025] and visualised using a reproducible R script within the Rxiv-Maker pipeline. This approach ensures that the figure remains synchronised with the latest available data and supports transparent, data-driven scientific reporting.
+![](FIGURES/SFigure__preprint_trends/SFigure__preprint_trends.svg)
+{#sfig:preprint_trends width="100%"} **Preprint Submission Trends Across Multiple Servers (2018-2025).** The figure displays the annual number of preprint submissions to major repositories, including arXiv, bioRxiv, and medRxiv. Data was collected from publicly available sources [@PubMedByYear2025] and visualised using a reproducible R script within the Rxiv-Maker pipeline. This approach ensures that the figure remains synchronised with the latest available data and supports transparent, data-driven scientific reporting.
 
-![](FIGURES/SFigure_1/SFigure_1.svg)
-{#sfig:architecture width="80%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration. This figure illustrates the modular design that enables independent development and testing of system components.
+![](FIGURES/SFigure__architecture/SFigure__architecture.svg)
+{#sfig:architecture width="75%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration with Docker containerisation support. This figure illustrates the modular design that enables independent development and testing of system components across both local and containerised environments.
 

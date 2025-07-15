@@ -181,11 +181,18 @@ This text only cites one reference @smith2023.
 
         # Should have warnings for unused bibliography entries
         self.assertTrue(result.has_warnings)
-        warning_messages = [error.message for error in result.errors if error.level.value == "warning"]
-        
+        warning_messages = [
+            error.message for error in result.errors if error.level.value == "warning"
+        ]
+
         # Should warn about unused jones2022 entry
-        self.assertTrue(any("jones2022" in msg and "Unused bibliography entry" in msg for msg in warning_messages))
-        
+        self.assertTrue(
+            any(
+                "jones2022" in msg and "Unused bibliography entry" in msg
+                for msg in warning_messages
+            )
+        )
+
         # Check metadata
         self.assertEqual(result.metadata.get("unused_entries"), 1)
         self.assertEqual(result.metadata.get("unique_citations"), 1)
@@ -207,7 +214,9 @@ This text cites @smith2023.
 
 Additional details with reference to @jones2022.
 """
-        with open(os.path.join(self.manuscript_dir, "02_SUPPLEMENTARY_INFO.md"), "w") as f:
+        with open(
+            os.path.join(self.manuscript_dir, "02_SUPPLEMENTARY_INFO.md"), "w"
+        ) as f:
             f.write(supp_content)
 
         validator = CitationValidator(self.manuscript_dir, enable_doi_validation=False)
@@ -215,7 +224,7 @@ Additional details with reference to @jones2022.
 
         # Should NOT have warnings for unused entries since both are cited
         self.assertFalse(result.has_warnings)
-        
+
         # Check metadata shows both citations found and no unused entries
         self.assertEqual(result.metadata.get("unused_entries"), 0)
         self.assertEqual(result.metadata.get("unique_citations"), 2)
@@ -258,12 +267,21 @@ This text only cites @smith2023.
         result = validator.validate()
 
         # Should have warnings for unused_entry but NOT for saraiva_2025_rxivmaker
-        warning_messages = [error.message for error in result.errors if error.level.value == "warning"]
-        
+        warning_messages = [
+            error.message for error in result.errors if error.level.value == "warning"
+        ]
+
         # Should warn about unused_entry but not saraiva_2025_rxivmaker
-        self.assertTrue(any("unused_entry" in msg and "Unused bibliography entry" in msg for msg in warning_messages))
-        self.assertFalse(any("saraiva_2025_rxivmaker" in msg for msg in warning_messages))
-        
+        self.assertTrue(
+            any(
+                "unused_entry" in msg and "Unused bibliography entry" in msg
+                for msg in warning_messages
+            )
+        )
+        self.assertFalse(
+            any("saraiva_2025_rxivmaker" in msg for msg in warning_messages)
+        )
+
         # Check metadata shows only 1 unused entry (not counting system entry)
         self.assertEqual(result.metadata.get("unused_entries"), 1)
         self.assertEqual(result.metadata.get("unique_citations"), 1)

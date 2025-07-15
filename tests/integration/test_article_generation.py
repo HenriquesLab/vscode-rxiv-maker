@@ -33,10 +33,23 @@ keywords: ["test", "article"]
         # Create main manuscript file with correct name
         manuscript_file = manuscript_dir / "01_MAIN.md"
         manuscript_file.write_text(sample_markdown)
+
+        # Create minimal bibliography file
+        bib_file = manuscript_dir / "03_REFERENCES.bib"
+        bib_content = """@article{test2023,
+    title = {Test Article},
+    author = {Test Author},
+    journal = {Test Journal},
+    year = {2023}
+}"""
+        bib_file.write_text(bib_content)
+
         output_dir = temp_dir / "output"
 
         # Change to test directory and run generation
         monkeypatch.chdir(temp_dir)
+        # Set environment variable to point to our test manuscript
+        monkeypatch.setenv("MANUSCRIPT_PATH", "MANUSCRIPT")
         with patch(
             "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
         ):

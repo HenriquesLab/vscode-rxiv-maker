@@ -7,7 +7,7 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 from crossref_commons.retrieval import get_publication_as_json
@@ -38,7 +38,7 @@ class BibliographyAdder:
         self.bib_file = self.manuscript_path / "03_REFERENCES.bib"
         self.cache = DOICache()
 
-    def add_entries(self, dois: List[str], overwrite: bool = False) -> bool:
+    def add_entries(self, dois: list[str], overwrite: bool = False) -> bool:
         """Add bibliography entries for the given DOIs.
 
         Args:
@@ -108,13 +108,13 @@ class BibliographyAdder:
         """
         return bool(self.DOI_REGEX.match(doi))
 
-    def _get_existing_entries(self) -> Dict[str, str]:
+    def _get_existing_entries(self) -> dict[str, str]:
         """Get existing bibliography entries.
 
         Returns:
             Dictionary mapping DOIs to entry keys
         """
-        entries = {}
+        entries: dict[str, str] = {}
 
         if not self.bib_file.exists():
             return entries
@@ -152,7 +152,7 @@ class BibliographyAdder:
 
         return entries
 
-    def _doi_exists(self, doi: str, existing_entries: Dict[str, str]) -> bool:
+    def _doi_exists(self, doi: str, existing_entries: dict[str, str]) -> bool:
         """Check if DOI already exists in bibliography.
 
         Args:
@@ -164,7 +164,7 @@ class BibliographyAdder:
         """
         return doi in existing_entries
 
-    def _fetch_metadata(self, doi: str) -> Optional[Dict[str, Any]]:
+    def _fetch_metadata(self, doi: str) -> Optional[dict[str, Any]]:
         """Fetch metadata for DOI from CrossRef or DataCite.
 
         Args:
@@ -204,7 +204,7 @@ class BibliographyAdder:
 
         return None
 
-    def _fetch_datacite_metadata(self, doi: str) -> Optional[Dict[str, Any]]:
+    def _fetch_datacite_metadata(self, doi: str) -> Optional[dict[str, Any]]:
         """Fetch metadata from DataCite API.
 
         Args:
@@ -233,7 +233,7 @@ class BibliographyAdder:
 
         return None
 
-    def _generate_bib_entry(self, doi: str, metadata: Dict[str, Any]) -> Optional[str]:
+    def _generate_bib_entry(self, doi: str, metadata: dict[str, Any]) -> Optional[str]:
         """Generate bibliography entry from metadata.
 
         Args:
@@ -272,7 +272,7 @@ class BibliographyAdder:
             return None
 
     def _generate_entry_key(
-        self, metadata: Dict[str, Any], source: str = "CrossRef"
+        self, metadata: dict[str, Any], source: str = "CrossRef"
     ) -> str:
         """Generate entry key from metadata.
 
@@ -316,7 +316,7 @@ class BibliographyAdder:
         return f"{first_author}{year}"
 
     def _get_entry_type(
-        self, metadata: Dict[str, Any], source: str = "CrossRef"
+        self, metadata: dict[str, Any], source: str = "CrossRef"
     ) -> str:
         """Get BibTeX entry type from metadata.
 
@@ -363,8 +363,8 @@ class BibliographyAdder:
             return crossref_mapping.get(entry_type, "article")
 
     def _extract_fields(
-        self, metadata: Dict[str, Any], doi: str, source: str = "CrossRef"
-    ) -> Dict[str, str]:
+        self, metadata: dict[str, Any], doi: str, source: str = "CrossRef"
+    ) -> dict[str, str]:
         """Extract fields from metadata.
 
         Args:

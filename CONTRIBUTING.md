@@ -24,6 +24,34 @@ Welcome to Rxiv-Maker! We're thrilled that you're interested in contributing to 
 - **New features**: Discuss first via issues or discussions
 - **Refactoring**: Improve code quality while maintaining functionality
 
+## 🐳 Docker Development Workflow
+
+For contributors who prefer containerized development, Docker mode eliminates the need to install LaTeX, Python, R, and Node.js locally while providing an identical environment to our CI/CD system.
+
+### Quick Docker Setup
+1. **Prerequisites**: Install Docker Desktop + Make (see [Docker guide](docs/docker-engine-mode.md))
+2. **Development**: Add `RXIV_ENGINE=DOCKER` to any make command
+3. **Pre-commit**: Requires local Python for git hooks (minimal setup)
+
+### Key Docker Commands
+```bash
+# Set as default for your session
+export RXIV_ENGINE=DOCKER
+
+# Core development commands (add RXIV_ENGINE=DOCKER to any make command)
+make pdf RXIV_ENGINE=DOCKER
+make validate RXIV_ENGINE=DOCKER  
+make test RXIV_ENGINE=DOCKER
+```
+
+### Docker vs Local Development
+- **Docker**: Faster setup, matches CI environment, cross-platform consistency
+- **Local**: Faster iteration, better IDE integration, offline development
+
+For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/docker-engine-mode.md).
+
+---
+
 ## 🚀 Getting Started
 
 ### Development Environment Setup
@@ -37,25 +65,38 @@ Welcome to Rxiv-Maker! We're thrilled that you're interested in contributing to 
    ```
 
 2. **Set Up Development Environment**
-   ```bash
-   # Create virtual environment
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    
-   # Install development dependencies
-   make setup
+   ### 🎯 **Choose Your Development Setup (Pick ONE)**
    
-   # Install pre-commit hooks
-   pre-commit install
-   ```
+   <details>
+   <summary><strong>🐳 Docker Development (Recommended for Contributors)</strong></summary>
+   
+   **Benefits**: Matches CI environment, no dependency conflicts, easier setup
+   
+   - **Installation**: Follow [Docker Engine Mode guide](docs/docker-engine-mode.md)
+   - **Workflow**: See [Docker Development Workflow](#-docker-development-workflow) section below
+   - **Pre-commit**: Minimal Python needed for git hooks only
+   
+   </details>
+   
+   <details>
+   <summary><strong>🏠 Local Development (Full Control)</strong></summary>
+   
+   **Benefits**: Faster iteration, better IDE integration, offline development
+   
+   - **Installation**: Follow [Local Development Setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for your platform
+   - **Pre-commit**: Install hooks after setup:
+     ```bash
+     pre-commit install
+     ```
+   
+   </details>
 
 3. **Verify Setup**
-   ```bash
-   # Run tests
-   pytest
    
-   # Try building the example
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf
+   ```bash
+   # Test your setup by building the example manuscript
+   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker mode
    ```
 
 ### Development Workflow
@@ -75,14 +116,13 @@ Welcome to Rxiv-Maker! We're thrilled that you're interested in contributing to 
 
 3. **Test Your Changes**
    ```bash
-   # Run all tests
-   pytest
+   # Run tests
+   pytest                                      # Local development
+   make test RXIV_ENGINE=DOCKER               # Docker development
    
-   # Run specific tests
-   pytest tests/unit/test_specific_module.py
-   
-   # Test with different manuscripts
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf
+   # Test with manuscripts
+   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker
+   make validate                              # Add RXIV_ENGINE=DOCKER for Docker
    ```
 
 4. **Submit Your Contribution**

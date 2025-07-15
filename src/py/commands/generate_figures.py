@@ -12,15 +12,19 @@ Usage:
 """
 
 import argparse
-import os
-import subprocess
+import json
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
+# Add path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.platform import platform_detector
+try:
+    from utils.platform import platform_detector
+except ImportError:
+    # Fallback for when run as script
+    sys.path.insert(0, str(Path(__file__).parent.parent / "utils"))
+    from platform import platform_detector
 
 PUPPETEER_CONFIG_PATH = Path(__file__).parent / "puppeteer-config.json"
 
@@ -29,7 +33,11 @@ class FigureGenerator:
     """Main class for generating figures from various source formats."""
 
     def __init__(
-        self, figures_dir="FIGURES", output_dir="FIGURES", output_format="png", r_only=False
+        self,
+        figures_dir="FIGURES",
+        output_dir="FIGURES",
+        output_format="png",
+        r_only=False,
     ):
         """Initialize the figure generator.
 
@@ -58,9 +66,7 @@ class FigureGenerator:
     def generate_all_figures(self):
         """Generate all figures found in the figures directory."""
         if not self.figures_dir.exists():
-            print(
-                f"Warning: Figures directory '{self.figures_dir}' does not exist"
-            )
+            print(f"Warning: Figures directory '{self.figures_dir}' does not exist")
             return
 
         print(f"Scanning for figures in: {self.figures_dir}")
@@ -113,12 +119,8 @@ class FigureGenerator:
         try:
             # Check if mmdc (Mermaid CLI) is available
             if not self._check_mermaid_cli():
-                print(
-                    f"  ⚠️  Skipping {mmd_file.name}: Mermaid CLI not available"
-                )
-                print(
-                    "     Install with: npm install -g @mermaid-js/mermaid-cli"
-                )
+                print(f"  ⚠️  Skipping {mmd_file.name}: Mermaid CLI not available")
+                print("     Install with: npm install -g @mermaid-js/mermaid-cli")
                 return
 
             # Create subdirectory for this figure
@@ -140,14 +142,82 @@ class FigureGenerator:
                 # Generate the figure using Mermaid CLI
                 cmd_parts = ["mmdc", "-i", str(mmd_file), "-o", str(output_file)]
 
-                # Add Puppeteer configuration for --no-sandbox if required
-                if not PUPPETEER_CONFIG_PATH.exists():
-                    PUPPETEER_CONFIG_PATH.write_text(
-                        '{"args": ["--no-sandbox"]}'
-                    )
-                cmd_parts.extend(
-                    ["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)]
-                )
+                # Add Puppeteer configuration with proper browser executable and
+                # emoji support
+                puppeteer_config = {
+                    "args": [
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--font-render-hinting=none",
+                        "--disable-font-subpixel-positioning",
+                        "--disable-features=VizDisplayCompositor",
+                    ]
+                }
+
+                # Detect if we're in Docker and set the appropriate browser path
+                import os
+
+                if os.path.exists("/.dockerenv"):  # Docker environment
+                    # Check architecture and set appropriate browser path
+                    import subprocess
+
+                    try:
+                        arch_result = subprocess.run(
+                            ["dpkg", "--print-architecture"],
+                            capture_output=True,
+                            text=True,
+                        )
+                        if arch_result.returncode == 0:
+                            arch = arch_result.stdout.strip()
+                            if arch == "amd64" and os.path.exists(
+                                "/usr/bin/google-chrome"
+                            ):
+                                puppeteer_config["executablePath"] = (
+                                    "/usr/bin/google-chrome"
+                                )
+                            elif arch == "arm64":
+                                # For ARM64, use Puppeteer's bundled Chrome
+                                chrome_paths = [
+                                    "/root/.cache/puppeteer/chrome/*/chrome-linux64/chrome",
+                                    "/home/*/.cache/puppeteer/chrome/*/chrome-linux64/chrome",
+                                ]
+                                import glob
+
+                                for pattern in chrome_paths:
+                                    matches = glob.glob(pattern)
+                                    if matches:
+                                        puppeteer_config["executablePath"] = matches[0]
+                                        break
+                                # If no Puppeteer Chrome found, try to download it
+                                if "executablePath" not in puppeteer_config:
+                                    try:
+                                        # Download Chrome using Puppeteer
+                                        puppeteer_cmd = (
+                                            "const puppeteer = require('puppeteer'); "
+                                            "(async () => { "
+                                            "await puppeteer.launch(); })()"
+                                        )
+                                        subprocess.run(
+                                            ["node", "-e", puppeteer_cmd],
+                                            capture_output=True,
+                                            text=True,
+                                            timeout=60,
+                                        )
+                                        # Try to find Chrome again
+                                        for pattern in chrome_paths:
+                                            matches = glob.glob(pattern)
+                                            if matches:
+                                                puppeteer_config["executablePath"] = (
+                                                    matches[0]
+                                                )
+                                                break
+                                    except Exception:
+                                        pass
+                    except Exception:
+                        pass
+
+                PUPPETEER_CONFIG_PATH.write_text(json.dumps(puppeteer_config))
+                cmd_parts.extend(["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)])
 
                 # Add format-specific options
                 if format_type == "pdf":
@@ -156,33 +226,23 @@ class FigureGenerator:
                     cmd_parts.extend(["--width", "1200", "--height", "800"])
                 # No extra options needed for svg
 
-                print(
-                    f"  🎨 Generating {figure_dir.name}/{output_file.name}..."
-                )
-                
+                print(f"  🎨 Generating {figure_dir.name}/{output_file.name}...")
+
                 # Use platform-appropriate command execution
                 cmd = " ".join(cmd_parts)
-                result = self.platform.run_command(
-                    cmd, capture_output=True, text=True
-                )
+                result = self.platform.run_command(cmd, capture_output=True, text=True)
 
                 if result.returncode == 0:
                     success_msg = f"Successfully generated {figure_dir.name}/"
                     success_msg += f"{output_file.name}"
                     print(f"  ✅ {success_msg}")
-                    generated_files.append(
-                        f"{figure_dir.name}/{output_file.name}"
-                    )
+                    generated_files.append(f"{figure_dir.name}/{output_file.name}")
                 else:
-                    print(
-                        f"  ❌ Error generating {format_type} for {mmd_file.name}:"
-                    )
+                    print(f"  ❌ Error generating {format_type} for {mmd_file.name}:")
                     print(f"     {result.stderr}")
 
             if generated_files:
-                print(
-                    f"     Total files generated: {', '.join(generated_files)}"
-                )
+                print(f"     Total files generated: {', '.join(generated_files)}")
 
         except Exception as e:
             print(f"  ❌ Error processing {mmd_file.name}: {e}")
@@ -203,7 +263,7 @@ class FigureGenerator:
                 cmd = ["uv", "run", "python", str(py_file.absolute())]
             else:
                 cmd = [python_cmd, str(py_file.absolute())]
-            
+
             result = self.platform.run_command(
                 " ".join(cmd),
                 capture_output=True,
@@ -223,10 +283,34 @@ class FigureGenerator:
                     print(f"     {result.stderr}")
                 return
 
+            print("     Debug: Script executed successfully, now checking for files...")
+
             # Check for generated files by scanning the figure subdirectory
+            # Add a small delay to ensure files are fully written in CI environments
+            import time
+
+            time.sleep(0.1)
+
+            # Force filesystem sync
+            import os
+
+            os.sync() if hasattr(os, "sync") else None
+
+            print(f"     Debug: About to scan directory: {figure_dir.absolute()}")
+            print(f"     Debug: Directory exists: {figure_dir.exists()}")
+            if figure_dir.exists():
+                dir_contents = list(figure_dir.iterdir())
+                print(f"     Debug: Directory contents: {dir_contents}")
+            else:
+                print("     Debug: Directory does not exist!")
+
             current_files = set()
             for ext in ["png", "pdf", "svg", "eps"]:
-                current_files.update(figure_dir.glob(f"*.{ext}"))
+                # Use rglob to find files recursively in subdirectories
+                found_files = list(figure_dir.rglob(f"*.{ext}"))
+                current_files.update(found_files)
+                file_names = [f.name for f in found_files]
+                print(f"     Debug: Found {len(found_files)} {ext} files: {file_names}")
 
             # Look for files that might have been created by this script
             base_name = py_file.stem
@@ -243,9 +327,16 @@ class FigureGenerator:
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    print(f"     - {figure_dir.name}/{gen_file.name}")
+                    # Show relative path from figure_dir
+                    rel_path = gen_file.relative_to(figure_dir)
+                    print(f"     - {figure_dir.name}/{rel_path}")
             else:
                 print(f"  ⚠️  No output files detected for {py_file.name}")
+                print(f"     Debug: Checked {len(current_files)} total files")
+                print(f"     Debug: Base name pattern: {base_name.lower()}")
+                if current_files:
+                    available_files = [f.name for f in current_files]
+                    print(f"     Debug: Available files: {available_files}")
 
         except Exception as e:
             print(f"  ❌ Error executing {py_file.name}: {e}")
@@ -257,9 +348,7 @@ class FigureGenerator:
             if not self._check_rscript():
                 print(f"  ⚠️  Skipping {r_file.name}: Rscript not available")
                 print("     Ensure R is installed and accessible in your PATH")
-                print(
-                    "Check https://www.r-project.org/ for installation instructions"
-                )
+                print("Check https://www.r-project.org/ for installation instructions")
                 return
 
             # Create subdirectory for this figure
@@ -395,9 +484,7 @@ def main():
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
-    parser.add_argument(
-        "--r-only", action="store_true", help="Only process R files"
-    )
+    parser.add_argument("--r-only", action="store_true", help="Only process R files")
 
     args = parser.parse_args()
 

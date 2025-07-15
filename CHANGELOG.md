@@ -7,6 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.3.0] - 2025-07-14
+
+### Added
+
+#### 🔍 Change Tracking System
+- **Complete Change Tracking Workflow**: New `track_changes.py` command with latexdiff integration for visual change highlighting
+  - Compare current manuscript against any previous git tag version
+  - Generate PDFs with underlined additions, struck-through deletions, and modified text markup
+  - Multi-pass LaTeX compilation with proper bibliography integration and cross-references
+  - Custom filename generation following standard convention with "_changes_vs_TAG" suffix
+  - Supports both local and Docker execution modes
+- **Makefile Integration**: New `make pdf-track-changes TAG=v1.0.0` command for streamlined workflow
+- **Academic Workflow Support**: Comprehensive documentation with use cases for peer review, preprint updates, and collaborative writing
+- **CI/CD Integration**: GitHub Actions and GitLab CI examples for automated change tracking
+- **Advanced Features**: Handles figures, tables, equations, citations, and complex LaTeX structures
+
+#### 🐳 Docker-Accelerated Google Colab Notebook
+- **New Colab Notebook**: `notebooks/rxiv_maker_colab_docker.ipynb` with udocker integration for containerized execution
+  - **Massive Speed Improvement**: ~4 minutes setup vs ~20 minutes for manual dependency installation
+  - **Container Integration**: Uses `henriqueslab/rxiv-maker-base:latest` image with all dependencies pre-installed
+  - **Volume Mounting**: Seamless file access between Google Colab and container environment
+  - **Pre-configured Environment**: Complete LaTeX distribution, Python 3.11, R, Node.js, and Mermaid CLI
+  - **Improved Reliability**: Isolated execution environment with consistent results across platforms
+  - **User-Friendly Interface**: Maintains existing ezinput UI while leveraging containerization benefits
+
+#### 🏗️ Docker Engine Mode Infrastructure
+- **Complete Containerization**: RXIV_ENGINE=DOCKER mode for all operations requiring only Docker and Make
+- **Docker Image Management**: Comprehensive build system in `src/docker/` with automated image building
+- **GitHub Actions Acceleration**: 5x faster CI/CD workflows using pre-compiled Docker images
+- **Platform Detection**: Automatic AMD64/ARM64 architecture compatibility with performance optimizations
+- **Safe Build Wrapper**: Resource monitoring, timeout management, and system protection via `build-safe.sh`
+- **Transparent Execution**: Volume mounting for seamless file access between host and container
+- **Cross-Platform Consistency**: Identical build environments across Windows, macOS, and Linux
+
+#### 🌐 Cross-Platform Compatibility
+- **Universal Support**: Complete Windows, macOS, and Linux compatibility with automatic platform detection
+- **Platform-Specific Commands**: Adaptive file operations (rmdir/del vs rm) and shell handling
+- **Multiple Python Managers**: Support for uv, venv, and system Python with intelligent selection
+- **Cross-Platform Testing**: Comprehensive CI/CD validation workflows across all platforms
+- **Path Handling**: Correct path separators and shell compatibility fixes
+- **Environment Setup**: Platform-agnostic environment setup with `setup_environment.py`
+
+#### 📚 Enhanced Documentation
+- **Docker-First Approach**: Restructured documentation prioritizing containerized workflows
+- **Comprehensive Guides**: New installation guide with four setup methods (Colab, Docker, Local, GitHub Actions)
+- **Workflow Documentation**: Enhanced GitHub Actions guide emphasizing 5x faster builds
+- **Command Reference**: Docker and local mode examples with comprehensive usage patterns
+- **Troubleshooting**: Enhanced debugging guides and common issue resolution
+
+### Changed
+
+#### 🔧 Enhanced Build System
+- **Python Module Architecture**: Centralized build management with `build_manager.py` for orchestrating complete build process
+- **Improved Error Handling**: Better logging infrastructure with warning and error logs in `output/` directory
+- **Multi-Pass LaTeX Compilation**: Proper bibliography integration and cross-reference resolution
+- **Figure System Transformation**: Descriptive naming conventions (Figure__system_diagram vs Figure_1) with enhanced generation
+- **Streamlined Makefile**: Simplified commands with Python delegation for better maintainability
+- **Build Process Order**: PDF validation before word count analysis for logical workflow
+
+#### 💻 Code Quality Modernization
+- **Type Annotations**: Updated to modern Python typing (dict/list vs Dict/List) across entire codebase
+- **Pre-commit Hooks**: Comprehensive code quality checks with ruff, mypy, and automated formatting
+- **Linting Integration**: Resolved 215+ linting issues with automated formatting and type safety
+- **Test Coverage**: Enhanced testing infrastructure with 434 tests passing
+- **Documentation Generation**: Improved API documentation with lazydocs integration
+- **Code Organization**: Better module structure with focused, type-safe components
+
+#### ⚡ Performance Optimizations
+- **Caching Strategies**: Aggressive caching for Python dependencies, virtual environments, and LaTeX outputs
+- **Parallel Processing**: Optimized CI/CD workflows with concurrent execution and matrix builds
+- **Dependency Management**: Modern package management with uv for faster installations
+- **Build Speed**: Reduced compilation times through intelligent change detection and selective rebuilds
+- **Memory Optimization**: Efficient resource usage for large manuscripts and complex builds
+
+### Fixed
+
+#### 📝 Citation and Bibliography
+- **Citation Rendering**: Fixed citations displaying as question marks (?) instead of proper numbers
+- **BibTeX Integration**: Enhanced BibTeX processing with proper path checking and multi-pass compilation
+- **Reference Resolution**: Corrected cross-reference and citation processing in build pipeline
+- **Bibliography Path Handling**: Fixed file path resolution in test environments and track changes
+- **Cross-Reference Validation**: Improved handling of figure, table, and equation references
+
+#### 🖥️ Cross-Platform Issues
+- **Windows Compatibility**: Unicode encoding fixes in `cleanup.py` and `utils/__init__.py` with ASCII fallbacks
+- **Path Management**: Corrected path separators and file operations across platforms
+- **Shell Compatibility**: Fixed bash vs sh compatibility issues in GitHub Actions and Makefiles
+- **Tool Installation**: Resolved platform-specific dependency installation with proper PATH handling
+- **Environment Variables**: Fixed environment variable handling across different shells and platforms
+
+#### 🐳 Docker Integration
+- **Container Permissions**: Fixed file access and workspace permissions for GitHub Actions
+- **Volume Mounting**: Corrected path mapping between host and container environments
+- **Environment Variables**: Proper variable passing to containers with MANUSCRIPT_PATH and RXIV_ENGINE
+- **Image Configuration**: Optimized Dockerfile with proper dependencies and global tool availability
+- **Build Context**: Fixed Docker build context and resource allocation issues
+
+#### 🛠️ Build System Stability
+- **Error Handling**: Improved error reporting and graceful failure handling throughout build process
+- **File Operations**: Fixed recursive file detection with rglob() and proper path handling
+- **Test Stability**: Resolved test failures in track changes and figure generation
+- **Figure Generation**: Fixed nested directory creation and output paths in figure scripts
+- **Executable Permissions**: Fixed executable permissions for files with shebangs
+
+### Performance
+
+#### 🚀 GitHub Actions Optimization
+- **5x Faster Builds**: Pre-compiled Docker images reduce build time from ~10 minutes to ~3-5 minutes
+- **Parallel Execution**: Concurrent workflow steps and matrix builds for optimal resource utilization
+- **Intelligent Caching**: Comprehensive caching strategies for dependencies, virtual environments, and LaTeX outputs
+- **Resource Optimization**: Efficient memory and CPU usage with Docker containerization
+- **Build Acceleration**: Docker base image with all system dependencies pre-installed
+
+#### 💻 Local Development
+- **Faster Setup**: Streamlined installation process across platforms with improved dependency management
+- **Incremental Builds**: Smart change detection and selective rebuilds for faster iteration
+- **Dependency Caching**: Reduced repeated installations and downloads with intelligent caching
+- **Build Optimization**: Efficient compilation and validation processes with parallel figure generation
+- **Development Workflow**: Enhanced developer experience with better error reporting and debugging
+
 ## [v1.2.0] - 2025-07-08
 
 ### Added

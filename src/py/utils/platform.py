@@ -8,22 +8,21 @@ import os
 import platform
 import shutil
 import subprocess
-import sys
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 
 class PlatformDetector:
     """Detect and manage platform-specific operations."""
-    
+
     def __init__(self):
         """Initialize platform detector."""
         self._platform = self._detect_platform()
         self._python_cmd = self._detect_python_command()
-    
+
     def _detect_platform(self) -> str:
         """Detect the current platform."""
-        if os.name == 'nt':
+        if os.name == "nt":
             return "Windows"
         elif platform.system() == "Darwin":
             return "macOS"
@@ -31,85 +30,87 @@ class PlatformDetector:
             return "Linux"
         else:
             return "Unknown"
-    
+
     def _detect_python_command(self) -> str:
         """Detect the best Python command to use."""
         # Priority: uv > venv > system python
         if shutil.which("uv"):
             return "uv run python"
-        
+
         # Check for virtual environment
         venv_python = self.get_venv_python_path()
         if venv_python and Path(venv_python).exists():
             return str(venv_python)
-        
+
         # Fall back to system python
         if self.is_windows():
             return "python"
         else:
             return "python3"
-    
+
     @property
     def platform(self) -> str:
         """Get the current platform name."""
         return self._platform
-    
+
     @property
     def python_cmd(self) -> str:
         """Get the Python command to use."""
         return self._python_cmd
-    
+
     def is_windows(self) -> bool:
         """Check if running on Windows."""
         return self._platform == "Windows"
-    
+
     def is_macos(self) -> bool:
         """Check if running on macOS."""
         return self._platform == "macOS"
-    
+
     def is_linux(self) -> bool:
         """Check if running on Linux."""
         return self._platform == "Linux"
-    
+
     def is_unix_like(self) -> bool:
         """Check if running on Unix-like system (macOS or Linux)."""
         return self.is_macos() or self.is_linux()
-    
+
     def get_path_separator(self) -> str:
         """Get the path separator for the current platform."""
         return "\\" if self.is_windows() else "/"
-    
+
     def get_null_device(self) -> str:
         """Get the null device path for the current platform."""
         return "nul" if self.is_windows() else "/dev/null"
-    
+
     def get_venv_python_path(self) -> Optional[str]:
         """Get the virtual environment Python path."""
         venv_dir = Path(".venv")
         if not venv_dir.exists():
             return None
-        
+
         if self.is_windows():
             python_path = venv_dir / "Scripts" / "python.exe"
         else:
             python_path = venv_dir / "bin" / "python"
-        
+
         return str(python_path) if python_path.exists() else None
-    
+
     def get_venv_activate_path(self) -> Optional[str]:
         """Get the virtual environment activation script path."""
         venv_dir = Path(".venv")
         if not venv_dir.exists():
             return None
-        
+
         if self.is_windows():
             activate_path = venv_dir / "Scripts" / "activate"
         else:
             activate_path = venv_dir / "bin" / "activate"
-        
+
         return str(activate_path) if activate_path.exists() else None
-    
-    def run_command(self, cmd: str, shell: bool = True, **kwargs) -> subprocess.CompletedProcess:
+
+    def run_command(
+        self, cmd: str, shell: bool = True, **kwargs
+    ) -> subprocess.CompletedProcess:
         """Run a command with platform-appropriate settings."""
         if self.is_windows():
             # On Windows, use cmd.exe for better compatibility
@@ -117,29 +118,29 @@ class PlatformDetector:
         else:
             # On Unix-like systems, use bash if available
             return subprocess.run(cmd, shell=shell, **kwargs)
-    
+
     def check_command_exists(self, command: str) -> bool:
         """Check if a command exists on the system."""
         return shutil.which(command) is not None
-    
+
     def get_env_file_content(self, env_file: Path = Path(".env")) -> dict:
         """Read environment file content if it exists."""
         if not env_file.exists():
             return {}
-        
+
         env_vars = {}
         try:
-            with open(env_file, 'r') as f:
+            with open(env_file) as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#') and '=' in line:
-                        key, value = line.split('=', 1)
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
                         env_vars[key.strip()] = value.strip()
         except Exception:
             pass
-        
+
         return env_vars
-    
+
     def install_uv(self) -> bool:
         """Install uv package manager for the current platform."""
         try:
@@ -149,12 +150,12 @@ class PlatformDetector:
             else:
                 # Use curl on Unix-like systems
                 cmd = "curl -LsSf https://astral.sh/uv/install.sh | sh"
-            
+
             result = self.run_command(cmd, capture_output=True, text=True)
             return result.returncode == 0
         except Exception:
             return False
-    
+
     def remove_directory(self, path: Path) -> bool:
         """Remove a directory with platform-appropriate method."""
         try:
@@ -164,7 +165,7 @@ class PlatformDetector:
             return False
         except Exception:
             return False
-    
+
     def copy_file(self, src: Path, dst: Path) -> bool:
         """Copy a file with error handling."""
         try:
@@ -173,14 +174,15 @@ class PlatformDetector:
             return True
         except Exception:
             return False
-    
+
     def make_executable(self, path: Path) -> bool:
         """Make a file executable (Unix-like systems only)."""
         if self.is_windows():
             return True  # Windows doesn't use Unix permissions
-        
+
         try:
             import stat
+
             current_mode = path.stat().st_mode
             path.chmod(current_mode | stat.S_IEXEC)
             return True

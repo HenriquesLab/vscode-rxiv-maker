@@ -149,17 +149,17 @@ def create_latex_figure_environment(
     # subdirectory structure
     latex_path = path.replace("FIGURES/", "Figures/")
 
-    # Handle new subdirectory structure: Figure_1.svg -> Figure_1/Figure_1.png
+    # Handle new subdirectory structure: Figure__name.svg -> Figure__name/Figure__name.png
     if (
         "/" not in latex_path.split("Figures/")[-1]
     ):  # Only if not already in subdirectory
-        # Extract figure name from path like "Figures/Figure_1.svg"
+        # Extract figure name from path like "Figures/Figure__name.svg"
         import os
 
         figure_name = os.path.splitext(os.path.basename(latex_path))[0]
         figure_ext = os.path.splitext(latex_path)[1]
 
-        # Convert to subdirectory format: Figures/Figure_1/Figure_1.ext
+        # Convert to subdirectory format: Figures/Figure__name/Figure__name.ext
         latex_path = f"Figures/{figure_name}/{figure_name}{figure_ext}"
 
     # Convert SVG to PNG for LaTeX compatibility

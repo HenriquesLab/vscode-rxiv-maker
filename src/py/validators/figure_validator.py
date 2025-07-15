@@ -37,7 +37,15 @@ class FigureValidator(BaseValidator):
 
     # Valid file extensions for figures
     VALID_EXTENSIONS = {
-        ".png", ".jpg", ".jpeg", ".pdf", ".svg", ".eps", ".py", ".mmd", ".r"
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".pdf",
+        ".svg",
+        ".eps",
+        ".py",
+        ".mmd",
+        ".r",
     }
 
     # Valid width formats
@@ -474,24 +482,28 @@ class FigureValidator(BaseValidator):
         extension_outputs = {
             ".py": [f"{base_name}.pdf", f"{base_name}.png"],  # Python scripts
             ".mmd": [  # Mermaid files generate multiple formats
-                f"{base_name}.pdf", f"{base_name}.png", f"{base_name}.svg"
+                f"{base_name}.pdf",
+                f"{base_name}.png",
+                f"{base_name}.svg",
             ],
             ".r": [  # R scripts generate multiple formats
-                f"{base_name}.pdf", f"{base_name}.png", f"{base_name}.svg"
+                f"{base_name}.pdf",
+                f"{base_name}.png",
+                f"{base_name}.svg",
             ],
         }
 
         expected_outputs = extension_outputs.get(ext, [])
-        
+
         # Also check for outputs in subdirectories (common pattern for figure generation)
         if expected_outputs:
             subdir_outputs = []
             for output in expected_outputs:
-                # Add subdirectory version (e.g., SFigure_3/SFigure_3.svg)
+                # Add subdirectory version (e.g., SFigure__example/SFigure__example.svg)
                 subdir_path = f"{base_name}/{os.path.basename(output)}"
                 subdir_outputs.append(subdir_path)
             expected_outputs.extend(subdir_outputs)
-        
+
         return expected_outputs
 
     def _check_unused_files(self) -> list:

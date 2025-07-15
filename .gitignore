@@ -2,6 +2,9 @@
 build/
 output/
 
+# Docker build logs
+src/docker/build-*.log
+
 # Generated figures (exclude generated, include source templates)
 !src/figures/Figure*_placeholder.txt
 

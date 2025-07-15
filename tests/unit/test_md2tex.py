@@ -725,7 +725,7 @@ class TestSubscriptSuperscriptFormatting:
         """Test that subscript markdown is converted to LaTeX."""
         markdown = "Water is H~2~O and carbon dioxide is CO~2~."
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
-        
+
         # Should convert subscript syntax
         assert "H\\textsubscript{2}O" in result
         assert "CO\\textsubscript{2}" in result
@@ -737,7 +737,7 @@ class TestSubscriptSuperscriptFormatting:
         """Test that superscript markdown is converted to LaTeX."""
         markdown = "Einstein's famous equation is E=mc^2^ and x^n^ is a power."
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
-        
+
         # Should convert superscript syntax
         assert "E=mc\\textsuperscript{2}" in result
         assert "x\\textsuperscript{n}" in result
@@ -749,7 +749,7 @@ class TestSubscriptSuperscriptFormatting:
         """Test that mixed subscript and superscript work together."""
         markdown = "The isotope U~235~ has a half-life of 7.04×10^8^ years."
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
-        
+
         # Should convert both subscript and superscript
         assert "U\\textsubscript{235}" in result
         assert "10\\textsuperscript{8}" in result
@@ -761,7 +761,7 @@ class TestSubscriptSuperscriptFormatting:
         """Test that subscript/superscript work with bold and italic."""
         markdown = "The **bold H~2~O** and *italic x^2^* formatting should work."
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
-        
+
         # Should convert all formatting
         assert "\\textbf{bold H\\textsubscript{2}O}" in result
         assert "\\textit{italic x\\textsuperscript{2}}" in result
@@ -770,7 +770,7 @@ class TestSubscriptSuperscriptFormatting:
         """Test that subscript/superscript in code spans are not converted."""
         markdown = "The code `H~2~O` and `x^2^` should remain unchanged."
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
-        
+
         # Should contain code spans with original syntax
         assert "\\texttt{H~2~O}" in result
         assert "\\texttt{x^2^}" in result
@@ -782,7 +782,7 @@ class TestSubscriptSuperscriptFormatting:
         """Test common scientific notation patterns."""
         markdown = "Avogadro's number is 6.022×10^23^ mol^-1^."
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
-        
+
         # Should convert scientific notation
         assert "10\\textsuperscript{23}" in result
         assert "mol\\textsuperscript{-1}" in result

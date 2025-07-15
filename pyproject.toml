@@ -19,6 +19,11 @@ dependencies = [
     "PyYAML>=6.0.0",
     "python-dotenv>=1.0.0",
     "crossref-commons>=0.0.7",
+    "lazydocs>=0.4.8",
+    "types-requests>=2.32.4.20250611",
+    "pytest>=7.4.4",
+    "ruff>=0.12.2",
+    "pre-commit>=4.2.0",
 ]
 
 [project.optional-dependencies]
@@ -142,6 +147,8 @@ markers = [
     "unit: marks tests as unit tests",
     "notebook: marks tests as notebook tests",
     "validation: marks tests as validation-related tests",
+    "build_manager: marks tests as build manager-related tests",
+    "pdf_validation: marks tests as PDF validation-related tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
@@ -236,8 +243,3 @@ tertiaryTextColor = "#ffffff"
 textColor = "#ffffff"
 fontFamily = "Arial, sans-serif"
 fontSize = "16px"
-
-[dependency-groups]
-dev = [
-    "pytest>=7.4.4",
-]

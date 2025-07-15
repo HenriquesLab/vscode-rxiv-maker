@@ -12,6 +12,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -24,7 +25,7 @@ class CleanupManager:
 
     def __init__(
         self,
-        manuscript_path: str = None,
+        manuscript_path: Optional[str] = None,
         output_dir: str = "output",
         verbose: bool = False,
     ):
@@ -35,7 +36,7 @@ class CleanupManager:
             output_dir: Output directory to clean
             verbose: Enable verbose output
         """
-        self.manuscript_path = manuscript_path or os.getenv(
+        self.manuscript_path: str = manuscript_path or os.getenv(
             "MANUSCRIPT_PATH", "MANUSCRIPT"
         )
         self.output_dir = Path(output_dir)
