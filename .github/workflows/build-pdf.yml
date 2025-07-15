@@ -137,7 +137,7 @@ jobs:
       shell: bash
       env:
         R_LIBS_USER: ~/.R/library
-      MANUSCRIPT_PATH: ${{ needs.prepare.outputs.manuscript_path }}
+        MANUSCRIPT_PATH: ${{ needs.prepare.outputs.manuscript_path }}
       run: |
         echo "✅ Running PDF generation with detailed logging"
         echo "=================================================="
