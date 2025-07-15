@@ -137,11 +137,12 @@ jobs:
       shell: bash
       env:
         R_LIBS_USER: ~/.R/library
+      MANUSCRIPT_PATH: ${{ needs.prepare.outputs.manuscript_path }}
       run: |
         echo "✅ Running PDF generation with detailed logging"
         echo "=================================================="
         echo "📋 Build Configuration:"
-        echo "  - Manuscript Path: ${{ needs.prepare.outputs.manuscript_path }}"
+        echo "  - Manuscript Path: $MANUSCRIPT_PATH"
         echo "  - Python Version: $(python3 --version)"
         echo "  - LaTeX Version: $(pdflatex --version | head -1)"
         echo "  - Current Directory: $(pwd)"
@@ -150,7 +151,6 @@ jobs:
         echo "=================================================="
 
         # Set up environment with verbose logging
-        export MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}
         export TEXMFVAR=/tmp/texmf-var
         export FORCE_FIGURES=true
         echo "🔧 Environment variables set:"
