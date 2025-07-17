@@ -163,8 +163,7 @@ python_functions = ["test_*"]
 addopts = [
     "-v",
     "--tb=short",
-    "--strict-markers",
-    "-x",  # Stop on first failure
+    "--strict-markers"
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

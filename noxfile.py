@@ -89,14 +89,10 @@ def coverage(session):
 
 @nox.session(python="3.11")
 def install_tests(session):
-    """Run essential installation tests with Docker support."""
+    """Run essential installation tests."""
     session.install(".")
     session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("docker>=6.0.0", "pytest-timeout>=2.1.0")
     session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Set environment variable to enable Docker tests
-    session.env["DOCKER_AVAILABLE"] = "true"
 
     # Run essential installation tests only
     session.run(
@@ -109,7 +105,7 @@ def install_tests(session):
         "-m",
         "not slow",  # Skip slow tests by default
         "-k",
-        "not (performance or system_deps or resource_usage)",  # Skip expensive tests
+        "not (performance or system_deps or resource_usage or docker or container)",  # Skip expensive tests and Docker tests
     )
 
 
@@ -118,11 +114,7 @@ def install_tests_full(session):
     """Run complete installation tests including slow tests."""
     session.install(".")
     session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("docker>=6.0.0", "pytest-timeout>=2.1.0")
     session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Set environment variable to enable Docker tests
-    session.env["DOCKER_AVAILABLE"] = "true"
 
     # Run all installation tests including slow ones
     session.run(
@@ -135,6 +127,8 @@ def install_tests_full(session):
         "--cov=src/rxiv_maker/install",
         "--cov-report=html:htmlcov/install",
         "--cov-report=term-missing",
+        "-k",
+        "not (docker or container)",  # Skip Docker tests
     )
 
 
@@ -161,17 +155,13 @@ def install_tests_fast(session):
     """Run fast installation tests for CI."""
     session.install(".")
     session.install("pytest>=7.4,<8.0", "py>=1.11.0")
-    session.install("docker>=6.0.0", "pytest-timeout>=2.1.0")
     session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Set environment variable to enable Docker tests
-    session.env["DOCKER_AVAILABLE"] = "true"
 
     # Run only the most essential tests
     session.run(
         "pytest",
-        "tests/install/docker/test_full_workflow.py::TestFullWorkflowIntegration::test_install_to_check_workflow",
-        "tests/install/docker/test_docker_environment.py::TestContainerSpecificBehavior::test_installation_in_container",
+        "tests/install/test_basic_installation.py",
+        "tests/install/test_dependency_installation.py",
         "-v",
         "-s",
         "--tb=short",

@@ -4,7 +4,7 @@ import datetime
 import sys
 from pathlib import Path
 
-import click
+import rich_click as click
 from rich.console import Console
 from rich.prompt import Prompt
 
@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 console = Console()
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("manuscript_path", type=click.Path(), required=False)
 @click.option(
     "--template",
@@ -28,16 +28,34 @@ console = Console()
 def init(
     ctx: click.Context, manuscript_path: str | None, template: str, force: bool
 ) -> None:
-    """Initialize a new manuscript directory.
+    """Initialize a new manuscript directory with template files and structure.
 
-    MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
+    **MANUSCRIPT_PATH**: Directory to create for your manuscript. Defaults to MANUSCRIPT/
 
-    This command creates:
-    - 00_CONFIG.yml (manuscript metadata)
-    - 01_MAIN.md (main manuscript content)
-    - 02_SUPPLEMENTARY_INFO.md (supplementary information)
-    - 03_REFERENCES.bib (bibliography)
-    - FIGURES/ (directory for figure scripts)
+    Creates all required files including configuration, main content, supplementary
+    information, bibliography, and figure directory with example scripts.
+
+    ## Examples
+
+    **Initialize default manuscript:**
+    ```
+    $ rxiv init
+    ```
+
+    **Initialize custom manuscript directory:**
+    ```
+    $ rxiv init MY_PAPER/
+    ```
+
+    **Use research template:**
+    ```
+    $ rxiv init --template research
+    ```
+
+    **Force overwrite existing directory:**
+    ```
+    $ rxiv init --force
+    ```
     """
     verbose = ctx.obj.get("verbose", False)
 

@@ -17,11 +17,98 @@ from .commands.check_installation import check_installation
 from .config import config_cmd
 
 # Configure rich-click for better help formatting
-click.rich_click.USE_RICH_MARKUP = False
-click.rich_click.USE_MARKDOWN = False
+click.rich_click.USE_RICH_MARKUP = True
+click.rich_click.USE_MARKDOWN = True
 click.rich_click.SHOW_ARGUMENTS = True
+click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
 click.rich_click.SHOW_METAVARS_COLUMN = False
-click.rich_click.APPEND_METAVARS_HELP = False
+click.rich_click.APPEND_METAVARS_HELP = True
+click.rich_click.STYLE_ERRORS_SUGGESTION = "magenta italic"
+click.rich_click.STYLE_METAVAR = "bold yellow"
+click.rich_click.STYLE_OPTION = "bold green"
+click.rich_click.STYLE_ARGUMENT = "bold blue"
+click.rich_click.STYLE_COMMAND = "bold cyan"
+click.rich_click.STYLE_SWITCH = "bold magenta"
+click.rich_click.STYLE_HELPTEXT = "dim"
+click.rich_click.STYLE_USAGE = "yellow"
+click.rich_click.STYLE_USAGE_COMMAND = "bold"
+click.rich_click.STYLE_HELP_HEADER = "bold blue"
+click.rich_click.STYLE_FOOTER_TEXT = "dim"
+click.rich_click.COMMAND_GROUPS = {
+    "rxiv": [
+        {
+            "name": "Core Commands",
+            "commands": ["pdf", "validate", "init"],
+        },
+        {
+            "name": "Content Commands",
+            "commands": ["figures", "bibliography", "clean"],
+        },
+        {
+            "name": "Workflow Commands",
+            "commands": ["arxiv", "track-changes", "setup"],
+        },
+        {
+            "name": "Configuration",
+            "commands": ["config", "check-installation"],
+        },
+        {
+            "name": "Information",
+            "commands": ["version"],
+        },
+    ]
+}
+
+click.rich_click.OPTION_GROUPS = {
+    "rxiv": [
+        {
+            "name": "Processing Options",
+            "options": ["-v", "--verbose", "--engine"],
+        },
+        {
+            "name": "Setup Options",
+            "options": ["--install-completion", "--no-update-check"],
+        },
+        {
+            "name": "Help & Version",
+            "options": ["--help", "--version"],
+        },
+    ],
+    "rxiv pdf": [
+        {
+            "name": "Build Options",
+            "options": ["-o", "--output-dir", "-f", "--force-figures"],
+        },
+        {
+            "name": "Processing Options",
+            "options": ["-s", "--skip-validation", "-t", "--track-changes"],
+        },
+        {
+            "name": "Help",
+            "options": ["--help"],
+        },
+    ],
+    "rxiv validate": [
+        {
+            "name": "Validation Options",
+            "options": ["-d", "--detailed", "--no-doi"],
+        },
+        {
+            "name": "Help",
+            "options": ["--help"],
+        },
+    ],
+    "rxiv init": [
+        {
+            "name": "Initialization Options",
+            "options": ["-t", "--template", "-f", "--force"],
+        },
+        {
+            "name": "Help",
+            "options": ["--help"],
+        },
+    ],
+}
 
 console = Console()
 
@@ -49,7 +136,9 @@ class UpdateCheckGroup(click.Group):
             raise
 
 
-@click.group(cls=UpdateCheckGroup)
+@click.group(
+    cls=UpdateCheckGroup, context_settings={"help_option_names": ["-h", "--help"]}
+)
 @click.version_option(version=__version__, prog_name="rxiv")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option(
@@ -74,18 +163,38 @@ def main(
     install_completion: str | None,
     no_update_check: bool,
 ) -> None:
-    """Automated LaTeX article generation from Markdown.
+    """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs with
+    automated figure generation, professional LaTeX typesetting, and bibliography management.
 
-    Transform your Markdown manuscripts into publication-ready PDFs with
-    automated figure generation, professional typesetting, and bibliography management.
+    ## Examples
 
-    Common commands:
-      rxiv init                  Initialize new manuscript
-      rxiv build                 Generate PDF
-      rxiv validate              Validate manuscript
-      rxiv arxiv                 Prepare arXiv submission
+    **Get help:**
+    ```
+    $ rxiv --help
+    ```
 
-    Use 'rxiv COMMAND --help' for more information on a specific command.
+    **Initialize a new manuscript:**
+    ```
+    $ rxiv init MY_PAPER/
+    ```
+
+    **Build PDF from manuscript:**
+    ```
+    $ rxiv pdf                      # Build from MANUSCRIPT/
+    $ rxiv pdf MY_PAPER/            # Build from custom directory
+    $ rxiv pdf --force-figures      # Force regenerate figures
+    ```
+
+    **Validate manuscript:**
+    ```
+    $ rxiv validate                 # Validate current manuscript
+    $ rxiv validate --no-doi        # Skip DOI validation
+    ```
+
+    **Prepare arXiv submission:**
+    ```
+    $ rxiv arxiv                    # Prepare arXiv package
+    ```
     """
     # Handle completion installation
     if install_completion:
@@ -149,7 +258,7 @@ def install_shell_completion(shell: str) -> None:
 
 
 # Register command groups
-main.add_command(commands.build)
+main.add_command(commands.pdf, name="pdf")
 main.add_command(commands.validate)
 main.add_command(commands.clean)
 main.add_command(commands.figures)

@@ -92,7 +92,7 @@ def generate_enhanced_index(docs_dir, successful_modules):
 
 def main():
     """Generate API documentation using lazydocs with enhancements."""
-    # Get the project root directory (script is in src/py/commands/)
+    # Get the project root directory (script is in src/rxiv_maker/commands/)
     project_root = Path(__file__).parent.parent.parent.parent
     src_dir = project_root / "src" / "py"
     docs_dir = project_root / "docs" / "api"

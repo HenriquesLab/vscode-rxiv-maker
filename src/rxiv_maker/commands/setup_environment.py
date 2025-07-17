@@ -256,7 +256,7 @@ class EnvironmentSetup:
                 self.log("System dependency check failed. You can:", "WARNING")
                 print("  • Install missing dependencies and run 'make setup' again")
                 print(
-                    "  • Skip dependency checking with 'python src/py/commands/setup_environment.py --no-check-system-deps'"
+                    "  • Skip dependency checking with 'python src/rxiv_maker/commands/setup_environment.py --no-check-system-deps'"
                 )
                 print("  • Use Docker mode instead: 'make pdf RXIV_ENGINE=DOCKER'")
                 return False

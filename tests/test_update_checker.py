@@ -131,7 +131,7 @@ class TestUpdateChecker:
 
             assert result == test_data
 
-    @patch("urllib.request.urlopen")
+    @patch("src.rxiv_maker.utils.update_checker.urlopen")
     def test_fetch_latest_version_success(self, mock_urlopen):
         """Test successful version fetching."""
         mock_response = Mock()
@@ -144,7 +144,7 @@ class TestUpdateChecker:
         assert result == "1.2.0"
         mock_urlopen.assert_called_once_with(checker.pypi_url, timeout=5)
 
-    @patch("urllib.request.urlopen")
+    @patch("src.rxiv_maker.utils.update_checker.urlopen")
     def test_fetch_latest_version_failure(self, mock_urlopen):
         """Test failed version fetching."""
         mock_urlopen.side_effect = URLError("Network error")
@@ -199,7 +199,7 @@ class TestUpdateChecker:
 
             notification = checker.get_update_notification()
             assert notification is not None
-            assert "1.0.0 → 1.2.0" in notification
+            assert "v1.0.0 → v1.2.0" in notification
             assert "pip install --upgrade" in notification
             assert "release notes" in notification.lower()
 
@@ -226,7 +226,7 @@ class TestUpdateChecker:
             notification = checker.get_update_notification()
             assert notification is None
 
-    @patch("urllib.request.urlopen")
+    @patch("src.rxiv_maker.utils.update_checker.urlopen")
     def test_force_check(self, mock_urlopen):
         """Test force check functionality."""
         mock_response = Mock()

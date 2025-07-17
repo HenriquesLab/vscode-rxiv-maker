@@ -2,7 +2,7 @@
 
 from .arxiv import arxiv
 from .bibliography import bibliography
-from .build import build
+from .build import build as pdf
 from .check_installation import check_installation
 from .clean import clean
 from .figures import figures
@@ -15,7 +15,7 @@ from .version import version
 __all__ = [
     "arxiv",
     "bibliography",
-    "build",
+    "pdf",
     "check_installation",
     "clean",
     "figures",

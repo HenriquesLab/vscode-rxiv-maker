@@ -277,28 +277,8 @@ class TestCheckInstallationComponents:
         assert "latex" in components
         assert components["latex"] is False
 
-    def test_nodejs_component_check(
-        self, docker_manager, ubuntu_container, test_package_wheel
-    ):
-        """Test Node.js component checking."""
-        # Install rxiv-maker without system deps
-        exit_code, output = install_rxiv_maker_in_container(
-            ubuntu_container, wheel_path=test_package_wheel, skip_system_deps=True
-        )
-        assert exit_code == 0, f"Installation failed: {output}"
-
-        # Run check-installation with JSON
-        exit_code, output = run_in_container(
-            ubuntu_container, "rxiv check-installation --json"
-        )
-        assert exit_code == 0
-
-        result = json.loads(output)
-        components = result["components"]
-
-        # Node.js should be missing when system deps are skipped
-        assert "nodejs" in components
-        assert components["nodejs"] is False
+    # Node.js component check removed - no longer relevant since pip install
+    # doesn't install external libraries like Node.js
 
     def test_component_status_consistency(
         self, docker_manager, ubuntu_container, test_package_wheel

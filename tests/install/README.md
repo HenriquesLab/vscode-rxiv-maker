@@ -59,17 +59,14 @@ tests/install/
   - Environment variables
 
 ### 3. Dependency Installation Tests (`test_dependency_installation.py`)
-- **Purpose**: Test system dependency installation
+- **Purpose**: Test essential system dependency installation
 - **Tests**:
   - LaTeX installation and compilation
-  - Node.js and npm installation
-  - Mermaid CLI installation
-  - R language installation
   - Python development libraries
   - Graphics libraries for matplotlib
-  - System library compilation
   - Dependency integration
   - Error handling for missing dependencies
+  - Note: Node.js, npm, Mermaid CLI, and R tests removed since pip install no longer handles external libraries
 
 ### 4. CLI Integration Tests (`cli/test_check_installation.py`)
 - **Purpose**: Test check-installation command functionality
@@ -102,13 +99,9 @@ tests/install/
 - **Tests**:
   - Install → init workflow
   - Install → validate workflow
-  - Install → figures workflow
-  - Install → build workflow (simulation)
   - Install → check workflow
   - Error handling in workflows
-  - Performance testing
-  - Memory usage testing
-  - Integration with system dependencies
+  - Note: Figure generation and build workflow tests removed since they require external dependencies
 
 ## Running Tests
 

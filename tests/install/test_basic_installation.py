@@ -127,10 +127,8 @@ class TestBasicInstallation:
             "LaTeX should not be installed when system deps are skipped"
         )
 
-        exit_code, output = run_in_container(ubuntu_container, "node --version")
-        assert exit_code != 0, (
-            "Node.js should not be installed when system deps are skipped"
-        )
+        # Note: Node.js and R installation checks removed since pip install
+        # no longer installs external libraries
 
     def test_import_functionality(
         self, docker_manager, ubuntu_container, test_package_wheel

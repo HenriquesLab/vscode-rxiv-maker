@@ -50,6 +50,7 @@ class BuildManager:
         skip_validation: bool = False,
         skip_pdf_validation: bool = False,
         verbose: bool = False,
+        track_changes_tag: str | None = None,
     ):
         """Initialize build manager.
 
@@ -60,6 +61,7 @@ class BuildManager:
             skip_validation: Skip manuscript validation
             skip_pdf_validation: Skip PDF validation
             verbose: Enable verbose output
+            track_changes_tag: Git tag to track changes against
         """
         self.manuscript_path: str = manuscript_path or os.getenv(
             "MANUSCRIPT_PATH", "MANUSCRIPT"
@@ -69,6 +71,7 @@ class BuildManager:
         self.skip_validation = skip_validation
         self.skip_pdf_validation = skip_pdf_validation
         self.verbose = verbose
+        self.track_changes_tag = track_changes_tag
         self.platform = platform_detector
 
         # Set up paths
@@ -215,7 +218,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/py/commands/validate.py",
+                "src/rxiv_maker/commands/validate.py",
                 self.manuscript_path,
                 "--detailed",
             ]
@@ -624,7 +627,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/py/commands/copy_pdf.py",
+                "src/rxiv_maker/commands/copy_pdf.py",
                 "--output-dir",
                 str(self.output_dir),
             ]
@@ -656,7 +659,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/py/commands/analyze_word_count.py",
+                "src/rxiv_maker/commands/analyze_word_count.py",
             ]
 
             if "uv run" in self.platform.python_cmd:
@@ -694,7 +697,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/py/validators/pdf_validator.py",
+                "src/rxiv_maker/validators/pdf_validator.py",
                 self.manuscript_path,
                 "--pdf-path",
                 str(self.output_pdf),

@@ -1,8 +1,0 @@
-# Test dependencies for installation testing
-pytest>=7.4.0
-pytest-cov>=4.0.0
-pytest-timeout>=2.1.0
-pytest-xdist>=3.0.0
-docker>=6.0.0
-build>=0.10.0
-wheel>=0.40.0

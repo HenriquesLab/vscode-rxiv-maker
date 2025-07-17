@@ -6,6 +6,9 @@ class RxivMaker < Formula
   license "MIT"
   version "1.3.0"
 
+  # Test PyPI configuration
+  option "with-test-pypi", "Install from test PyPI instead of main PyPI"
+
   head "https://github.com/henriqueslab/rxiv-maker.git", branch: "main"
 
   # Core dependencies for local (non-Docker) development
@@ -26,7 +29,16 @@ class RxivMaker < Formula
 
     # Install the package using pip in the virtual environment
     system libexec/"venv/bin/pip", "install", "--upgrade", "pip"
-    system libexec/"venv/bin/pip", "install", buildpath
+
+    # Choose installation source based on option
+    if build.with?("test-pypi")
+      # Install from test PyPI
+      system libexec/"venv/bin/pip", "install", "--index-url", "https://test.pypi.org/simple/",
+             "--extra-index-url", "https://pypi.org/simple/", "rxiv-maker"
+    else
+      # Install from source (default)
+      system libexec/"venv/bin/pip", "install", buildpath
+    end
 
     # Create wrapper script for the CLI
     (bin/"rxiv").write_env_script libexec/"venv/bin/rxiv", PATH: "#{libexec}/venv/bin:$PATH"

@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-import click
+import rich_click as click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -16,7 +16,7 @@ from ...commands.build_manager import BuildManager
 console = Console()
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument(
     "manuscript_path",
     type=click.Path(exists=True, file_okay=False),
@@ -49,17 +49,37 @@ def build(
     skip_validation: bool,
     track_changes: str | None,
 ) -> None:
-    """Build PDF from manuscript.
-
-    Generates a publication-ready PDF from your Markdown manuscript with automated
+    """Generate a publication-ready PDF from your Markdown manuscript with automated
     figure generation, professional typesetting, and bibliography management.
 
-    Examples:
-      rxiv build                      # Build from MANUSCRIPT/
-      rxiv build MY_PAPER/            # Build from custom directory
-      rxiv build --force-figures      # Force regenerate all figures
-      rxiv build --skip-validation    # Skip validation for debugging
-      rxiv build --track-changes v1.0.0  # Track changes against git tag
+    **MANUSCRIPT_PATH**: Directory containing your manuscript files. Defaults to MANUSCRIPT/
+
+    ## Examples
+
+    **Build from default directory:**
+    ```
+    $ rxiv pdf
+    ```
+
+    **Build from custom directory:**
+    ```
+    $ rxiv pdf MY_PAPER/
+    ```
+
+    **Force regenerate all figures:**
+    ```
+    $ rxiv pdf --force-figures
+    ```
+
+    **Skip validation for debugging:**
+    ```
+    $ rxiv pdf --skip-validation
+    ```
+
+    **Track changes against git tag:**
+    ```
+    $ rxiv pdf --track-changes v1.0.0
+    ```
     """
     verbose = ctx.obj.get("verbose", False)
 
@@ -99,7 +119,7 @@ def build(
 
             # Build the PDF
             progress.update(task, description="Generating PDF...")
-            success = build_manager.build()
+            success = build_manager.run_full_build()
 
             if success:
                 progress.update(task, description="✅ PDF generated successfully!")

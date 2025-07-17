@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-import click
+import rich_click as click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 console = Console()
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument(
     "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
 )
@@ -24,17 +24,34 @@ console = Console()
 def validate(
     ctx: click.Context, manuscript_path: str | None, detailed: bool, no_doi: bool
 ) -> None:
-    """Validate manuscript structure and content.
+    """Validate manuscript structure and content before PDF generation.
 
-    MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
+    **MANUSCRIPT_PATH**: Directory containing your manuscript files. Defaults to MANUSCRIPT/
 
-    This command checks:
-    - Manuscript structure and required files
-    - Citation syntax and bibliography consistency
-    - Cross-reference validity (figures, tables, equations)
-    - Figure file existence and attributes
-    - Mathematical expression syntax
-    - Special Markdown syntax elements
+    This command checks manuscript structure, citations, cross-references,
+    figures, mathematical expressions, and special Markdown syntax elements.
+
+    ## Examples
+
+    **Validate default manuscript:**
+    ```
+    $ rxiv validate
+    ```
+
+    **Validate custom manuscript directory:**
+    ```
+    $ rxiv validate MY_PAPER/
+    ```
+
+    **Show detailed validation report:**
+    ```
+    $ rxiv validate --detailed
+    ```
+
+    **Skip DOI validation:**
+    ```
+    $ rxiv validate --no-doi
+    ```
     """
     verbose = ctx.obj.get("verbose", False)
 
