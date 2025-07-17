@@ -1,1 +1,0 @@
-# Docker Image Update Test

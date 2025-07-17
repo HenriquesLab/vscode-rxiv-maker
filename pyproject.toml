@@ -24,6 +24,7 @@ dependencies = [
     "pytest>=7.4.4",
     "ruff>=0.12.2",
     "pre-commit>=4.2.0",
+    "folder2md4llms>=0.3.0",
 ]
 
 [project.optional-dependencies]
