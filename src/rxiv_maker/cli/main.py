@@ -7,27 +7,6 @@ from pathlib import Path
 import rich_click as click
 from rich.console import Console
 
-# Configure rich-click for better help formatting
-click.rich_click.USE_RICH_MARKUP = True
-click.rich_click.USE_MARKDOWN = True
-click.rich_click.SHOW_ARGUMENTS = True
-click.rich_click.SHOW_METAVARS_COLUMN = True
-click.rich_click.APPEND_METAVARS_HELP = True
-click.rich_click.STYLE_ERRORS_SUGGESTION = "magenta italic"
-click.rich_click.ERRORS_SUGGESTION = "Try '{command} --help' for more information."
-click.rich_click.STYLE_HELPTEXT_FIRST_LINE = "bold"
-click.rich_click.STYLE_HELPTEXT = "dim"
-click.rich_click.STYLE_OPTION = "bold cyan"
-click.rich_click.STYLE_ARGUMENT = "bold yellow"
-click.rich_click.STYLE_COMMAND = "bold green"
-click.rich_click.STYLE_SWITCH = "bold red"
-click.rich_click.STYLE_METAVAR = "bold blue"
-click.rich_click.STYLE_USAGE = "bold"
-click.rich_click.STYLE_USAGE_COMMAND = "bold green"
-click.rich_click.STYLE_USAGE_ARGS = "bold yellow"
-click.rich_click.STYLE_HELP_PANEL_BORDER = "blue"
-click.rich_click.STYLE_HELP_PANEL_TITLE = "bold blue"
-
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -36,6 +15,13 @@ from ..utils.update_checker import check_for_updates_async, show_update_notifica
 from . import commands
 from .commands.check_installation import check_installation
 from .config import config_cmd
+
+# Configure rich-click for better help formatting
+click.rich_click.USE_RICH_MARKUP = False
+click.rich_click.USE_MARKDOWN = False
+click.rich_click.SHOW_ARGUMENTS = True
+click.rich_click.SHOW_METAVARS_COLUMN = False
+click.rich_click.APPEND_METAVARS_HELP = False
 
 console = Console()
 
@@ -88,32 +74,18 @@ def main(
     install_completion: str | None,
     no_update_check: bool,
 ) -> None:
-    """**Rxiv-Maker**: Automated LaTeX article generation from Markdown.
+    """Automated LaTeX article generation from Markdown.
 
-    Transform your Markdown manuscripts into publication-ready PDFs with:
+    Transform your Markdown manuscripts into publication-ready PDFs with
+    automated figure generation, professional typesetting, and bibliography management.
 
-    - ✨ **Automated figure generation** from Python/R scripts
-    - 📄 **Professional LaTeX typesetting** with zero LaTeX knowledge required
-    - 📚 **Bibliography management** with automatic DOI validation
-    - 🔗 **Cross-reference resolution** for figures, tables, and equations
-    - 🐳 **Docker support** for reproducible builds
-    - 🔄 **Change tracking** against git tags
+    Common commands:
+      rxiv init                  Initialize new manuscript
+      rxiv build                 Generate PDF
+      rxiv validate              Validate manuscript
+      rxiv arxiv                 Prepare arXiv submission
 
-    **Quick Start:**
-    ```bash
-    rxiv init MY_PAPER/          # Initialize new manuscript
-    rxiv build                   # Generate PDF
-    rxiv build --force-figures   # Force regenerate figures
-    rxiv arxiv                   # Prepare arXiv submission
-    ```
-
-    **Examples:**
-    ```bash
-    rxiv build MANUSCRIPT/       # Build from specific directory
-    rxiv build --engine docker   # Use Docker engine
-    rxiv validate --no-doi       # Validate without DOI checks
-    rxiv bibliography fix        # Fix bibliography issues
-    ```
+    Use 'rxiv COMMAND --help' for more information on a specific command.
     """
     # Handle completion installation
     if install_completion:

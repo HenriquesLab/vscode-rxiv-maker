@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-import rich_click as click
+import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -49,30 +49,17 @@ def build(
     skip_validation: bool,
     track_changes: str | None,
 ) -> None:
-    """**Build PDF from manuscript.**
+    """Build PDF from manuscript.
 
     Generates a publication-ready PDF from your Markdown manuscript with automated
     figure generation, professional typesetting, and bibliography management.
 
-    **Features:**
-    - ✨ **Automated figure generation** from Python/R scripts and Mermaid diagrams
-    - 📄 **Professional LaTeX typesetting** with custom styling
-    - 📚 **Bibliography management** with DOI validation
-    - 🔗 **Cross-reference resolution** for figures, tables, and equations
-    - ✅ **Validation checks** for syntax, references, and figures
-    - 📊 **Word count analysis** and document statistics
-
-    **Examples:**
-    ```bash
-    rxiv build                      # Build from MANUSCRIPT/
-    rxiv build MY_PAPER/            # Build from custom directory
-    rxiv build --force-figures      # Force regenerate all figures
-    rxiv build --skip-validation    # Skip validation for debugging
-    rxiv build --track-changes v1.0.0  # Track changes against git tag
-    ```
-
-    **Arguments:**
-    - `MANUSCRIPT_PATH`: Path to manuscript directory (default: MANUSCRIPT)
+    Examples:
+      rxiv build                      # Build from MANUSCRIPT/
+      rxiv build MY_PAPER/            # Build from custom directory
+      rxiv build --force-figures      # Force regenerate all figures
+      rxiv build --skip-validation    # Skip validation for debugging
+      rxiv build --track-changes v1.0.0  # Track changes against git tag
     """
     verbose = ctx.obj.get("verbose", False)
 
