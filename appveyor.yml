@@ -11,6 +11,10 @@ environment:
 
 # Install phase
 install:
+  # Fix Homebrew configuration issues in CI
+  - brew untap homebrew/homebrew-cask-versions || true
+  - brew cleanup || true
+
   # Update Homebrew
   - brew update
 
