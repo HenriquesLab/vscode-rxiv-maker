@@ -24,7 +24,7 @@ Successfully implemented the complete workflow to **remove automatic system depe
 option "with-test-pypi", "Install from test PyPI instead of main PyPI"
 
 # Usage:
-# brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+# brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 ```
 
 ### 4. AppVeyor CI Integration
@@ -88,7 +88,7 @@ rxiv-install-deps --help
 
 ### 3. Test Homebrew Installation
 ```bash
-brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 ```
 
 ### 4. Enable AppVeyor CI
@@ -146,7 +146,7 @@ If issues arise:
 ### Scripts
 - `scripts/deploy-test-pypi.sh` - Automated deployment
 - `appveyor.yml` - CI configuration
-- `homebrew-rxiv-maker/Formula/rxiv-maker.rb` - Enhanced formula
+- `src/homebrew-rxiv-maker/Formula/rxiv-maker.rb` - Enhanced formula
 
 ### Links
 - **Test PyPI**: https://test.pypi.org/project/rxiv-maker/

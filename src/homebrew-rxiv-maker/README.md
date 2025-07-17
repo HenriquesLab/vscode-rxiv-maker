@@ -130,10 +130,10 @@ brew test rxiv-maker
 
 ```bash
 # Edit formula
-edit homebrew-rxiv-maker/Formula/rxiv-maker.rb
+edit src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
 
 # Test changes
-brew reinstall --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb
+brew reinstall --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
 ```
 
 ## 📋 Formula Information

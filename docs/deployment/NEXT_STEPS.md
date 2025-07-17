@@ -58,7 +58,7 @@ rxiv-install-deps --help
 ### 🍺 Test Homebrew installation
 ```bash
 # Test with test-pypi option
-brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 
 # Verify installation
 which rxiv

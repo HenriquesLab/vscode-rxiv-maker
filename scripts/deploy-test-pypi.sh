@@ -82,7 +82,7 @@ if hatch publish -r https://test.pypi.org/legacy/; then
     echo "  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ rxiv-maker"
     echo ""
     echo "🍺 Test Homebrew installation with:"
-    echo "  brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi"
+    echo "  brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi"
 else
     echo "❌ Upload failed!"
     echo "Common issues:"
