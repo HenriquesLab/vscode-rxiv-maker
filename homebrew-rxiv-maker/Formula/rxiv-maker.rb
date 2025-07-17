@@ -19,7 +19,7 @@ class RxivMaker < Formula
 
   # LaTeX distribution - prefer BasicTeX for smaller footprint
   # Users can upgrade to full MacTeX if needed
-  depends_on "basictex"
+  # Note: basictex is a cask, not a formula
 
   # Python dependencies will be installed via pip
 
