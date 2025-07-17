@@ -21,6 +21,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 - **Multi-Environment** - Local, Docker, Google Colab, and GitHub Actions support
 - **Change Tracking** - Visual diff PDFs against git tags
 - **VS Code Integration** - Dedicated extension with syntax highlighting
+- **Modern CLI** - Beautiful command-line interface with rich output and auto-completion
 
 **Key rxiv-markdown features:** Scientific cross-references (`@fig:label`, `@eq:label`), citations (`@citation`), text formatting (`~subscript~`, `^superscript^`), document control (`<newpage>`), and automated figure generation.
 
@@ -43,7 +44,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 - **Make**: Build automation (see [platform-specific installation](docs/getting-started/installation.md))
 
 ### Python Dependencies
-Automatically installed with `make setup`:
+Automatically installed with `pip install rxiv-maker` or `make setup`:
 ```
 matplotlib>=3.7.0    # Figure generation
 seaborn>=0.12.0      # Statistical plotting  
@@ -52,6 +53,8 @@ pandas>=2.0.0        # Data manipulation
 PyYAML>=6.0.0        # Configuration parsing
 pypdf>=3.0.0         # PDF processing
 crossref-commons     # Citation validation
+click>=8.0.0         # Modern CLI framework
+rich>=13.0.0         # Beautiful terminal output
 ```
 
 ### Optional Dependencies (Local Development Only Without Docker)
@@ -77,7 +80,39 @@ crossref-commons     # Citation validation
 
 ## Quickstart
 
-### Setup Options
+### 🚀 Modern CLI (Recommended)
+
+**📦 Universal Install (Recommended)**
+```bash
+# One command installs everything
+pip install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+
+# Initialize new manuscript
+rxiv init MY_PAPER/
+
+# Build PDF
+rxiv build MY_PAPER/
+
+# Enable auto-completion (optional)
+rxiv --install-completion bash  # or zsh, fish
+```
+
+**🎛️ Installation Options**
+```bash
+# Full installation (default)
+pip install rxiv-maker
+
+# Minimal installation (Python + LaTeX only)
+RXIV_INSTALL_MODE=minimal pip install rxiv-maker
+
+# Skip system dependencies
+RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
+```
+
+### 📋 Alternative Setup Options
 
 **🌐 Google Colab** (Easiest - no installation)
 - **Prerequisites**: Google account only
@@ -99,8 +134,197 @@ make pdf RXIV_ENGINE=DOCKER
 ```bash
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
+pip install -e .                    # Install with modern CLI
+rxiv build                          # Generate PDF using CLI
+```
+
+**🛠️ Legacy Make Interface** (Still supported)
+```bash
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
 make setup && make pdf
 ```
+
+## Modern CLI Usage
+
+Rxiv-Maker includes a modern command-line interface with rich output and intuitive commands:
+
+### Quick Start
+```bash
+# Install from PyPI
+pip install rxiv-maker
+
+# Initialize new manuscript
+rxiv init MY_PAPER/
+
+# Build PDF
+rxiv build MY_PAPER/
+
+# Validate manuscript
+rxiv validate MY_PAPER/
+```
+
+### Key CLI Commands
+```bash
+# Essential commands
+rxiv build                          # Generate PDF from MANUSCRIPT/
+rxiv build --force-figures          # Force regeneration of figures
+rxiv validate                       # Validate manuscript
+rxiv clean                          # Clean generated files
+
+# Manuscript management
+rxiv init MY_PROJECT/               # Initialize new manuscript
+rxiv figures                        # Generate figures only
+rxiv arxiv                          # Prepare arXiv submission
+
+# Bibliography management
+rxiv bibliography add 10.1000/doi   # Add DOI to bibliography
+rxiv bibliography fix               # Fix bibliography issues
+rxiv bibliography validate          # Validate bibliography
+
+# Utility commands
+rxiv version                        # Show version
+rxiv version --detailed             # Show detailed system info
+rxiv --help                         # Show help
+```
+
+### 🔧 CLI Features
+- **Rich Output**: Beautiful colors, progress bars, and formatted tables
+- **Smart Validation**: Pre-build error detection with helpful suggestions
+- **Auto-completion**: Support for bash/zsh/fish shells
+- **Flexible Arguments**: Intuitive command structure
+- **Error Handling**: Clear error messages with resolution tips
+- **Configuration**: Persistent settings with `~/.rxiv/config.toml`
+- **Backward Compatibility**: All Make commands still work
+
+### 📚 Complete CLI Reference
+
+#### 📖 Manuscript Management
+```bash
+rxiv init MY_PAPER/                 # Initialize new manuscript
+rxiv build MY_PAPER/                # Generate PDF
+rxiv validate MY_PAPER/             # Validate manuscript
+rxiv clean MY_PAPER/                # Clean generated files
+```
+
+#### 🎨 Figure Generation
+```bash
+rxiv figures MY_PAPER/              # Generate all figures
+rxiv figures --force                # Force regeneration
+rxiv build --force-figures          # Build with fresh figures
+```
+
+#### 📚 Bibliography Management
+```bash
+rxiv bibliography add 10.1000/doi   # Add DOI to bibliography
+rxiv bibliography fix               # Fix bibliography issues
+rxiv bibliography validate          # Validate bibliography
+```
+
+#### 📦 Publishing
+```bash
+rxiv arxiv MY_PAPER/                # Prepare arXiv submission
+rxiv track-changes MY_PAPER/ v1.0.0 # Track changes vs git tag
+```
+
+#### ⚙️ Configuration
+```bash
+rxiv config show                    # Show current configuration
+rxiv config set key value           # Set configuration value
+rxiv config get key                 # Get configuration value
+rxiv config reset                   # Reset to defaults
+```
+
+#### 🔧 System
+```bash
+rxiv setup                          # Setup development environment
+rxiv version                        # Show version
+rxiv version --detailed             # Show detailed system info
+rxiv --help                         # Show help
+```
+
+#### 🐳 Docker Support
+```bash
+rxiv build --engine docker          # Use Docker engine
+rxiv config set general.default_engine docker  # Set Docker as default
+```
+
+## Installation
+
+### 🚀 Universal Install (Recommended)
+```bash
+# One command installs everything automatically
+pip install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+```
+
+**What gets installed:**
+- Python packages (matplotlib, numpy, etc.)
+- LaTeX distribution (for PDF generation)
+- Node.js + Mermaid CLI (for diagrams)
+- R language (optional, for statistical figures)
+- System libraries (automatically detected)
+
+### 🎛️ Installation Options
+```bash
+# Full installation (default)
+pip install rxiv-maker
+
+# Minimal installation (Python + essential LaTeX only)
+RXIV_INSTALL_MODE=minimal pip install rxiv-maker
+
+# Core installation (Python + LaTeX, skip Node.js/R)
+RXIV_INSTALL_MODE=core pip install rxiv-maker
+
+# Python packages only (skip all system dependencies)
+RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
+```
+
+### 🍺 Homebrew (macOS) - Deprecated
+```bash
+# Still supported but deprecated in favor of universal installer
+brew tap henriqueslab/rxiv-maker https://github.com/henriqueslab/rxiv-maker
+brew install rxiv-maker
+```
+
+### 📋 Development Install
+```bash
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+pip install -e .                       # Modern hatch-based build system
+```
+
+### 🔧 Auto-completion Setup
+```bash
+# For bash users
+rxiv --install-completion bash
+
+# For zsh users  
+rxiv --install-completion zsh
+
+# For fish users
+rxiv --install-completion fish
+```
+
+### 🔄 Migration from Make Commands
+
+Existing users can continue using Make commands or migrate to the CLI:
+
+| Make Command | CLI Command | Notes |
+|-------------|-------------|-------|
+| `make setup` | `rxiv setup` | Setup environment |
+| `make pdf` | `rxiv build` | Build PDF |
+| `make validate` | `rxiv validate` | Validate manuscript |
+| `make clean` | `rxiv clean` | Clean files |
+| `make arxiv` | `rxiv arxiv` | Prepare arXiv |
+| `make pdf FORCE_FIGURES=true` | `rxiv build --force-figures` | Force figures |
+| `MANUSCRIPT_PATH=path/ make pdf` | `rxiv build path/` | Custom path |
+
+📖 **Complete migration guide**: [MIGRATION.md](MIGRATION.md)  
+📚 **Complete CLI reference**: [CLI_REFERENCE.md](CLI_REFERENCE.md)  
+📋 **CLI modernization changelog**: [CHANGELOG_CLI.md](CHANGELOG_CLI.md)
 
 **⚡ GitHub Actions** (Team collaboration)
 - **Prerequisites**: GitHub account only
@@ -183,6 +407,37 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 git clone https://github.com/henriqueslab/rxiv-maker.git
 pip install -e ".[dev]" && pre-commit install
 ```
+
+### Release Process
+For maintainers releasing new versions:
+1. **Create GitHub release** with tag `v1.4.0`
+2. **PyPI publishing** happens automatically
+3. **Homebrew formula** updates manually or daily
+4. See [Release Process Guide](docs/RELEASE_PROCESS.md) for details
+
+### 🔧 Troubleshooting Installation
+
+If installation fails or components are missing:
+
+```bash
+# Check what's installed
+rxiv check-installation --detailed
+
+# Repair broken installation
+rxiv check-installation --fix
+
+# Or manually repair
+python -m rxiv_maker.install.manager --repair
+
+# Reinstall system dependencies
+python -m rxiv_maker.install.manager --mode full
+```
+
+**Common Issues:**
+- **No admin rights**: Use `RXIV_INSTALL_MODE=minimal` 
+- **Behind proxy**: System package managers may fail
+- **Docker/CI**: Use `RXIV_SKIP_SYSTEM_DEPS=1`
+- **Partial install**: Run repair command above
 
 ## How to Cite
 

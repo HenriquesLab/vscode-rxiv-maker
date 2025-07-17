@@ -9,13 +9,13 @@ These tests validate the fixes implemented for the technical audit:
 
 import pytest
 
-from src.py.converters.md2tex import convert_markdown_to_latex
-from src.py.converters.supplementary_note_processor import (
+from rxiv_maker.converters.md2tex import convert_markdown_to_latex
+from rxiv_maker.converters.supplementary_note_processor import (
     process_supplementary_note_references,
     process_supplementary_notes,
     restore_supplementary_note_placeholders,
 )
-from src.py.converters.table_processor import (
+from rxiv_maker.converters.table_processor import (
     convert_tables_to_latex,
     generate_latex_table,
 )
@@ -75,7 +75,7 @@ class TestSupplementaryFloatNumbering:
 
     def test_table_environment_selection(self):
         """Test that correct table environments are selected."""
-        from src.py.converters.table_processor import _determine_table_environment
+        from rxiv_maker.converters.table_processor import _determine_table_environment
 
         # Regular table
         env, pos = _determine_table_environment("single", None, False)

@@ -2,7 +2,7 @@
 
 import unittest
 
-from src.py.converters.table_processor import (
+from rxiv_maker.converters.table_processor import (
     convert_tables_to_latex,
     generate_latex_table,
 )

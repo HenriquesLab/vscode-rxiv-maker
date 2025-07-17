@@ -54,7 +54,7 @@ keywords: ["test", "article"]
             "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
         ):
             # Import and run the main function
-            from src.py.commands.generate_preprint import main
+            from rxiv_maker.commands.generate_preprint import main
 
             result = main()
             assert result == 0  # Success
@@ -115,7 +115,7 @@ plt.close()
 
         # Test figure generation
         with patch("sys.argv", ["generate_figures.py"]):
-            from src.py.commands.generate_figures import main as fig_main
+            from rxiv_maker.commands.generate_figures import main as fig_main
 
             fig_main()  # This function doesn't return a value
 
@@ -203,7 +203,7 @@ References will be processed from 03_REFERENCES.bib.
         with patch(
             "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
         ):
-            from src.py.commands.generate_preprint import main
+            from rxiv_maker.commands.generate_preprint import main
 
             result = main()
             assert result == 0  # Success

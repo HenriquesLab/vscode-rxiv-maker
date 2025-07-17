@@ -86,7 +86,7 @@ More text with citations @test2023 and @another2023.
         (manuscript_dir / "03_REFERENCES.bib").write_text(bib_content)
 
         # Generate LaTeX using the actual system
-        from src.py.commands.build_manager import BuildManager
+        from rxiv_maker.commands.build_manager import BuildManager
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
@@ -147,7 +147,7 @@ More text with citations @test2023 and @another2023.
 
     def test_citation_in_generated_tex(self, tmp_path):
         """Test that citations are properly converted in the LaTeX file."""
-        from src.py.converters.citation_processor import convert_citations_to_latex
+        from rxiv_maker.converters.citation_processor import convert_citations_to_latex
 
         # Test various citation formats
         test_cases = [
@@ -254,7 +254,7 @@ This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
         (manuscript_dir / "03_REFERENCES.bib").write_text(bib_content)
 
         # Run the full build process
-        from src.py.commands.build_manager import BuildManager
+        from rxiv_maker.commands.build_manager import BuildManager
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()

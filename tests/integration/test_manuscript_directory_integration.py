@@ -130,7 +130,7 @@ This work demonstrates successful custom manuscript directory handling.
             "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
         ):
             try:
-                from src.py.commands.generate_preprint import main
+                from rxiv_maker.commands.generate_preprint import main
 
                 result = main()
 
@@ -150,10 +150,10 @@ This work demonstrates successful custom manuscript directory handling.
                     source_pdf = output_dir / f"{manuscript_path}.pdf"
                     if source_pdf.exists():
                         # Test PDF copy with custom naming
-                        from src.py.processors.yaml_processor import (
+                        from rxiv_maker.processors.yaml_processor import (
                             extract_yaml_metadata_from_file,
                         )
-                        from src.py.utils import copy_pdf_to_manuscript_folder
+                        from rxiv_maker.utils import copy_pdf_to_manuscript_folder
 
                         # Extract metadata for custom naming
                         yaml_metadata = extract_yaml_metadata_from_file(str(main_file))
@@ -231,7 +231,7 @@ This is manuscript {manuscript}.
             monkeypatch.setenv("MANUSCRIPT_PATH", manuscript)
 
             # Test manuscript finding
-            from src.py.utils import find_manuscript_md
+            from rxiv_maker.utils import find_manuscript_md
 
             found_manuscript = find_manuscript_md()
             assert manuscript in str(found_manuscript)
@@ -240,7 +240,7 @@ This is manuscript {manuscript}.
             output_dir = temp_dir / "output"
             output_dir.mkdir(exist_ok=True)
 
-            from src.py.utils import write_manuscript_output
+            from rxiv_maker.utils import write_manuscript_output
 
             tex_result = write_manuscript_output(
                 str(output_dir), f"\\title{{Paper {manuscript[-1]}}}"
@@ -251,7 +251,7 @@ This is manuscript {manuscript}.
             assert expected_tex.exists()
 
             # Test PDF copying simulation
-            from src.py.utils import copy_pdf_to_manuscript_folder
+            from rxiv_maker.utils import copy_pdf_to_manuscript_folder
 
             # Create fake PDF
             fake_pdf = output_dir / f"{manuscript}.pdf"
@@ -278,7 +278,7 @@ This is manuscript {manuscript}.
         # Test with missing manuscript directory
         monkeypatch.setenv("MANUSCRIPT_PATH", "NONEXISTENT_MANUSCRIPT")
 
-        from src.py.utils import find_manuscript_md
+        from rxiv_maker.utils import find_manuscript_md
 
         with pytest.raises(FileNotFoundError):
             find_manuscript_md()
@@ -326,7 +326,7 @@ This is manuscript {manuscript}.
 
         # Build first manuscript
         monkeypatch.setenv("MANUSCRIPT_PATH", manuscript1)
-        from src.py.utils import write_manuscript_output
+        from rxiv_maker.utils import write_manuscript_output
 
         result1 = write_manuscript_output(str(output_dir), "\\title{Manuscript A}")
 

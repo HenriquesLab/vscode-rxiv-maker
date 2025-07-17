@@ -21,9 +21,9 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from src.py.commands.validate import UnifiedValidator
-    from src.py.validators.citation_validator import CitationValidator
-    from src.py.validators.doi_validator import DOIValidator
+    from rxiv_maker.commands.validate import UnifiedValidator
+    from rxiv_maker.validators.citation_validator import CitationValidator
+    from rxiv_maker.validators.doi_validator import DOIValidator
 
     INTEGRATION_AVAILABLE = True
 except ImportError:

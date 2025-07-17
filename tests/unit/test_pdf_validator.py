@@ -22,8 +22,8 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from src.py.validators.base_validator import ValidationLevel, ValidationResult
-    from src.py.validators.pdf_validator import PDFValidator
+    from rxiv_maker.validators.base_validator import ValidationLevel, ValidationResult
+    from rxiv_maker.validators.pdf_validator import PDFValidator
 
     PDF_VALIDATOR_AVAILABLE = True
 except ImportError:
@@ -230,7 +230,7 @@ class TestPDFValidatorIntegration(unittest.TestCase):
         validator = PDFValidator(self.manuscript_dir, pdf_path=pdf_path)
 
         # Mock pypdf functionality
-        with patch("src.py.validators.pdf_validator.pypdf") as mock_pypdf:
+        with patch("src.rxiv_maker.validators.pdf_validator.pypdf") as mock_pypdf:
             mock_reader = Mock()
             mock_page = Mock()
             mock_page.extract_text.return_value = (

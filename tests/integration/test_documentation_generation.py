@@ -13,7 +13,10 @@ from pathlib import Path
 import pytest
 
 # Import the functions directly to test them more precisely
-from src.py.commands.generate_docs import generate_enhanced_index, generate_module_docs
+from rxiv_maker.commands.generate_docs import (
+    generate_enhanced_index,
+    generate_module_docs,
+)
 
 
 @pytest.mark.integration

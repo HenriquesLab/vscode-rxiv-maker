@@ -1,6 +1,6 @@
 """Unit tests for the author_processor module."""
 
-from src.py.processors.author_processor import (
+from rxiv_maker.processors.author_processor import (
     generate_authors_and_affiliations,
     generate_corresponding_authors,
     generate_extended_author_info,

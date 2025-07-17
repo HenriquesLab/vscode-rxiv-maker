@@ -1,11 +1,27 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "versioneer[toml]==0.29"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [project]
 name = "rxiv-maker"
 dynamic = ["version"]
-description = "Automated LaTeX article generation with figure creation capabilities"
+authors = [
+    {name = "Rxiv-Maker Contributors", email = "rxiv.maker@gmail.com"},
+]
+keywords = ["latex", "markdown", "scientific-writing", "publishing", "automation", "cli", "command-line", "hatch"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing :: Markup :: LaTeX",
+    "Topic :: Text Processing :: Markup :: Markdown",
+]
+description = "Automated LaTeX article generation with modern CLI and figure creation capabilities"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -25,6 +41,11 @@ dependencies = [
     "ruff>=0.12.2",
     "pre-commit>=4.2.0",
     "folder2md4llms>=0.3.0",
+    "click>=8.0.0",
+    "rich>=13.0.0",
+    "rich-click>=1.6.0",
+    "typing-extensions>=4.0.0",
+    "packaging>=21.0.0",
 ]
 
 [project.optional-dependencies]
@@ -43,12 +64,15 @@ dev = [
     "pre-commit>=4.0.0",
     "lazydocs>=0.4.8",
 ]
+minimal = []  # Same as base dependencies
+full = []     # Same as base dependencies (system deps handled by installer)
+system-deps = []  # Placeholder for system dependency installation
 
 # Ruff configuration (replaces black, isort, flake8, autoflake, docformatter)
 [tool.ruff]
 # Set the maximum line length to match Black
 line-length = 88
-target-version = "py39"
+target-version = "py311"
 exclude = [
     "versioneer.py",
     "rxiv_maker_colab.ipynb",
@@ -99,12 +123,11 @@ convention = "google"
 "trace_*.py" = ["D"]
 "notebooks/*" = ["D", "E501"]
 # Ignore auto-generated files
-"src/py/_version.py" = ["ALL"]
-"versioneer.py" = ["ALL"]
+"src/rxiv_maker/_version.py" = ["ALL"]
 "rxiv_maker_colab.ipynb" = ["ALL"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_return_any = false
 warn_unused_configs = false
 disallow_untyped_defs = false
@@ -112,7 +135,7 @@ explicit_package_bases = true
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["src/py"]
+source = ["src/rxiv_maker"]
 omit = [
     "*/tests/*",
     "*/test_*.py",
@@ -141,6 +164,7 @@ addopts = [
     "-v",
     "--tb=short",
     "--strict-markers",
+    "-x",  # Stop on first failure
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -150,20 +174,56 @@ markers = [
     "validation: marks tests as validation-related tests",
     "build_manager: marks tests as build manager-related tests",
     "pdf_validation: marks tests as PDF validation-related tests",
+    "cli: marks tests as CLI-related tests",
+    "install: marks tests as installation-related tests",
+    "docker: marks tests as Docker-dependent tests",
+    "container: marks tests as container-based tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
 ]
 
-# Versioneer configuration
-[tool.versioneer]
-VCS = "git"
-style = "pep440"
-versionfile_source = "src/py/_version.py"
-versionfile_build = "py/_version.py"
-tag_prefix = "v"
-parentdir_prefix = "rxiv-maker-"
+# Hatch configuration
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "1.4.0.dev0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/rxiv_maker/_version.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=7.4.4",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.12.2",
+    "pre-commit>=4.2.0",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "pytest --cov=src/rxiv_maker {args:tests}"
+lint = "ruff check {args:src}"
+format = "ruff format {args:src}"
+type-check = "mypy {args:src/rxiv_maker}"
+all = ["lint", "type-check", "test-cov"]
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.20.0",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build"
+serve = "mkdocs serve"
+
+# Console scripts entry point
+[project.scripts]
+rxiv = "rxiv_maker.cli:main"
+rxiv-install-deps = "rxiv_maker.install.manager:main"
 
 # Typos spell checker configuration
 [tool.typos.files]
@@ -244,3 +304,8 @@ tertiaryTextColor = "#ffffff"
 textColor = "#ffffff"
 fontFamily = "Arial, sans-serif"
 fontSize = "16px"
+
+[dependency-groups]
+dev = [
+    "hatch>=1.14.1",
+]

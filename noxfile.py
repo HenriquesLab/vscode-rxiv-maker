@@ -11,7 +11,14 @@ def tests(session):
     session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
     session.install("ruff>=0.8.0", "mypy>=1.0", "pytest-notebook>=0.10.0")
     session.install("lazydocs>=0.4.8", "nbstripout>=0.7.1", "pre-commit>=4.0.0")
-    session.run("pytest", "tests/", "-v")
+    session.run(
+        "pytest",
+        "tests/",
+        "-v",
+        "--timeout=120",  # 2 minute timeout
+        "-m",
+        "not slow",  # Skip slow tests by default
+    )
 
 
 @nox.session(venv_backend="none")
@@ -50,7 +57,15 @@ def integration(session):
     session.install(".")
     session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
     session.install("pytest-notebook>=0.10.0")
-    session.run("pytest", "tests/integration/", "-v", "-s")
+    session.run(
+        "pytest",
+        "tests/integration/",
+        "-v",
+        "-s",
+        "--timeout=180",  # 3 minute timeout for integration tests
+        "-m",
+        "not slow",  # Skip slow integration tests
+    )
 
 
 @nox.session(python="3.11")
@@ -63,8 +78,102 @@ def coverage(session):
     session.run(
         "pytest",
         "tests/",
-        "--cov=src/py",
+        "--cov=src/rxiv_maker",  # Fixed coverage path
         "--cov-report=html",
         "--cov-report=term-missing",
         "-v",
+        "-m",
+        "not slow",  # Skip slow tests for coverage
+    )
+
+
+@nox.session(python="3.11")
+def install_tests(session):
+    """Run essential installation tests with Docker support."""
+    session.install(".")
+    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
+    session.install("docker>=6.0.0", "pytest-timeout>=2.1.0")
+    session.install("build>=0.10.0", "wheel>=0.40.0")
+
+    # Set environment variable to enable Docker tests
+    session.env["DOCKER_AVAILABLE"] = "true"
+
+    # Run essential installation tests only
+    session.run(
+        "pytest",
+        "tests/install/",
+        "-v",
+        "-s",
+        "--tb=short",
+        "--timeout=120",  # 2 minute timeout per test
+        "-m",
+        "not slow",  # Skip slow tests by default
+        "-k",
+        "not (performance or system_deps or resource_usage)",  # Skip expensive tests
+    )
+
+
+@nox.session(python="3.11")
+def install_tests_full(session):
+    """Run complete installation tests including slow tests."""
+    session.install(".")
+    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
+    session.install("docker>=6.0.0", "pytest-timeout>=2.1.0")
+    session.install("build>=0.10.0", "wheel>=0.40.0")
+
+    # Set environment variable to enable Docker tests
+    session.env["DOCKER_AVAILABLE"] = "true"
+
+    # Run all installation tests including slow ones
+    session.run(
+        "pytest",
+        "tests/install/",
+        "-v",
+        "-s",
+        "--tb=short",
+        "--timeout=300",  # 5 minute timeout per test (reduced from 10)
+        "--cov=src/rxiv_maker/install",
+        "--cov-report=html:htmlcov/install",
+        "--cov-report=term-missing",
+    )
+
+
+@nox.session(python="3.11")
+def install_tests_basic(session):
+    """Run basic installation tests without Docker."""
+    session.install(".")
+    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
+
+    # Run only unit tests that don't require Docker
+    session.run(
+        "pytest",
+        "tests/install/",
+        "-v",
+        "-k",
+        "not docker and not container",
+        "--tb=short",
+        "--timeout=60",  # 1 minute timeout for basic tests
+    )
+
+
+@nox.session(python="3.11")
+def install_tests_fast(session):
+    """Run fast installation tests for CI."""
+    session.install(".")
+    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
+    session.install("docker>=6.0.0", "pytest-timeout>=2.1.0")
+    session.install("build>=0.10.0", "wheel>=0.40.0")
+
+    # Set environment variable to enable Docker tests
+    session.env["DOCKER_AVAILABLE"] = "true"
+
+    # Run only the most essential tests
+    session.run(
+        "pytest",
+        "tests/install/docker/test_full_workflow.py::TestFullWorkflowIntegration::test_install_to_check_workflow",
+        "tests/install/docker/test_docker_environment.py::TestContainerSpecificBehavior::test_installation_in_container",
+        "-v",
+        "-s",
+        "--tb=short",
+        "--timeout=90",  # 1.5 minute timeout for fast tests
     )

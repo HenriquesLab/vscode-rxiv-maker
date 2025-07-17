@@ -1,0 +1,250 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Publish to TestPyPI or PyPI'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+          - testpypi
+          - pypi
+      version:
+        description: 'Version to publish (leave empty to auto-detect from tag)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write  # For trusted publishing
+
+jobs:
+  build:
+    name: Build Distribution Packages
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for version detection
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install hatch build twine
+
+    - name: Validate version and tag
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          # Extract version from release tag
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION=${VERSION#v}  # Remove 'v' prefix if present
+          echo "Release trigger - using version: $VERSION"
+        elif [ -n "${{ github.event.inputs.version }}" ]; then
+          # Manual trigger with version
+          VERSION="${{ github.event.inputs.version }}"
+          echo "Manual trigger - using specified version: $VERSION"
+        else
+          # Auto-detect version from git tags
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          VERSION=${VERSION#v}  # Remove 'v' prefix if present
+          echo "Auto-detected version: $VERSION"
+        fi
+
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Final version: $VERSION"
+
+        # Validate version format
+        if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9].*)?$'; then
+          echo "❌ Invalid version format: $VERSION"
+          echo "Expected format: X.Y.Z or X.Y.Z-suffix"
+          exit 1
+        fi
+
+        echo "✅ Version validation passed: $VERSION"
+
+    - name: Build packages
+      run: |
+        echo "Building packages for version ${{ steps.version.outputs.VERSION }}"
+        python -m build
+
+        # List built packages
+        echo "Built packages:"
+        ls -la dist/
+
+        # Validate built packages
+        echo "Validating packages..."
+        twine check dist/*
+
+        echo "✅ Package build and validation successful"
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-packages
+        path: dist/
+        retention-days: 30
+
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'release' && 'pypi' || github.event.inputs.environment || 'testpypi' }}
+      url: ${{ github.event_name == 'release' && 'https://pypi.org/project/rxiv-maker/' || (github.event.inputs.environment == 'pypi' && 'https://pypi.org/project/rxiv-maker/' || 'https://test.pypi.org/project/rxiv-maker/') }}
+
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist-packages
+        path: dist/
+
+    - name: Determine target repository
+      id: target
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          TARGET="pypi"
+          URL="https://pypi.org/"
+          echo "Release trigger - publishing to production PyPI"
+        else
+          TARGET="${{ github.event.inputs.environment }}"
+          if [ "$TARGET" = "pypi" ]; then
+            URL="https://pypi.org/"
+            echo "Manual trigger - publishing to production PyPI"
+          else
+            URL="https://test.pypi.org/"
+            echo "Manual trigger - publishing to Test PyPI"
+          fi
+        fi
+
+        echo "TARGET=$TARGET" >> $GITHUB_OUTPUT
+        echo "URL=$URL" >> $GITHUB_OUTPUT
+        echo "Publishing to: $TARGET ($URL)"
+
+    - name: Publish to Test PyPI
+      if: steps.target.outputs.TARGET == 'testpypi'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        # Uses TESTPYPI_API_TOKEN secret
+
+    - name: Publish to PyPI
+      if: steps.target.outputs.TARGET == 'pypi'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # Uses PYPI_API_TOKEN secret or trusted publishing
+
+    - name: Verify publication
+      run: |
+        TARGET="${{ steps.target.outputs.TARGET }}"
+        VERSION="${{ needs.build.outputs.version }}"
+
+        if [ "$TARGET" = "pypi" ]; then
+          CHECK_URL="https://pypi.org/pypi/rxiv-maker/$VERSION/json"
+          INSTALL_CMD="pip install rxiv-maker==$VERSION"
+        else
+          CHECK_URL="https://test.pypi.org/pypi/rxiv-maker/$VERSION/json"
+          INSTALL_CMD="pip install --index-url https://test.pypi.org/simple/ rxiv-maker==$VERSION"
+        fi
+
+        echo "Waiting for package to be available..."
+        for i in {1..30}; do
+          if curl -f -s "$CHECK_URL" > /dev/null; then
+            echo "✅ Package available at: $CHECK_URL"
+            break
+          fi
+          echo "⏳ Attempt $i/30: Package not yet available, waiting..."
+          sleep 10
+        done
+
+        # Test installation
+        echo "Testing installation..."
+        python -m pip install --upgrade pip
+
+        if $INSTALL_CMD; then
+          echo "✅ Package installation successful"
+
+          # Basic functionality test
+          python -c "import rxiv_maker; print(f'rxiv_maker version: {rxiv_maker.__version__}')"
+          echo "✅ Package import successful"
+        else
+          echo "❌ Package installation failed"
+          exit 1
+        fi
+
+    outputs:
+      target: ${{ steps.target.outputs.TARGET }}
+      version: ${{ needs.build.outputs.version }}
+
+  create-summary:
+    name: Create Release Summary
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Create summary
+      run: |
+        VERSION="${{ needs.build.outputs.version }}"
+        TARGET="${{ needs.publish.outputs.target }}"
+
+        echo "## 📦 PyPI Publishing Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "- **Target**: $TARGET" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build Status**: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Publish Status**: ${{ needs.publish.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ needs.publish.result }}" = "success" ]; then
+          echo "### ✅ Publication Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$TARGET" = "pypi" ]; then
+            echo "📦 **Production PyPI**: https://pypi.org/project/rxiv-maker/$VERSION/" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Install with:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "pip install rxiv-maker==$VERSION" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🍺 **Next Steps**: Update Homebrew formula" >> $GITHUB_STEP_SUMMARY
+            echo "1. Wait ~10 minutes for PyPI propagation" >> $GITHUB_STEP_SUMMARY
+            echo "2. Run: [Update Homebrew Formula](../actions/workflows/update-homebrew-formula.yml)" >> $GITHUB_STEP_SUMMARY
+            echo "3. Or wait for automated update (if configured)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🧪 **Test PyPI**: https://test.pypi.org/project/rxiv-maker/$VERSION/" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Install with:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "pip install --index-url https://test.pypi.org/simple/ rxiv-maker==$VERSION" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "### ❌ Publication Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Common Issues**:" >> $GITHUB_STEP_SUMMARY
+          echo "- Version already exists on PyPI" >> $GITHUB_STEP_SUMMARY
+          echo "- API token expired or invalid" >> $GITHUB_STEP_SUMMARY
+          echo "- Package validation failed" >> $GITHUB_STEP_SUMMARY
+          echo "- Network connectivity issues" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📋 **Troubleshooting**: Check [Release Guide](../../homebrew-rxiv-maker/MAINTENANCE.md)" >> $GITHUB_STEP_SUMMARY

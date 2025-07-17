@@ -9,7 +9,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Import the module under test
-from src.py.commands.generate_docs import generate_enhanced_index, generate_module_docs
+from rxiv_maker.commands.generate_docs import (
+    generate_enhanced_index,
+    generate_module_docs,
+)
 
 
 @pytest.fixture
@@ -222,7 +225,7 @@ class PartiallyDocumentedClass:
         This test creates a minimal 'main' function that directly simulates
         the failure scenario without complex mocking.
         """
-        from src.py.commands.generate_docs import main as original_main
+        from src.rxiv_maker.commands.generate_docs import main as original_main
 
         def simplified_main_for_test():
             """A simplified version of main that always simulates failures."""
@@ -239,9 +242,9 @@ class PartiallyDocumentedClass:
             return True
 
         # Replace the original main with our simplified version
-        import src.py.commands.generate_docs
+        import src.rxiv_maker.commands.generate_docs
 
-        src.py.commands.generate_docs.main = simplified_main_for_test
+        src.rxiv_maker.commands.generate_docs.main = simplified_main_for_test
 
         try:
             # Run our simplified main
@@ -251,7 +254,7 @@ class PartiallyDocumentedClass:
             assert result is False
         finally:
             # Restore the original main function
-            src.py.commands.generate_docs.main = original_main
+            src.rxiv_maker.commands.generate_docs.main = original_main
 
 
 if __name__ == "__main__":
