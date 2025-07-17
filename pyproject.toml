@@ -174,9 +174,6 @@ markers = [
     "build_manager: marks tests as build manager-related tests",
     "pdf_validation: marks tests as PDF validation-related tests",
     "cli: marks tests as CLI-related tests",
-    "install: marks tests as installation-related tests",
-    "docker: marks tests as Docker-dependent tests",
-    "container: marks tests as container-based tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
