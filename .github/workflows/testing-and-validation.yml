@@ -248,9 +248,9 @@ jobs:
 
       - name: Test Python module import
         run: |
-          python -c "import rxiv_maker; print('✅ Package imported successfully')"
+          python -c "import rxiv_maker; print('OK: Package imported successfully')"
           python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
-          python -c "from rxiv_maker.cli import main; print('✅ CLI module imported successfully')"
+          python -c "from rxiv_maker.cli import main; print('OK: CLI module imported successfully')"
 
       - name: Test package functionality
         if: needs.setup.outputs.run-integration == 'true'
@@ -312,7 +312,7 @@ jobs:
           fi
 
           rxiv --version
-          python -c "import rxiv_maker; print('✅ Clean environment test passed')"
+          python -c "import rxiv_maker; print('OK: Clean environment test passed')"
 
           # Deactivate
           deactivate
