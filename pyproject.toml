@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rxiv-maker"
-version = "1.4.0.dev0"
+version = "1.4.0"
 authors = [
     {name = "Rxiv-Maker Contributors", email = "rxiv.maker@gmail.com"},
 ]
@@ -184,7 +184,7 @@ filterwarnings = [
 # Hatch configuration
 # [tool.hatch.version]
 # source = "vcs"
-# fallback-version = "1.4.0.dev0"
+# fallback-version = "1.4.0"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/rxiv_maker/_version.py"
