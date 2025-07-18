@@ -270,6 +270,7 @@ jobs:
           fi
 
           cd ..
+        shell: bash
         env:
           # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
           PYTHONIOENCODING: utf-8
@@ -288,6 +289,7 @@ jobs:
           else
             echo "No test directory found, skipping unit tests"
           fi
+        shell: bash
 
       - name: Test with clean virtual environment
         run: |
