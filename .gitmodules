@@ -1,0 +1,9 @@
+[submodule "git_submodules/homebrew-rxiv-maker"]
+	path = git_submodules/homebrew-rxiv-maker
+	url = https://github.com/henriqueslab/homebrew-rxiv-maker.git
+[submodule "git_submodules/scoop-rxiv-maker"]
+	path = git_submodules/scoop-rxiv-maker
+	url = https://github.com/henriqueslab/scoop-rxiv-maker.git
+[submodule "git_submodules/vscode-rxiv-maker"]
+	path = git_submodules/vscode-rxiv-maker
+	url = https://github.com/HenriquesLab/vscode-rxiv-maker

@@ -237,9 +237,8 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-# Package manager repositories (should be separate repos)
-homebrew-rxiv-maker/
-scoop-rxiv-maker/
+# Git submodules are tracked by .gitmodules
+# Individual submodule contents are managed by git submodule commands
 
 .gitignore
 MANUSCRIPT/2025__author_et_al__rxiv.pdf
