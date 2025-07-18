@@ -814,3 +814,50 @@ class BuildManager:
             self.log(f"Build warnings logged to {self.warnings_log.name}", "INFO")
 
         return True
+
+
+def main():
+    """Main entry point for build manager command."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Build manager for Rxiv-Maker manuscript compilation"
+    )
+    parser.add_argument(
+        "--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory"
+    )
+    parser.add_argument("--output-dir", default="output", help="Output directory")
+    parser.add_argument(
+        "--force-figures", action="store_true", help="Force regeneration of all figures"
+    )
+    parser.add_argument(
+        "--skip-validation", action="store_true", help="Skip manuscript validation"
+    )
+    parser.add_argument(
+        "--skip-pdf-validation", action="store_true", help="Skip PDF validation"
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--track-changes", help="Git tag to track changes against")
+
+    args = parser.parse_args()
+
+    # Initialize build manager
+    build_manager = BuildManager(
+        manuscript_path=args.manuscript_path,
+        output_dir=args.output_dir,
+        force_figures=args.force_figures,
+        skip_validation=args.skip_validation,
+        skip_pdf_validation=args.skip_pdf_validation,
+        verbose=args.verbose,
+        track_changes_tag=args.track_changes,
+    )
+
+    # Run the build process
+    success = build_manager.run()
+
+    if not success:
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()

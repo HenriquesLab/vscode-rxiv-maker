@@ -290,3 +290,40 @@ class EnvironmentSetup:
         self.show_completion_message()
 
         return True
+
+
+def main():
+    """Main entry point for setup environment command."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Set up development environment for rxiv-maker"
+    )
+    parser.add_argument(
+        "--reinstall",
+        action="store_true",
+        help="Reinstall dependencies (removes .venv and creates new one)",
+    )
+    parser.add_argument(
+        "--check-deps-only", action="store_true", help="Only check system dependencies"
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+
+    args = parser.parse_args()
+
+    # Initialize setup manager
+    setup_manager = EnvironmentSetup(
+        reinstall=args.reinstall,
+        check_system_deps=not args.check_deps_only,
+        verbose=args.verbose,
+    )
+
+    # Run setup
+    success = setup_manager.run()
+
+    if not success:
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()

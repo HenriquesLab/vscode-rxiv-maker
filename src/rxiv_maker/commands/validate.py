@@ -381,3 +381,48 @@ def validate_manuscript(
         validator.print_summary()
 
     return validation_passed
+
+
+def main():
+    """Main entry point for validate command."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Validate rxiv-maker manuscript structure and content"
+    )
+    parser.add_argument(
+        "manuscript_path",
+        nargs="?",
+        default="MANUSCRIPT",
+        help="Path to manuscript directory",
+    )
+    parser.add_argument(
+        "--detailed", action="store_true", help="Show detailed validation report"
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument(
+        "--include-info", action="store_true", help="Include informational messages"
+    )
+    parser.add_argument(
+        "--check-latex", action="store_true", help="Check LaTeX compilation"
+    )
+    parser.add_argument("--no-doi", action="store_true", help="Disable DOI validation")
+
+    args = parser.parse_args()
+
+    # Run validation
+    success = validate_manuscript(
+        manuscript_path=args.manuscript_path,
+        detailed=args.detailed,
+        verbose=args.verbose,
+        include_info=args.include_info,
+        check_latex=args.check_latex,
+        enable_doi_validation=not args.no_doi,
+    )
+
+    if not success:
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()

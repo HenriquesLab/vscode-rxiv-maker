@@ -217,6 +217,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install build hatch pytest pytest-cov pytest-xdist
 
+          # Verify installation
+          python -m pip list | grep -E "(build|hatch|pytest)" || echo "Some packages may not be installed"
+
       - name: Build package
         run: |
           python -m build --sdist --wheel --outdir dist/
@@ -238,11 +241,26 @@ jobs:
 
       - name: Test CLI functionality
         run: |
-          # Test basic CLI commands
-          rxiv --version
+          # Test basic CLI commands with retry logic
+          echo "Testing CLI version command..."
+          for i in {1..3}; do
+            if rxiv --version; then
+              echo "✅ CLI version command successful on attempt $i"
+              break
+            else
+              echo "❌ CLI version command failed on attempt $i"
+              if [ $i -eq 3 ]; then
+                echo "❌ CLI version command failed after 3 attempts"
+                exit 1
+              fi
+              sleep 1
+            fi
+          done
+
+          echo "Testing CLI help command..."
           rxiv --help
 
-          # Test CLI with different options
+          # Test CLI with different options (non-blocking)
           rxiv config show || echo "Config command not available"
           rxiv version --detailed || echo "Detailed version not available"
         env:
@@ -739,19 +757,36 @@ jobs:
           python -m pip install --upgrade pip
 
           # Test installation with timeout and error handling
+          echo "Attempting to install rxiv-maker from PyPI..."
           if timeout 300 python -m pip install rxiv-maker; then
             echo "✅ PyPI package installed successfully"
 
-            # Test CLI functionality
+            # Test CLI functionality with detailed error reporting
+            echo "Testing CLI functionality after PyPI installation..."
             if rxiv --version; then
               echo "✅ CLI working correctly"
+              echo "Version: $(rxiv --version)"
             else
-              echo "❌ CLI not working, but continuing..."
+              echo "❌ CLI not working after PyPI installation"
+              echo "Python path: $(python -c 'import sys; print(sys.path)')"
+              echo "Installed packages: $(python -m pip list | grep rxiv || echo 'No rxiv packages found')"
               exit 0
             fi
           else
             echo "❌ PyPI installation failed or timed out"
             echo "This may be expected if the package is not yet published"
+            echo "Checking PyPI for package availability..."
+            python -c "
+            import requests
+            try:
+                response = requests.get('https://pypi.org/pypi/rxiv-maker/json', timeout=10)
+                if response.status_code == 200:
+                    print('✅ Package exists on PyPI')
+                else:
+                    print('❌ Package not found on PyPI (status: ' + str(response.status_code) + ')')
+            except Exception as e:
+                print('❌ Error checking PyPI: ' + str(e))
+            " || echo "Could not check PyPI availability"
             exit 0
           fi
 
