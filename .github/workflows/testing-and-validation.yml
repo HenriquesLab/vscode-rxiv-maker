@@ -818,9 +818,11 @@ jobs:
                 Write-Host "✅ Scoop package installed successfully"
 
                 # Test CLI functionality
-                if (rxiv --version) {
+                try {
+                  $versionOutput = rxiv --version
                   Write-Host "✅ CLI working correctly"
-                } else {
+                  Write-Host "Version: $versionOutput"
+                } catch {
                   Write-Host "❌ CLI not working, but continuing..."
                 }
               } else {
@@ -831,7 +833,7 @@ jobs:
               Write-Host "❌ Scoop installation timed out"
               Stop-Job $job
             }
-            Remove-Job $job
+            Remove-Job $job -Force
           } catch {
             Write-Host "❌ Failed to add bucket: $_"
             Write-Host "This may be expected if repository does not exist yet"
