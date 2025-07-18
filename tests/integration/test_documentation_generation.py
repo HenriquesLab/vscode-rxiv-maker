@@ -34,7 +34,7 @@ def test_full_documentation_generation():
         project_root = Path(__file__).parent.parent.parent
 
         # Create a realistic project structure in the temp directory
-        temp_src = temp_path / "src" / "py"
+        temp_src = temp_path / "src" / "rxiv_maker"
         temp_src.mkdir(parents=True)
 
         # Create docs directory
@@ -49,7 +49,7 @@ def test_full_documentation_generation():
         ]
 
         for file_path in sample_files:
-            src_file = project_root / "src" / "py" / file_path
+            src_file = project_root / "src" / "rxiv_maker" / file_path
             dest_file = temp_src / file_path
 
             # Ensure the parent directory exists

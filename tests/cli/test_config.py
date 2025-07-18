@@ -40,6 +40,11 @@ class TestConfigCommand:
         """Test config get with existing key."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
+                # Reset config to defaults before test
+                from rxiv_maker.cli.config import config
+
+                config.config_data = config.get_default_config()
+
                 result = self.runner.invoke(
                     config_cmd, ["get", "general.default_engine"]
                 )

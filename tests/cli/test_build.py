@@ -102,8 +102,8 @@ authors:
         result = self.runner.invoke(
             build, ["/nonexistent/path"], obj={"verbose": False, "engine": "local"}
         )
-        assert result.exit_code == 1
-        assert "does not exist" in result.output
+        assert result.exit_code == 2  # Click validation error
+        assert "Directory '/nonexistent/path'" in result.output
 
     def test_build_with_options(self):
         """Test build with various options."""
@@ -168,7 +168,7 @@ authors:
             with patch(
                 "rxiv_maker.cli.commands.build.BuildManager"
             ) as mock_build_manager:
-                mock_build_manager.return_value.build.return_value = False
+                mock_build_manager.return_value.run_full_build.return_value = False
 
                 result = self.runner.invoke(
                     build,
@@ -198,7 +198,9 @@ authors:
             with patch(
                 "rxiv_maker.cli.commands.build.BuildManager"
             ) as mock_build_manager:
-                mock_build_manager.return_value.build.side_effect = KeyboardInterrupt()
+                mock_build_manager.return_value.run_full_build.side_effect = (
+                    KeyboardInterrupt()
+                )
 
                 result = self.runner.invoke(
                     build,
@@ -228,7 +230,7 @@ authors:
             with patch(
                 "rxiv_maker.cli.commands.build.BuildManager"
             ) as mock_build_manager:
-                mock_build_manager.return_value.build.side_effect = Exception(
+                mock_build_manager.return_value.run_full_build.side_effect = Exception(
                     "Test error"
                 )
 

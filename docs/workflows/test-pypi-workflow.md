@@ -4,7 +4,7 @@ This document summarizes the complete implementation of the test-pypi workflow f
 
 ## Overview
 
-The workflow has been successfully implemented to remove automatic system dependency installation from pip install while maintaining all verification functionality and adding comprehensive testing via AppVeyor.
+The workflow has been successfully implemented to remove automatic system dependency installation from pip install while maintaining all verification functionality and adding comprehensive testing via GitHub Actions.
 
 ## Changes Implemented
 
@@ -53,15 +53,16 @@ else
 end
 ```
 
-### 4. AppVeyor CI Configuration
+### 4. GitHub Actions CI Configuration
 
 ```yaml
-# Test environment: macOS Monterey
+# Test environment: macOS (latest GitHub Actions runner)
 # Test phases:
 # 1. Install from test-pypi via Homebrew
 # 2. Test CLI functionality
 # 3. Verify no automatic system dependencies
 # 4. Validate verification logic
+# 5. Matrix testing for both test-pypi and default modes
 ```
 
 ## Testing Results
@@ -85,8 +86,8 @@ end
 - `--with-test-pypi` option - ✅ Added
 - Test PyPI installation logic - ✅ Implemented
 
-### ✅ AppVeyor Configuration
-- `appveyor.yml` - ✅ Created
+### ✅ GitHub Actions Configuration
+- `.github/workflows/test-homebrew-install.yml` - ✅ Created
 - Documentation - ✅ Complete
 
 ## Usage Instructions
@@ -135,9 +136,9 @@ rxiv-install-deps
 brew install rxiv-maker
 ```
 
-## AppVeyor Testing
+## GitHub Actions Testing
 
-The AppVeyor workflow automatically tests:
+The GitHub Actions workflow automatically tests:
 
 1. **Homebrew Installation from Test PyPI**
    - Installs via `--with-test-pypi` option
@@ -153,6 +154,7 @@ The AppVeyor workflow automatically tests:
    - End-to-end workflow verification
    - Dependency checking
    - Error handling
+   - Matrix testing for both installation modes
 
 ## Benefits Achieved
 
@@ -167,9 +169,10 @@ The AppVeyor workflow automatically tests:
 - Manual system dependency installation available
 
 ### 3. Comprehensive Testing
-- Automated CI testing via AppVeyor
+- Automated CI testing via GitHub Actions
 - Both test-pypi and source installation paths
 - Full workflow validation
+- Matrix testing for multiple installation modes
 
 ### 4. Improved User Experience
 - Clear separation between Python and system dependencies
@@ -182,14 +185,14 @@ The AppVeyor workflow automatically tests:
    - Obtain test-pypi API token
    - Push built package for testing
 
-2. **Enable AppVeyor**
-   - Configure AppVeyor CI for the repository
-   - Set up automated testing on commits
+2. **Enable GitHub Actions**
+   - GitHub Actions workflow is ready and configured
+   - Manual testing available on-demand
 
 3. **Test Production Deployment**
    - Validate complete workflow
    - Test Homebrew formula with test-pypi package
-   - Verify AppVeyor tests pass
+   - Verify GitHub Actions tests pass
 
 4. **Release to Production**
    - Push to main PyPI
@@ -200,8 +203,8 @@ The AppVeyor workflow automatically tests:
 
 - `setup.py` - Removed PostInstallCommand, cleaned up
 - `homebrew-rxiv-maker/Formula/rxiv-maker.rb` - Added test-pypi option
-- `appveyor.yml` - Created comprehensive CI configuration
-- `docs/workflows/appveyor-testing.md` - Added testing documentation
+- `.github/workflows/test-homebrew-install.yml` - Created comprehensive CI configuration
+- `docs/workflows/github-actions-testing.md` - Added testing documentation
 - `docs/workflows/test-pypi-workflow.md` - This summary document
 
 ## Verification Commands
