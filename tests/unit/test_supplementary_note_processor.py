@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.py.converters.supplementary_note_processor import (
+from rxiv_maker.converters.supplementary_note_processor import (
     extract_supplementary_note_info,
     process_supplementary_note_references,
     process_supplementary_notes,

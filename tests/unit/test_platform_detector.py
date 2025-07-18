@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 
-from src.py.utils.platform import (
+from rxiv_maker.utils.platform import (
     PlatformDetector,
     get_platform,
     get_python_command,
@@ -408,14 +408,14 @@ class TestPlatformUtilityFunctions(unittest.TestCase):
         result = is_unix_like()
         self.assertIsInstance(result, bool)
 
-    @patch("src.py.utils.platform.platform_detector.run_command")
+    @patch("rxiv_maker.utils.platform.subprocess.run")
     def test_run_platform_command(self, mock_run_command):
         """Test run_platform_command function."""
         mock_run_command.return_value = Mock(returncode=0)
 
         result = run_platform_command("echo test")
 
-        mock_run_command.assert_called_once_with("echo test")
+        mock_run_command.assert_called_once_with("echo test", shell=True)
         self.assertEqual(result.returncode, 0)
 
 

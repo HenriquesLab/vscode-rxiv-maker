@@ -2,7 +2,10 @@
 
 import pytest
 
-from src.py.processors.yaml_processor import extract_yaml_metadata, parse_yaml_simple
+from rxiv_maker.processors.yaml_processor import (
+    extract_yaml_metadata,
+    parse_yaml_simple,
+)
 
 
 class TestYAMLProcessor:

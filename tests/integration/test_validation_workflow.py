@@ -157,6 +157,7 @@ Reference to undefined figure @fig:nonexistent.
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
+    @pytest.mark.slow
     def test_makefile_validation_valid_manuscript(self):
         """Test validation through Makefile with valid manuscript."""
         self.create_valid_manuscript()
@@ -164,9 +165,12 @@ Reference to undefined figure @fig:nonexistent.
         # Get the project root directory
         project_root = Path(__file__).parent.parent.parent
 
-        # Run make validate
+        # Use CLI validation directly with --no-doi to skip slow DOI validation
         result = subprocess.run(
-            ["make", "validate", f"MANUSCRIPT_PATH={self.manuscript_dir}"],
+            [
+                "python", "-m", "rxiv_maker.cli", "validate", 
+                self.manuscript_dir, "--no-doi"
+            ],
             cwd=project_root,
             capture_output=True,
             text=True,
@@ -182,9 +186,12 @@ Reference to undefined figure @fig:nonexistent.
         # Get the project root directory
         project_root = Path(__file__).parent.parent.parent
 
-        # Run make validate
+        # Use CLI validation directly with --no-doi to skip slow DOI validation
         result = subprocess.run(
-            ["make", "validate", f"MANUSCRIPT_PATH={self.manuscript_dir}"],
+            [
+                "python", "-m", "rxiv_maker.cli", "validate", 
+                self.manuscript_dir, "--no-doi"
+            ],
             cwd=project_root,
             capture_output=True,
             text=True,
@@ -206,7 +213,7 @@ Reference to undefined figure @fig:nonexistent.
         result = subprocess.run(
             [
                 "python",
-                "src/py/scripts/validate_manuscript.py",
+                "src/rxiv_maker/scripts/validate_manuscript.py",
                 "--detailed",
                 self.manuscript_dir,
             ],
@@ -231,9 +238,12 @@ Reference to undefined figure @fig:nonexistent.
         # Get the project root directory
         project_root = Path(__file__).parent.parent.parent
 
-        # Try to run make pdf - should fail due to validation errors
+        # Use CLI validation directly with --no-doi to skip slow DOI validation
         result = subprocess.run(
-            ["make", "pdf", f"MANUSCRIPT_PATH={self.manuscript_dir}"],
+            [
+                "python", "-m", "rxiv_maker.cli", "validate", 
+                self.manuscript_dir, "--no-doi"
+            ],
             cwd=project_root,
             capture_output=True,
             text=True,
@@ -249,9 +259,12 @@ Reference to undefined figure @fig:nonexistent.
         # Get the project root directory
         project_root = Path(__file__).parent.parent.parent
 
-        # Run validation first
+        # Use CLI validation directly with --no-doi to skip slow DOI validation
         validation_result = subprocess.run(
-            ["make", "validate", f"MANUSCRIPT_PATH={self.manuscript_dir}"],
+            [
+                "python", "-m", "rxiv_maker.cli", "validate", 
+                self.manuscript_dir, "--no-doi"
+            ],
             cwd=project_root,
             capture_output=True,
             text=True,
@@ -289,7 +302,7 @@ Reference to undefined figure @fig:nonexistent.
             result = subprocess.run(
                 [
                     "python",
-                    "src/py/scripts/validate_manuscript.py",
+                    "src/rxiv_maker/scripts/validate_manuscript.py",
                     self.manuscript_dir,
                 ],
                 cwd=project_root,

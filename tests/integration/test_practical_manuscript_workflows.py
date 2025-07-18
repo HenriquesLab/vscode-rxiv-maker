@@ -103,7 +103,7 @@ This work demonstrates the effectiveness of our approach.
         bib_file.write_text(bib_content)
 
         # Step 7: Test that the build system can find and process the manuscript
-        from src.py.utils import (
+        from rxiv_maker.utils import (
             create_output_dir,
             find_manuscript_md,
             write_manuscript_output,
@@ -163,7 +163,7 @@ This work demonstrates effectiveness.
         assert r"\documentclass" in written_content
 
         # Step 10: Test PDF naming and placement (simulate successful LaTeX compilation)
-        from src.py.utils import copy_pdf_to_manuscript_folder
+        from rxiv_maker.utils import copy_pdf_to_manuscript_folder
 
         # Create mock PDF (as if LaTeX compiled successfully)
         mock_pdf = output_dir / f"{manuscript_name}.pdf"
@@ -245,7 +245,7 @@ date: "2025-06-25"
             monkeypatch.setenv("MANUSCRIPT_PATH", manuscript_path)
 
             # Test manuscript finding
-            from src.py.utils import (
+            from rxiv_maker.utils import (
                 copy_pdf_to_manuscript_folder,
                 find_manuscript_md,
                 write_manuscript_output,
@@ -374,7 +374,7 @@ affiliations:
         bib_file.write_text(bib_content)
 
         # Test the build process components
-        from src.py.utils import (
+        from rxiv_maker.utils import (
             copy_pdf_to_manuscript_folder,
             create_output_dir,
             find_manuscript_md,

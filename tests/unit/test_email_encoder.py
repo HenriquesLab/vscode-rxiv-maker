@@ -4,7 +4,7 @@ import base64
 
 import pytest
 
-from src.py.utils.email_encoder import (
+from rxiv_maker.utils.email_encoder import (
     decode_email,
     encode_author_emails,
     encode_email,

@@ -22,9 +22,9 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from src.py.utils.doi_cache import DOICache
-    from src.py.validators.base_validator import ValidationError, ValidationLevel
-    from src.py.validators.doi_validator import DOIValidator
+    from rxiv_maker.utils.doi_cache import DOICache
+    from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
+    from rxiv_maker.validators.doi_validator import DOIValidator
 
     DOI_VALIDATOR_AVAILABLE = True
 except ImportError:

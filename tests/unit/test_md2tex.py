@@ -2,24 +2,24 @@
 
 import re
 
-from src.py.converters.citation_processor import convert_citations_to_latex
-from src.py.converters.code_processor import convert_code_blocks_to_latex
-from src.py.converters.figure_processor import (
+from rxiv_maker.converters.citation_processor import convert_citations_to_latex
+from rxiv_maker.converters.code_processor import convert_code_blocks_to_latex
+from rxiv_maker.converters.figure_processor import (
     convert_figure_references_to_latex,
     convert_figures_to_latex,
 )
-from src.py.converters.html_processor import convert_html_comments_to_latex
-from src.py.converters.list_processor import convert_lists_to_latex
-from src.py.converters.md2tex import (
+from rxiv_maker.converters.html_processor import convert_html_comments_to_latex
+from rxiv_maker.converters.list_processor import convert_lists_to_latex
+from rxiv_maker.converters.md2tex import (
     convert_markdown_to_latex,
     extract_content_sections,
     map_section_title_to_key,
 )
-from src.py.converters.table_processor import (
+from rxiv_maker.converters.table_processor import (
     convert_table_references_to_latex,
     convert_tables_to_latex,
 )
-from src.py.converters.url_processor import escape_url_for_latex
+from rxiv_maker.converters.url_processor import escape_url_for_latex
 
 
 class TestMarkdownToLatexConversion:

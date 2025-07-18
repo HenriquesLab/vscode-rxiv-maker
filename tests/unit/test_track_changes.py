@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
-from src.py.commands.track_changes import TrackChangesManager
+from rxiv_maker.commands.track_changes import TrackChangesManager
 
 
 class TestTrackChangesManager(unittest.TestCase):
@@ -176,7 +176,7 @@ class TestTrackChangesManager(unittest.TestCase):
 
         # Check that the correct command was called
         args, kwargs = mock_run.call_args
-        self.assertIn("src/py/commands/generate_preprint.py", args[0])
+        self.assertIn("src/rxiv_maker/commands/generate_preprint.py", args[0])
         self.assertIn("--output-dir", args[0])
 
         # Check environment variables
@@ -557,9 +557,11 @@ affiliations:
             # If bibtex wasn't called, check if the file exists in the mock environment
             bib_path = Path(self.temp_dir) / "03_REFERENCES.bib"
             if bib_path.exists():
-                print(f"Bibliography file exists at {bib_path} but bibtex wasn't called")
+                print(
+                    f"Bibliography file exists at {bib_path} but bibtex wasn't called"
+                )
                 print(f"All calls: {[str(call) for call in calls]}")
-        
+
         # For now, just check that compilation was successful
         # The actual bibtex call test can be more complex due to file path resolution
         self.assertTrue(True)  # Test passes if we get here

@@ -1,7 +1,7 @@
 """Unit tests for text_formatters module."""
 
-from src.py.converters.md2tex import convert_markdown_to_latex
-from src.py.converters.text_formatters import process_code_spans
+from rxiv_maker.converters.md2tex import convert_markdown_to_latex
+from rxiv_maker.converters.text_formatters import process_code_spans
 
 
 class TestCodeSpanMathProcessing:

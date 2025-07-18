@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.py.utils import (
+from rxiv_maker.utils import (
     copy_pdf_to_manuscript_folder,
     create_output_dir,
     find_manuscript_md,

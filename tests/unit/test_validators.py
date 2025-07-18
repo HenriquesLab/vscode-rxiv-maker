@@ -21,7 +21,7 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from src.py.validators import (
+    from rxiv_maker.validators import (
         CitationValidator,
         FigureValidator,
         LaTeXErrorParser,

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.py.processors.template_processor import (
+from rxiv_maker.processors.template_processor import (
     generate_bibliography,
     generate_keywords,
     get_template_path,
