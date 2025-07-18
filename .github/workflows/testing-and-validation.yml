@@ -241,6 +241,10 @@ jobs:
           # Test CLI with different options
           rxiv config show || echo "Config command not available"
           rxiv version --detailed || echo "Detailed version not available"
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
       - name: Test Python module import
         run: |
@@ -266,6 +270,10 @@ jobs:
           fi
 
           cd ..
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
       - name: Run unit tests
         if: needs.setup.outputs.test-scope != 'quick'
@@ -309,6 +317,10 @@ jobs:
           # Deactivate
           deactivate
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
@@ -387,6 +399,10 @@ jobs:
           print(f'Memory usage: {memory_mb:.1f} MB')
           "
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
   security-testing:
     name: Security Testing
@@ -521,6 +537,10 @@ jobs:
           fi
 
           echo "✅ Docker integration test completed"
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
   ecosystem-testing:
     name: Ecosystem Integration Testing
@@ -578,6 +598,10 @@ jobs:
           fi
 
           echo "✅ Core functionality test passed"
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
       - name: Test repository status
         run: |
@@ -716,6 +740,10 @@ jobs:
 
           echo "✅ PyPI installation test completed"
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
       - name: Test Homebrew installation
         if: matrix.package-manager == 'homebrew'
@@ -756,6 +784,10 @@ jobs:
 
           echo "✅ Homebrew installation test completed"
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
       - name: Test Scoop installation
         if: matrix.package-manager == 'scoop'

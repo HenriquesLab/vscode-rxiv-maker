@@ -39,16 +39,22 @@ class Config:
                 with open(self.config_file, "rb") as f:
                     self.config_data = tomllib.load(f)
             except ImportError:
-                console.print(
-                    "⚠️  Warning: TOML library not available. Using defaults.",
-                    style="yellow",
-                )
+                try:
+                    console.print(
+                        "⚠️  Warning: TOML library not available. Using defaults.",
+                        style="yellow",
+                    )
+                except UnicodeEncodeError:
+                    print("Warning: TOML library not available. Using defaults.")
                 self.config_data = self.get_default_config()
         except Exception as e:
-            console.print(
-                f"⚠️  Warning: Error loading config: {e}. Using defaults.",
-                style="yellow",
-            )
+            try:
+                console.print(
+                    f"⚠️  Warning: Error loading config: {e}. Using defaults.",
+                    style="yellow",
+                )
+            except UnicodeEncodeError:
+                print(f"Warning: Error loading config: {e}. Using defaults.")
             self.config_data = self.get_default_config()
 
     def get_default_config(self) -> dict[str, Any]:
@@ -199,8 +205,25 @@ class Config:
             if isinstance(section_data, dict):
                 add_section(section_name, section_data)
 
-        console.print(table)
-        console.print(f"\n📁 Config file: {self.config_file}", style="blue")
+        try:
+            console.print(table)
+            console.print(f"\n📁 Config file: {self.config_file}", style="blue")
+        except UnicodeEncodeError:
+            # Fallback for Windows environments with limited encoding
+            try:
+                console.print(table)
+                console.print(f"\n[CONFIG] Config file: {self.config_file}", style="blue")
+            except UnicodeEncodeError:
+                # Final fallback - use plain print
+                print("\nRxiv-Maker Configuration")
+                print("=" * 50)
+                for section_name, section_data in self.config_data.items():
+                    if isinstance(section_data, dict):
+                        for key, value in section_data.items():
+                            full_key = f"{section_name}.{key}"
+                            description = descriptions.get(full_key, "")
+                            print(f"{full_key}: {value} - {description}")
+                print(f"\nConfig file: {self.config_file}")
 
 
 # Global configuration instance
@@ -233,7 +256,10 @@ def set(key: str, value: str):
         parsed_value = value
 
     config.set(key, parsed_value)
-    console.print(f"✅ Set {key} = {parsed_value}", style="green")
+    try:
+        console.print(f"✅ Set {key} = {parsed_value}", style="green")
+    except UnicodeEncodeError:
+        print(f"[OK] Set {key} = {parsed_value}")
 
 
 @config_cmd.command()
@@ -242,9 +268,15 @@ def get(key: str):
     """Get configuration value."""
     value = config.get(key)
     if value is not None:
-        console.print(f"{key} = {value}", style="green")
+        try:
+            console.print(f"{key} = {value}", style="green")
+        except UnicodeEncodeError:
+            print(f"{key} = {value}")
     else:
-        console.print(f"❌ Key '{key}' not found", style="red")
+        try:
+            console.print(f"❌ Key '{key}' not found", style="red")
+        except UnicodeEncodeError:
+            print(f"[ERROR] Key '{key}' not found")
 
 
 @config_cmd.command()
@@ -253,7 +285,10 @@ def reset():
     if click.confirm("Are you sure you want to reset all configuration to defaults?"):
         config.config_data = config.get_default_config()
         config.save_config()
-        console.print("✅ Configuration reset to defaults", style="green")
+        try:
+            console.print("✅ Configuration reset to defaults", style="green")
+        except UnicodeEncodeError:
+            print("[OK] Configuration reset to defaults")
 
 
 @config_cmd.command()
@@ -262,6 +297,12 @@ def edit():
     editor = os.environ.get("EDITOR", "nano")
     try:
         click.edit(filename=str(config.config_file), editor=editor)
-        console.print("✅ Configuration file edited", style="green")
+        try:
+            console.print("✅ Configuration file edited", style="green")
+        except UnicodeEncodeError:
+            print("[OK] Configuration file edited")
     except Exception as e:
-        console.print(f"❌ Error editing config: {e}", style="red")
+        try:
+            console.print(f"❌ Error editing config: {e}", style="red")
+        except UnicodeEncodeError:
+            print(f"[ERROR] Error editing config: {e}")

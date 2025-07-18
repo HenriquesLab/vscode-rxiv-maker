@@ -167,6 +167,10 @@ jobs:
           # Test Python module import
           python -c "import rxiv_maker; print('✅ Package imported successfully')"
           python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
       - name: Test with clean virtual environment
         run: |
@@ -187,6 +191,10 @@ jobs:
           # Deactivate
           deactivate
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSFSENCODING: utf-8
 
   publish-to-testpypi:
     name: Publish to TestPyPI
