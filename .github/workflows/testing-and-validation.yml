@@ -230,6 +230,7 @@ jobs:
             echo "No wheel file found, installing from source"
             python -m pip install .
           fi
+        shell: bash
 
       - name: Test CLI functionality
         run: |
@@ -714,6 +715,7 @@ jobs:
           fi
 
           echo "✅ PyPI installation test completed"
+        shell: bash
 
       - name: Test Homebrew installation
         if: matrix.package-manager == 'homebrew'
@@ -753,6 +755,7 @@ jobs:
           fi
 
           echo "✅ Homebrew installation test completed"
+        shell: bash
 
       - name: Test Scoop installation
         if: matrix.package-manager == 'scoop'
