@@ -156,7 +156,15 @@ jobs:
       - name: Test wheel installation
         run: |
           python -m pip install --upgrade pip
-          python -m pip install dist/*.whl
+
+          # Find and install the wheel file (cross-platform compatible)
+          if ls dist/*.whl 1> /dev/null 2>&1; then
+            python -m pip install dist/*.whl
+          else
+            echo "No wheel file found, installing from source"
+            python -m pip install .
+          fi
+        shell: bash
 
       - name: Test CLI functionality
         run: |
@@ -185,7 +193,15 @@ jobs:
 
           # Install and test
           python -m pip install --upgrade pip
-          python -m pip install dist/*.whl
+
+          # Find and install the wheel file (cross-platform compatible)
+          if ls dist/*.whl 1> /dev/null 2>&1; then
+            python -m pip install dist/*.whl
+          else
+            echo "No wheel file found, installing from source"
+            python -m pip install .
+          fi
+
           rxiv --version
 
           # Deactivate

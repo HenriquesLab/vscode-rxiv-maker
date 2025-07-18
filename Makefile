@@ -124,12 +124,12 @@ all: pdf
 # Install Python dependencies (cross-platform)
 .PHONY: setup
 setup:
-	@$(PYTHON_CMD) -m pip install -e . || $(PYTHON_CMD) src/rxiv_maker/commands/setup_environment.py
+	@$(PYTHON_CMD) -m pip install -e . || (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment)
 
 # Reinstall Python dependencies (removes .venv and creates new one) - cross-platform
 .PHONY: setup-reinstall
 setup-reinstall:
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || $(PYTHON_CMD) src/rxiv_maker/commands/setup_environment.py --reinstall
+	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --reinstall)
 
 # Check system dependencies
 .PHONY: check-deps
