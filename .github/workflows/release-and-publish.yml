@@ -216,7 +216,7 @@ jobs:
     name: Publish to TestPyPI
     needs: [setup, build, test-package]
     runs-on: ubuntu-latest
-    if: needs.setup.outputs.publish-testpypi == 'true' && (needs.test-package.result == 'success' || needs.setup.outputs.run-tests == 'false')
+    if: needs.setup.outputs.publish-testpypi == 'true' && (needs.test-package.result == 'success' || needs.setup.outputs.run-tests == 'false') && github.ref == 'refs/heads/main'
 
     environment:
       name: testpypi
@@ -247,7 +247,7 @@ jobs:
     name: Publish to PyPI
     needs: [setup, build, test-package]
     runs-on: ubuntu-latest
-    if: needs.setup.outputs.publish-pypi == 'true' && (needs.test-package.result == 'success' || needs.setup.outputs.run-tests == 'false')
+    if: needs.setup.outputs.publish-pypi == 'true' && (needs.test-package.result == 'success' || needs.setup.outputs.run-tests == 'false') && github.ref == 'refs/heads/main'
 
     environment:
       name: pypi
