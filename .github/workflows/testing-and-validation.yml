@@ -223,8 +223,12 @@ jobs:
 
       - name: Install package
         run: |
-          # Find and install the wheel file
-          if ls dist/*.whl 1> /dev/null 2>&1; then
+          # Find and install the wheel file (cross-platform approach)
+          python -m pip install --upgrade pip
+
+          # Try installing wheel file first, fallback to source installation
+          if python -c "import glob; exit(0 if glob.glob('dist/*.whl') else 1)" 2>/dev/null; then
+            echo "Installing from wheel file..."
             python -m pip install dist/*.whl
           else
             echo "No wheel file found, installing from source"
@@ -282,8 +286,15 @@ jobs:
           # Run tests if they exist
           if [ -d "tests" ]; then
             echo "Running unit tests..."
-            python -m pytest tests/ -v --tb=short --maxfail=5 --cov=rxiv_maker --cov-report=xml || {
-              echo "Unit tests failed, but continuing..."
+            echo "Python version: $(python --version)"
+            echo "Pytest version: $(python -m pytest --version)"
+            echo "Test directory contents:"
+            find tests -name "*.py" | head -10
+
+            # Run tests with better error handling
+            python -m pytest tests/ -v --tb=short --maxfail=5 --cov=rxiv_maker --cov-report=xml -x || {
+              echo "Unit tests failed. Exit code: $?"
+              echo "Continuing with build (tests marked as non-blocking)..."
               exit 0
             }
           else
@@ -306,7 +317,8 @@ jobs:
           python -m pip install --upgrade pip
 
           # Install package (prefer wheel, fallback to source)
-          if ls dist/*.whl 1> /dev/null 2>&1; then
+          if python -c "import glob; exit(0 if glob.glob('dist/*.whl') else 1)" 2>/dev/null; then
+            echo "Installing from wheel file..."
             python -m pip install dist/*.whl
           else
             echo "No wheel file found, installing from source"
@@ -451,7 +463,8 @@ jobs:
           echo "🔒 Running dependency safety check..."
 
           # Install package (prefer wheel, fallback to source)
-          if ls dist/*.whl 1> /dev/null 2>&1; then
+          if python -c "import glob; exit(0 if glob.glob('dist/*.whl') else 1)" 2>/dev/null; then
+            echo "Installing from wheel file..."
             python -m pip install dist/*.whl
           else
             echo "No wheel file found, installing from source"
@@ -495,7 +508,8 @@ jobs:
           python -m build --wheel --outdir dist/
 
           # Install package (prefer wheel, fallback to source)
-          if ls dist/*.whl 1> /dev/null 2>&1; then
+          if python -c "import glob; exit(0 if glob.glob('dist/*.whl') else 1)" 2>/dev/null; then
+            echo "Installing from wheel file..."
             python -m pip install dist/*.whl
           else
             echo "No wheel file found, installing from source"
@@ -576,7 +590,8 @@ jobs:
           python -m build --wheel --outdir dist/
 
           # Install package (prefer wheel, fallback to source)
-          if ls dist/*.whl 1> /dev/null 2>&1; then
+          if python -c "import glob; exit(0 if glob.glob('dist/*.whl') else 1)" 2>/dev/null; then
+            echo "Installing from wheel file..."
             python -m pip install dist/*.whl
           else
             echo "No wheel file found, installing from source"

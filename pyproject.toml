@@ -175,7 +175,6 @@ markers = [
     "build_manager: marks tests as build manager-related tests",
     "pdf_validation: marks tests as PDF validation-related tests",
     "cli: marks tests as CLI-related tests",
-    "slow: marks tests as slow tests that may be skipped in CI",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
