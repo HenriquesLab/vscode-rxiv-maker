@@ -286,7 +286,7 @@ RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
 ### 🍺 Homebrew (macOS) - Deprecated
 ```bash
 # Still supported but deprecated in favor of universal installer
-brew tap henriqueslab/rxiv-maker https://github.com/henriqueslab/rxiv-maker
+brew tap henriqueslab/rxiv-maker
 brew install rxiv-maker
 ```
 

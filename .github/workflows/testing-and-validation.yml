@@ -759,7 +759,7 @@ jobs:
 
           # Test our tap and formula
           echo "Adding henriqueslab/rxiv-maker tap..."
-          if brew tap henriqueslab/rxiv-maker https://github.com/HenriquesLab/homebrew-rxiv-maker 2>/dev/null; then
+          if brew tap henriqueslab/rxiv-maker 2>/dev/null; then
             echo "✅ Tap added successfully"
 
             # Test installation with timeout
