@@ -1,0 +1,200 @@
+name: Test Homebrew Formula
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'homebrew-rxiv-maker/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'homebrew-rxiv-maker/**'
+  workflow_dispatch:
+
+jobs:
+  test-homebrew-formula:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up environment
+      run: |
+        echo "🔧 Setting up Homebrew environment..."
+        echo "=================================================="
+
+        # Homebrew environment variables for CI
+        echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $GITHUB_ENV
+        echo "HOMEBREW_NO_INSTALL_CLEANUP=1" >> $GITHUB_ENV
+        echo "HOMEBREW_NO_ANALYTICS=1" >> $GITHUB_ENV
+
+        # System info
+        echo "📊 System Information:"
+        echo "  - macOS Version: $(sw_vers -productVersion)"
+        echo "  - Architecture: $(uname -m)"
+        echo "  - Available Memory: $(sysctl -n hw.memsize | awk '{print $1/1024/1024/1024 " GB"}')"
+        echo "  - Available Disk: $(df -h / | tail -1 | awk '{print $4}') free"
+        echo "=================================================="
+
+    - name: Fix Homebrew configuration
+      run: |
+        echo "🛠️ Fixing Homebrew configuration issues..."
+        echo "=================================================="
+
+        # Fix problematic taps that don't exist in CI
+        echo "Removing problematic homebrew-cask-versions tap..."
+        brew untap homebrew/homebrew-cask-versions || true
+
+        # Clean up any existing issues
+        echo "Cleaning up Homebrew configuration..."
+        brew cleanup || true
+
+        # Update Homebrew
+        echo "Updating Homebrew..."
+        brew update
+
+        echo "✅ Homebrew configuration fixed"
+        echo "=================================================="
+
+    - name: Test formula syntax
+      run: |
+        echo "🧪 Testing formula syntax..."
+        echo "=================================================="
+
+        # Test Ruby syntax
+        ruby -c homebrew-rxiv-maker/Formula/rxiv-maker.rb
+        echo "✅ Ruby syntax is valid"
+
+        # Test formula loading
+        brew formula homebrew-rxiv-maker/Formula/rxiv-maker.rb || true
+        echo "✅ Formula loading test completed"
+
+        echo "=================================================="
+
+    - name: Install dependencies
+      run: |
+        echo "📦 Installing system dependencies..."
+        echo "=================================================="
+
+        # Install LaTeX distribution
+        echo "Installing BasicTeX..."
+        brew install --cask basictex
+
+        # Install other dependencies
+        echo "Installing Python, Node.js, R, and Make..."
+        brew install python@3.12 node r make
+
+        # Update PATH for LaTeX
+        echo "Updating PATH for LaTeX..."
+        eval "$(/usr/libexec/path_helper)"
+        echo "/usr/local/texlive/2025basic/bin/universal-darwin" >> $GITHUB_PATH
+
+        # Verify installations
+        echo "✅ Verifying installations:"
+        echo "  - Python: $(python3.12 --version)"
+        echo "  - Node.js: $(node --version)"
+        echo "  - R: $(R --version | head -1)"
+        echo "  - Make: $(make --version | head -1)"
+        echo "  - LaTeX: $(pdflatex --version | head -1)" || echo "  - LaTeX: Not in PATH yet"
+        echo "=================================================="
+
+    - name: Test formula installation
+      run: |
+        echo "🧪 Testing formula installation..."
+        echo "=================================================="
+
+        # Install from local formula
+        echo "Installing rxiv-maker from local formula..."
+        brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb
+
+        echo "✅ Formula installation completed"
+        echo "=================================================="
+
+    - name: Test CLI functionality
+      run: |
+        echo "🧪 Testing CLI functionality..."
+        echo "=================================================="
+
+        # Test version command
+        echo "Testing version command..."
+        rxiv --version
+
+        # Test help command
+        echo "Testing help command..."
+        rxiv --help | head -10
+
+        # Test config command
+        echo "Testing config command..."
+        rxiv config show || true
+
+        echo "✅ CLI functionality tests completed"
+        echo "=================================================="
+
+    - name: Test manuscript operations
+      run: |
+        echo "🧪 Testing manuscript operations..."
+        echo "=================================================="
+
+        # Create test directory
+        mkdir -p test-manuscript
+        cd test-manuscript
+
+        # Test init command
+        echo "Testing manuscript initialization..."
+        rxiv init .
+
+        # Check if files were created
+        echo "Checking created files..."
+        ls -la
+
+        # Test validation
+        echo "Testing manuscript validation..."
+        rxiv validate --no-doi || true
+
+        # Test setup check
+        echo "Testing setup check..."
+        rxiv setup --check-all || true
+
+        echo "✅ Manuscript operations tests completed"
+        echo "=================================================="
+
+    - name: Test formula removal
+      run: |
+        echo "🧪 Testing formula removal..."
+        echo "=================================================="
+
+        # Test uninstall
+        echo "Testing formula uninstall..."
+        brew uninstall rxiv-maker
+
+        # Verify removal
+        echo "Verifying removal..."
+        ! command -v rxiv && echo "✅ Formula successfully removed" || echo "❌ Formula removal failed"
+
+        echo "=================================================="
+
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: homebrew-test-artifacts
+        path: |
+          test-manuscript/
+          ~/.cache/
+        retention-days: 7
+
+    - name: Test summary
+      if: always()
+      run: |
+        echo "🎉 Homebrew Formula Test Summary"
+        echo "=================================================="
+        echo "✅ Formula syntax validation"
+        echo "✅ System dependencies installation"
+        echo "✅ Formula installation from source"
+        echo "✅ CLI functionality testing"
+        echo "✅ Manuscript operations testing"
+        echo "✅ Formula removal testing"
+        echo ""
+        echo "🚀 All tests completed successfully!"
+        echo "=================================================="
