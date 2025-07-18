@@ -4,7 +4,17 @@ This package contains utility functions for various tasks including
 email encoding/decoding and other helper functions.
 """
 
-from .citation_utils import inject_rxiv_citation
+try:
+    from .citation_utils import inject_rxiv_citation
+except ImportError:
+    # Fallback for when citation_utils is not available
+    from typing import Any
+
+    def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
+        """Fallback implementation when citation_utils is not available."""
+        print("Warning: Citation utils not available, skipping citation injection")
+
+
 from .email_encoder import (
     decode_email,
     encode_author_emails,

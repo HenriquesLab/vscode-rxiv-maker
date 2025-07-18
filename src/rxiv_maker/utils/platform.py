@@ -244,7 +244,9 @@ def safe_print(
         print(f"{fallback_symbol} {message}")
 
 
-def safe_console_print(console, message: str, style: str = None, **kwargs) -> None:
+def safe_console_print(
+    console, message: str, style: str | None = None, **kwargs
+) -> None:
     """Print a message using Rich console with cross-platform Unicode fallback.
 
     Args:
