@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build manager for Rxiv-Maker.
 
 This script orchestrates the complete build process including:
@@ -8,25 +7,13 @@ This script orchestrates the complete build process including:
 - PDF output management
 """
 
-import argparse
 import os
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 
-try:
-    # Relative imports for when run as module
-    from ..utils.figure_checksum import get_figure_checksum_manager
-    from ..utils.platform import platform_detector
-except ImportError:
-    # Fallback for when run as script
-    import sys
-    from pathlib import Path
-
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from utils.figure_checksum import get_figure_checksum_manager
-    from utils.platform import platform_detector
+from ..utils.figure_checksum import get_figure_checksum_manager
+from ..utils.platform import platform_detector
 
 
 # Import FigureGenerator dynamically to avoid import issues
@@ -827,86 +814,3 @@ class BuildManager:
             self.log(f"Build warnings logged to {self.warnings_log.name}", "INFO")
 
         return True
-
-
-def main():
-    """Main entry point for build manager."""
-    parser = argparse.ArgumentParser(description="Build manager for Rxiv-Maker")
-    parser.add_argument(
-        "--manuscript-path", default=None, help="Path to manuscript directory"
-    )
-    parser.add_argument(
-        "--output-dir", default="output", help="Output directory for generated files"
-    )
-    parser.add_argument(
-        "--force-figures", action="store_true", help="Force regeneration of all figures"
-    )
-    parser.add_argument(
-        "--skip-validation", action="store_true", help="Skip manuscript validation"
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
-    parser.add_argument(
-        "--track-changes", metavar="TAG", help="Track changes against specified git tag"
-    )
-
-    args = parser.parse_args()
-
-    try:
-        # Handle track changes mode
-        if args.track_changes:
-            try:
-                from commands.track_changes import TrackChangesManager
-            except ImportError:
-                # Fallback import
-                sys.path.insert(0, str(Path(__file__).parent))
-                from track_changes import TrackChangesManager
-
-            track_changes = TrackChangesManager(
-                manuscript_path=args.manuscript_path
-                or os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT"),
-                output_dir=args.output_dir,
-                git_tag=args.track_changes,
-                verbose=args.verbose,
-            )
-
-            success = track_changes.generate_change_tracked_pdf()
-
-            if success:
-                return 0
-            else:
-                print("❌ Change tracking failed!")
-                return 1
-
-        # Normal build mode
-        build_manager = BuildManager(
-            manuscript_path=args.manuscript_path,
-            output_dir=args.output_dir,
-            force_figures=args.force_figures,
-            skip_validation=args.skip_validation,
-            verbose=args.verbose,
-        )
-
-        success = build_manager.run_full_build()
-
-        if success:
-            return 0
-        else:
-            print("❌ Build failed!")
-            return 1
-
-    except KeyboardInterrupt:
-        print("\n❌ Build interrupted by user")
-        return 1
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        if args.verbose:
-            import traceback
-
-            traceback.print_exc()
-        return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

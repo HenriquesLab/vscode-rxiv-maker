@@ -1,15 +1,10 @@
-#!/usr/bin/env python3
 """Prepare arXiv submission package from Rxiv-Maker output.
 
 This script creates a clean, self-contained package suitable for arXiv submission
 by copying and modifying the necessary files to remove dependencies on minted
 and other shell-escape requiring packages.
-
-Usage:
-    python prepare_arxiv.py [--output-dir DIR]
 """
 
-import argparse
 import os
 import shutil
 import subprocess
@@ -411,65 +406,3 @@ def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip", manuscript_path
     print("📤 Ready for arXiv submission!")
 
     return zip_path
-
-
-def main():
-    """Main entry point for preparing arXiv submission package."""
-    parser = argparse.ArgumentParser(description="Prepare arXiv submission package")
-    parser.add_argument(
-        "--output-dir",
-        default="./output",
-        help="Path to Rxiv-Maker output directory (default: ./output)",
-    )
-    parser.add_argument(
-        "--arxiv-dir",
-        default=None,
-        help="Path for arXiv submission files (default: {output_dir}/arxiv_submission)",
-    )
-    parser.add_argument(
-        "--manuscript-path",
-        default=None,
-        help="Path to source manuscript directory (for context and smart naming)",
-    )
-    parser.add_argument(
-        "--zip", action="store_true", help="Create ZIP file for submission"
-    )
-    parser.add_argument(
-        "--zip-filename",
-        default="for_arxiv.zip",
-        help="Name of ZIP file (default: for_arxiv.zip)",
-    )
-
-    args = parser.parse_args()
-
-    try:
-        # Prepare the package
-        arxiv_path = prepare_arxiv_package(
-            args.output_dir, args.arxiv_dir, args.manuscript_path
-        )
-
-        # Create ZIP if requested (only if compilation was successful)
-        if args.zip:
-            # Check if compilation test was run and passed
-            if hasattr(prepare_arxiv_package, "compilation_success"):
-                if prepare_arxiv_package.compilation_success:
-                    create_zip_package(
-                        arxiv_path, args.zip_filename, args.manuscript_path
-                    )
-                else:
-                    print("⚠️  Skipping ZIP creation due to compilation test failure")
-                    print("   Fix the LaTeX errors and try again")
-                    return 1
-            else:
-                # If no test was run, create ZIP anyway (backward compatibility)
-                create_zip_package(arxiv_path, args.zip_filename, args.manuscript_path)
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return 1
-
-    return 0
-
-
-if __name__ == "__main__":
-    exit(main())

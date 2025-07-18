@@ -9,7 +9,11 @@ from .author_processor import (
     generate_corresponding_authors,
     generate_extended_author_info,
 )
-from .template_processor import get_template_path, process_template_replacements, generate_supplementary_tex
+from .template_processor import (
+    generate_supplementary_tex,
+    get_template_path,
+    process_template_replacements,
+)
 from .yaml_processor import extract_yaml_metadata
 
 __all__ = [

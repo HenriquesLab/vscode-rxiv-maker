@@ -22,13 +22,9 @@ try:
     )
 except ImportError:
     # Fallback for script execution
-    import os
-    import sys
-
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from utils.bibliography_checksum import get_bibliography_checksum_manager
-    from utils.doi_cache import DOICache
-    from validators.base_validator import (
+    from ..utils.bibliography_checksum import get_bibliography_checksum_manager
+    from ..utils.doi_cache import DOICache
+    from .base_validator import (
         BaseValidator,
         ValidationError,
         ValidationLevel,

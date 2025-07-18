@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Cleanup command for Rxiv-Maker.
 
 This script handles cross-platform cleanup operations including:
@@ -8,15 +7,10 @@ This script handles cross-platform cleanup operations including:
 - Temporary file cleanup
 """
 
-import argparse
 import os
-import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from utils.platform import platform_detector
+from ..utils.platform import platform_detector
 
 
 class CleanupManager:
@@ -335,79 +329,3 @@ class CleanupManager:
             self.log("Cleanup completed with some warnings", "WARNING")
 
         return all_success
-
-
-def main():
-    """Main entry point for cleanup manager."""
-    parser = argparse.ArgumentParser(description="Cleanup manager for Rxiv-Maker")
-    parser.add_argument(
-        "--manuscript-path", default=None, help="Path to manuscript directory"
-    )
-    parser.add_argument(
-        "--output-dir", default="output", help="Output directory to clean"
-    )
-    parser.add_argument(
-        "--figures-only", action="store_true", help="Only clean generated figures"
-    )
-    parser.add_argument(
-        "--output-only", action="store_true", help="Only clean output directory"
-    )
-    parser.add_argument(
-        "--arxiv-only", action="store_true", help="Only clean ArXiv files"
-    )
-    parser.add_argument(
-        "--temp-only", action="store_true", help="Only clean temporary files"
-    )
-    parser.add_argument(
-        "--cache-only", action="store_true", help="Only clean cache files"
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
-
-    args = parser.parse_args()
-
-    try:
-        cleanup_manager = CleanupManager(
-            manuscript_path=args.manuscript_path,
-            output_dir=args.output_dir,
-            verbose=args.verbose,
-        )
-
-        success = True
-
-        # Handle specific cleanup options
-        if args.figures_only:
-            success = cleanup_manager.clean_generated_figures()
-        elif args.output_only:
-            success = cleanup_manager.clean_output_directory()
-        elif args.arxiv_only:
-            success = cleanup_manager.clean_arxiv_files()
-        elif args.temp_only:
-            success = cleanup_manager.clean_temporary_files()
-        elif args.cache_only:
-            success = cleanup_manager.clean_cache_files()
-        else:
-            # Run full cleanup
-            success = cleanup_manager.run_full_cleanup()
-
-        if success:
-            return 0
-        else:
-            print("❌ Cleanup completed with warnings")
-            return 1
-
-    except KeyboardInterrupt:
-        print("\n❌ Cleanup interrupted by user")
-        return 1
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        if args.verbose:
-            import traceback
-
-            traceback.print_exc()
-        return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

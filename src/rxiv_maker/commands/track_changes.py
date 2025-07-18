@@ -1,25 +1,18 @@
-#!/usr/bin/env python3
 """Track changes functionality for Rxiv-Maker.
 
 This module provides change tracking capabilities by comparing the current
 manuscript against a specified git tag using latexdiff.
 """
 
-import argparse
+import builtins
+import contextlib
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-# Import removed - will use subprocess approach like BuildManager
-import builtins
-import contextlib
 from datetime import datetime
+from pathlib import Path
 
 # Local implementations to avoid import issues
 import yaml
@@ -580,39 +573,3 @@ class TrackChangesManager:
         except Exception as e:
             self.log(f"Error copying PDF to manuscript directory: {e}", force=True)
             return False
-
-
-def main():
-    """Main entry point for track changes."""
-    parser = argparse.ArgumentParser(description="Track changes against a git tag")
-    parser.add_argument(
-        "--manuscript-path", required=True, help="Path to manuscript directory"
-    )
-    parser.add_argument(
-        "--output-dir", default="output", help="Output directory for generated files"
-    )
-    parser.add_argument("--git-tag", required=True, help="Git tag to compare against")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
-
-    args = parser.parse_args()
-
-    try:
-        track_changes = TrackChangesManager(
-            manuscript_path=args.manuscript_path,
-            output_dir=args.output_dir,
-            git_tag=args.git_tag,
-            verbose=args.verbose,
-        )
-
-        success = track_changes.generate_change_tracked_pdf()
-        sys.exit(0 if success else 1)
-
-    except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

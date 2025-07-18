@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Figure Generation Script for Rxiv-Maker.
 
 This script automatically processes figure files in the FIGURES directory and generates
@@ -6,25 +5,12 @@ publication-ready output files. It supports:
 - .mmd files: Mermaid diagrams (generates SVG/PNG/PDF)
 - .py files: Python scripts for matplotlib/seaborn figures
 - .R files: R scripts (executes script and captures output figures)
-
-Usage:
-    python generate_figures.py [--output-dir OUTPUT_DIR] [--format FORMAT]
 """
 
-import argparse
 import json
-import sys
 from pathlib import Path
 
-# Add path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-try:
-    from utils.platform import platform_detector
-except ImportError:
-    # Fallback for when run as script
-    sys.path.insert(0, str(Path(__file__).parent.parent / "utils"))
-    from platform import platform_detector
+from ..utils.platform import platform_detector
 
 PUPPETEER_CONFIG_PATH = Path(__file__).parent / "puppeteer-config.json"
 
@@ -455,56 +441,3 @@ class FigureGenerator:
     def _check_rscript(self):
         """Check if Rscript is available."""
         return self.platform.check_command_exists("Rscript")
-
-
-def main():
-    """Main function with command-line interface."""
-    parser = argparse.ArgumentParser(
-        description="Generate figures from .mmd and .py files in FIGURES directory"
-    )
-    parser.add_argument(
-        "--figures-dir",
-        "-d",
-        default="FIGURES",
-        help="Directory containing figure source files (default: FIGURES)",
-    )
-    parser.add_argument(
-        "--output-dir",
-        "-o",
-        default="FIGURES",
-        help="Output directory for generated figures (default: FIGURES)",
-    )
-    parser.add_argument(
-        "--format",
-        "-f",
-        default="png",
-        choices=["png", "svg", "pdf", "eps"],
-        help="Output format for figures (default: png)",
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
-    parser.add_argument("--r-only", action="store_true", help="Only process R files")
-
-    args = parser.parse_args()
-
-    try:
-        generator = FigureGenerator(
-            figures_dir=args.figures_dir,
-            output_dir=args.output_dir,
-            output_format=args.format,
-            r_only=args.r_only,
-        )
-        generator.generate_all_figures()
-
-    except Exception as e:
-        print(f"Error: {e}")
-        if args.verbose:
-            import traceback
-
-            traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

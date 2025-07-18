@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Documentation generation script using lazydocs.
 
 This script generates comprehensive markdown documentation for the rxiv-maker
@@ -10,7 +9,6 @@ signatures.
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 
@@ -97,10 +95,19 @@ def generate_enhanced_index(docs_dir, successful_modules):
     return index_path
 
 
-def main():
-    """Generate API documentation using lazydocs with enhancements."""
+def generate_api_docs(project_root: Path = None) -> bool:
+    """Generate API documentation using lazydocs with enhancements.
+
+    Args:
+        project_root: Root directory of the project. If None, attempts to find it.
+
+    Returns:
+        True if documentation generation was successful, False otherwise.
+    """
     # Get the project root directory (script is in src/rxiv_maker/commands/)
-    project_root = Path(__file__).parent.parent.parent.parent
+    if project_root is None:
+        project_root = Path(__file__).parent.parent.parent.parent
+
     src_dir = project_root / "src" / "py"
     docs_dir = project_root / "docs" / "api"
 
@@ -179,8 +186,3 @@ def main():
     else:
         print("❌ No documentation could be generated")
         return False
-
-
-if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)

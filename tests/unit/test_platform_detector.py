@@ -31,43 +31,42 @@ class TestPlatformDetector(unittest.TestCase):
 
     def test_detect_windows_platform(self):
         """Test Windows platform detection."""
-        with patch("os.name", "nt"):
-            with patch("platform.system", return_value="Windows"):
-                detector = PlatformDetector()
-                self.assertEqual(detector.platform, "Windows")
-                self.assertTrue(detector.is_windows())
-                self.assertFalse(detector.is_macos())
-                self.assertFalse(detector.is_linux())
-                self.assertFalse(detector.is_unix_like())
+        with patch("os.name", "nt"), patch("platform.system", return_value="Windows"):
+            detector = PlatformDetector()
+            self.assertEqual(detector.platform, "Windows")
+            self.assertTrue(detector.is_windows())
+            self.assertFalse(detector.is_macos())
+            self.assertFalse(detector.is_linux())
+            self.assertFalse(detector.is_unix_like())
 
     def test_detect_macos_platform(self):
         """Test macOS platform detection."""
-        with patch("os.name", "posix"):
-            with patch("platform.system", return_value="Darwin"):
-                detector = PlatformDetector()
-                self.assertEqual(detector.platform, "macOS")
-                self.assertFalse(detector.is_windows())
-                self.assertTrue(detector.is_macos())
-                self.assertFalse(detector.is_linux())
-                self.assertTrue(detector.is_unix_like())
+        with patch("os.name", "posix"), patch("platform.system", return_value="Darwin"):
+            detector = PlatformDetector()
+            self.assertEqual(detector.platform, "macOS")
+            self.assertFalse(detector.is_windows())
+            self.assertTrue(detector.is_macos())
+            self.assertFalse(detector.is_linux())
+            self.assertTrue(detector.is_unix_like())
 
     def test_detect_linux_platform(self):
         """Test Linux platform detection."""
-        with patch("os.name", "posix"):
-            with patch("platform.system", return_value="Linux"):
-                detector = PlatformDetector()
-                self.assertEqual(detector.platform, "Linux")
-                self.assertFalse(detector.is_windows())
-                self.assertFalse(detector.is_macos())
-                self.assertTrue(detector.is_linux())
-                self.assertTrue(detector.is_unix_like())
+        with patch("os.name", "posix"), patch("platform.system", return_value="Linux"):
+            detector = PlatformDetector()
+            self.assertEqual(detector.platform, "Linux")
+            self.assertFalse(detector.is_windows())
+            self.assertFalse(detector.is_macos())
+            self.assertTrue(detector.is_linux())
+            self.assertTrue(detector.is_unix_like())
 
     def test_detect_unknown_platform(self):
         """Test unknown platform detection fallback."""
-        with patch("os.name", "unknown"):
-            with patch("platform.system", return_value="Unknown"):
-                detector = PlatformDetector()
-                self.assertEqual(detector.platform, "Unknown")
+        with (
+            patch("os.name", "unknown"),
+            patch("platform.system", return_value="Unknown"),
+        ):
+            detector = PlatformDetector()
+            self.assertEqual(detector.platform, "Unknown")
 
     def test_path_separator_windows(self):
         """Test path separator for Windows."""

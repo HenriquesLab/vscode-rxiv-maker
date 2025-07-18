@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Environment setup command for Rxiv-Maker.
 
 This script handles cross-platform environment setup including:
@@ -9,16 +8,11 @@ This script handles cross-platform environment setup including:
 - System dependency checking
 """
 
-import argparse
 import subprocess
-import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from utils.dependency_checker import DependencyChecker
-from utils.platform import platform_detector
+from ..utils.dependency_checker import DependencyChecker
+from ..utils.platform import platform_detector
 
 
 class EnvironmentSetup:
@@ -296,65 +290,3 @@ class EnvironmentSetup:
         self.show_completion_message()
 
         return True
-
-
-def main():
-    """Main entry point for environment setup."""
-    parser = argparse.ArgumentParser(description="Set up Rxiv-Maker Python environment")
-    parser.add_argument(
-        "--reinstall",
-        action="store_true",
-        help="Remove existing virtual environment and reinstall",
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show verbose output"
-    )
-    parser.add_argument(
-        "--no-check-system-deps",
-        action="store_true",
-        help="Skip system dependency checking (not recommended)",
-    )
-    parser.add_argument(
-        "--check-deps-only",
-        action="store_true",
-        help="Only check system dependencies, don't set up Python environment",
-    )
-
-    args = parser.parse_args()
-
-    try:
-        # Handle check-deps-only mode
-        if args.check_deps_only:
-            from utils.dependency_checker import print_dependency_report
-
-            print_dependency_report(verbose=args.verbose)
-            return 0
-
-        setup = EnvironmentSetup(
-            reinstall=args.reinstall,
-            verbose=args.verbose,
-            check_system_deps=not args.no_check_system_deps,
-        )
-
-        success = setup.run_setup()
-
-        if success:
-            return 0
-        else:
-            setup.log("Setup failed!", "ERROR")
-            return 1
-
-    except KeyboardInterrupt:
-        print("\n❌ Setup interrupted by user")
-        return 1
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        if args.verbose:
-            import traceback
-
-            traceback.print_exc()
-        return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

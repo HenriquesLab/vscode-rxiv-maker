@@ -8,9 +8,6 @@ import rich_click as click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 console = Console()
 
 

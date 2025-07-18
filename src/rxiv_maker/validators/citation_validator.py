@@ -9,16 +9,12 @@ try:
     from .doi_validator import DOIValidator
 except ImportError:
     # Fallback for script execution
-    import os
-    import sys
-
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from validators.base_validator import (
+    from .base_validator import (
         BaseValidator,
         ValidationLevel,
         ValidationResult,
     )
-    from validators.doi_validator import DOIValidator
+    from .doi_validator import DOIValidator
 
 
 class CitationValidator(BaseValidator):

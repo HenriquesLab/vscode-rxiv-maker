@@ -42,7 +42,8 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 except UnicodeEncodeError:
                     try:
                         console.print(
-                            f"[UPDATE] Update available: {__version__} → {latest_version}",
+                            f"[UPDATE] Update available: {__version__} → "
+                            f"{latest_version}",
                             style="green",
                         )
                     except UnicodeEncodeError:
@@ -134,8 +135,9 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
             console.print(table)
 
             # Show additional info
+            install_path = Path(__file__).parent.parent.parent.absolute()
             console.print(
-                f"\n📁 Installation path: {Path(__file__).parent.parent.parent.absolute()}",
+                f"\n📁 Installation path: {install_path}",
                 style="blue",
             )
             console.print(f"🐍 Python executable: {sys.executable}", style="blue")
@@ -143,8 +145,9 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
             # Fallback for Windows environments with limited encoding
             try:
                 console.print(table)
+                install_path = Path(__file__).parent.parent.parent.absolute()
                 console.print(
-                    f"\n[PATH] Installation path: {Path(__file__).parent.parent.parent.absolute()}",
+                    f"\n[PATH] Installation path: {install_path}",
                     style="blue",
                 )
                 console.print(
@@ -180,9 +183,8 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 except ImportError:
                     print("Matplotlib: Not found (Missing)")
 
-                print(
-                    f"\nInstallation path: {Path(__file__).parent.parent.parent.absolute()}"
-                )
+                install_path = Path(__file__).parent.parent.parent.absolute()
+                print(f"\nInstallation path: {install_path}")
                 print(f"Python executable: {sys.executable}")
 
     else:
