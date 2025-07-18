@@ -319,7 +319,7 @@ def main():
     )
 
     # Run setup
-    success = setup_manager.run()
+    success = setup_manager.run_setup()
 
     if not success:
         exit(1)
