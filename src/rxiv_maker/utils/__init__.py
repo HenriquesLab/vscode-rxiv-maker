@@ -21,7 +21,7 @@ from .pdf_utils import (
     copy_pdf_to_manuscript_folder,
     get_custom_pdf_filename,
 )
-from .platform import safe_print, safe_console_print
+from .platform import safe_console_print, safe_print
 
 __all__ = [
     "decode_email",

@@ -212,7 +212,9 @@ class Config:
             # Fallback for Windows environments with limited encoding
             try:
                 console.print(table)
-                console.print(f"\n[CONFIG] Config file: {self.config_file}", style="blue")
+                console.print(
+                    f"\n[CONFIG] Config file: {self.config_file}", style="blue"
+                )
             except UnicodeEncodeError:
                 # Final fallback - use plain print
                 print("\nRxiv-Maker Configuration")

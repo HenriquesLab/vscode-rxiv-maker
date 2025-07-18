@@ -7,7 +7,6 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-
 from ... import __version__
 from ...utils.platform import platform_detector
 from ...utils.update_checker import force_update_check
@@ -48,16 +47,20 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                         )
                     except UnicodeEncodeError:
                         print(f"Update available: {__version__} → {latest_version}")
-                
+
                 try:
-                    console.print("   Run: pip install --upgrade rxiv-maker", style="blue")
+                    console.print(
+                        "   Run: pip install --upgrade rxiv-maker", style="blue"
+                    )
                     console.print(
                         f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest_version}",
                         style="blue",
                     )
                 except UnicodeEncodeError:
                     print("   Run: pip install --upgrade rxiv-maker")
-                    print(f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest_version}")
+                    print(
+                        f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest_version}"
+                    )
             else:
                 try:
                     console.print(
@@ -66,7 +69,8 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 except UnicodeEncodeError:
                     try:
                         console.print(
-                            f"[OK] You have the latest version ({__version__})", style="green"
+                            f"[OK] You have the latest version ({__version__})",
+                            style="green",
                         )
                     except UnicodeEncodeError:
                         print(f"You have the latest version ({__version__})")
@@ -75,10 +79,12 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 console.print(f"❌ Could not check for updates: {e}", style="red")
             except UnicodeEncodeError:
                 try:
-                    console.print(f"[ERROR] Could not check for updates: {e}", style="red")
+                    console.print(
+                        f"[ERROR] Could not check for updates: {e}", style="red"
+                    )
                 except UnicodeEncodeError:
                     print(f"Could not check for updates: {e}")
-        
+
         try:
             console.print()  # Add spacing
         except UnicodeEncodeError:
@@ -141,7 +147,9 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                     f"\n[PATH] Installation path: {Path(__file__).parent.parent.parent.absolute()}",
                     style="blue",
                 )
-                console.print(f"[PYTHON] Python executable: {sys.executable}", style="blue")
+                console.print(
+                    f"[PYTHON] Python executable: {sys.executable}", style="blue"
+                )
             except UnicodeEncodeError:
                 # Final fallback - use plain print
                 print("\nRxiv-Maker Version Information")
@@ -149,27 +157,32 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 print(f"Rxiv-Maker: {__version__} (Installed)")
                 print(f"Platform: {platform_detector.platform} (Detected)")
                 print(f"Python: {sys.version.split()[0]} (Compatible)")
-                
+
                 # Add dependency info
                 try:
                     import click
+
                     print(f"Click: {click.__version__} (Available)")
                 except ImportError:
                     print("Click: Not found (Missing)")
-                
+
                 try:
                     from rich import __version__ as rich_version
+
                     print(f"Rich: {rich_version} (Available)")
                 except ImportError:
                     print("Rich: Available (Available)")
-                
+
                 try:
                     import matplotlib
+
                     print(f"Matplotlib: {matplotlib.__version__} (Available)")
                 except ImportError:
                     print("Matplotlib: Not found (Missing)")
-                
-                print(f"\nInstallation path: {Path(__file__).parent.parent.parent.absolute()}")
+
+                print(
+                    f"\nInstallation path: {Path(__file__).parent.parent.parent.absolute()}"
+                )
                 print(f"Python executable: {sys.executable}")
 
     else:

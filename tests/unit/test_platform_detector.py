@@ -11,14 +11,14 @@ from unittest.mock import Mock, mock_open, patch
 
 from rxiv_maker.utils.platform import (
     PlatformDetector,
+    _convert_to_ascii,
     get_platform,
     get_python_command,
     is_unix_like,
     is_windows,
     run_platform_command,
-    safe_print,
     safe_console_print,
-    _convert_to_ascii,
+    safe_print,
 )
 
 
@@ -509,10 +509,10 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test safe_print when terminal supports Unicode."""
         with patch("sys.stdout") as mock_stdout:
             mock_stdout.encoding = "utf-8"
-            
+
             with patch("builtins.print") as mock_print:
                 safe_print("Test message")
-                
+
                 # Should print with Unicode emoji
                 mock_print.assert_called_once_with("✅ Test message")
 
@@ -520,10 +520,10 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test safe_print when terminal doesn't support Unicode."""
         with patch("sys.stdout") as mock_stdout:
             mock_stdout.encoding = None  # No encoding support
-            
+
             with patch("builtins.print") as mock_print:
                 safe_print("Test message")
-                
+
                 # Should print with ASCII fallback when no encoding
                 mock_print.assert_called_once_with("[OK] Test message")
 
@@ -531,10 +531,10 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test safe_print when stdout has no encoding."""
         with patch("sys.stdout") as mock_stdout:
             mock_stdout.encoding = None
-            
+
             with patch("builtins.print") as mock_print:
                 safe_print("Test message")
-                
+
                 # Should use ASCII fallback
                 mock_print.assert_called_once_with("[OK] Test message")
 
@@ -542,29 +542,34 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test safe_print with custom symbols."""
         with patch("sys.stdout") as mock_stdout:
             mock_stdout.encoding = "utf-8"
-            
+
             with patch("builtins.print") as mock_print:
-                safe_print("Test message", success_symbol="🎉", fallback_symbol="[SUCCESS]")
-                
+                safe_print(
+                    "Test message", success_symbol="🎉", fallback_symbol="[SUCCESS]"
+                )
+
                 # Should print with custom Unicode symbol
                 mock_print.assert_called_once_with("🎉 Test message")
 
     def test_safe_console_print_unicode_success(self):
         """Test safe_console_print when Unicode works."""
         mock_console = Mock()
-        
+
         safe_console_print(mock_console, "✅ Test message", style="green")
-        
+
         mock_console.print.assert_called_once_with("✅ Test message", style="green")
 
     def test_safe_console_print_unicode_fallback(self):
         """Test safe_console_print when Unicode fails."""
         mock_console = Mock()
-        mock_console.print.side_effect = [UnicodeEncodeError("charmap", "✅", 0, 1, "undefined"), None]
-        
+        mock_console.print.side_effect = [
+            UnicodeEncodeError("charmap", "✅", 0, 1, "undefined"),
+            None,
+        ]
+
         with patch("builtins.print") as mock_print:
             safe_console_print(mock_console, "✅ Test message", style="green")
-            
+
             # Should try Rich console with ASCII first
             self.assertEqual(mock_console.print.call_count, 2)
             second_call = mock_console.print.call_args_list[1]
@@ -573,11 +578,13 @@ class TestUnicodeEncoding(unittest.TestCase):
     def test_safe_console_print_double_fallback(self):
         """Test safe_console_print when both Rich attempts fail."""
         mock_console = Mock()
-        mock_console.print.side_effect = UnicodeEncodeError("charmap", "✅", 0, 1, "undefined")
-        
+        mock_console.print.side_effect = UnicodeEncodeError(
+            "charmap", "✅", 0, 1, "undefined"
+        )
+
         with patch("builtins.print") as mock_print:
             safe_console_print(mock_console, "✅ Test message", style="green")
-            
+
             # Should fall back to plain print
             mock_print.assert_called_once_with("[OK] Test message")
 
@@ -592,7 +599,7 @@ class TestUnicodeEncoding(unittest.TestCase):
             ("🐍 Python", "[PYTHON] Python"),
             ("🐳 Docker", "[DOCKER] Docker"),
         ]
-        
+
         for input_text, expected in test_cases:
             with self.subTest(input_text=input_text):
                 result = _convert_to_ascii(input_text)
@@ -606,7 +613,7 @@ class TestUnicodeEncoding(unittest.TestCase):
             ("Up ↑", "Up ^"),
             ("Down ↓", "Down v"),
         ]
-        
+
         for input_text, expected in test_cases:
             with self.subTest(input_text=input_text):
                 result = _convert_to_ascii(input_text)
@@ -616,7 +623,7 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test ASCII conversion with mixed Unicode and ASCII content."""
         input_text = "🔍 Searching for 📦 package → version 1.0.0 ✅"
         expected = "[SEARCH] Searching for [PACKAGE] package -> version 1.0.0 [OK]"
-        
+
         result = _convert_to_ascii(input_text)
         self.assertEqual(result, expected)
 
@@ -624,7 +631,7 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test ASCII conversion with no Unicode content."""
         input_text = "Regular ASCII text with no emojis"
         expected = input_text  # Should remain unchanged
-        
+
         result = _convert_to_ascii(input_text)
         self.assertEqual(result, expected)
 
@@ -633,7 +640,7 @@ class TestUnicodeEncoding(unittest.TestCase):
         # Use an emoji that's not in our replacement dict
         input_text = "Unknown emoji: 🦄"
         expected = input_text  # Should remain unchanged if not in replacement dict
-        
+
         result = _convert_to_ascii(input_text)
         self.assertEqual(result, expected)
 
@@ -641,11 +648,13 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test safe_print with ASCII encoding."""
         with patch("sys.stdout") as mock_stdout:
             mock_stdout.encoding = "ascii"
-            
+
             with patch("builtins.print") as mock_print:
                 # Test with ASCII-only content - should work normally
-                safe_print("Test message", success_symbol="[OK]", fallback_symbol="[OK]")
-                
+                safe_print(
+                    "Test message", success_symbol="[OK]", fallback_symbol="[OK]"
+                )
+
                 # Should use the success symbol since it's ASCII
                 mock_print.assert_called_once_with("[OK] Test message")
 
@@ -654,18 +663,22 @@ class TestUnicodeEncoding(unittest.TestCase):
         mock_console = Mock()
         mock_table = Mock()
         mock_table.__str__ = Mock(return_value="Table content")
-        
+
         safe_console_print(mock_console, mock_table, style="blue")
-        
+
         mock_console.print.assert_called_once_with(mock_table, style="blue")
 
     def test_safe_console_print_with_kwargs(self):
         """Test safe_console_print with additional keyword arguments."""
         mock_console = Mock()
-        
-        safe_console_print(mock_console, "Test message", style="green", highlight=True, markup=False)
-        
-        mock_console.print.assert_called_once_with("Test message", style="green", highlight=True, markup=False)
+
+        safe_console_print(
+            mock_console, "Test message", style="green", highlight=True, markup=False
+        )
+
+        mock_console.print.assert_called_once_with(
+            "Test message", style="green", highlight=True, markup=False
+        )
 
 
 if __name__ == "__main__":
