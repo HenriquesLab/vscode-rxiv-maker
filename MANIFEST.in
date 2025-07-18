@@ -63,7 +63,7 @@ exclude .tox/
 exclude .nox/
 
 # Exclude Homebrew tap (no longer needed in package)
-exclude src/homebrew-rxiv-maker/
+exclude homebrew-rxiv-maker/
 
 # Exclude example manuscripts (too large)
 exclude EXAMPLE_MANUSCRIPT/

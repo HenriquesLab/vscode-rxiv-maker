@@ -23,7 +23,7 @@ install:
   - brew install python@3.11 node@20 r make
 
   # Install from local formula with test-pypi option
-  - brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+  - brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 
   # Verify installation
   - which rxiv

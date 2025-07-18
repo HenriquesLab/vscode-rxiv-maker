@@ -63,7 +63,7 @@ rxiv --version
 
 ```bash
 # Update formula for production
-cd src/homebrew-rxiv-maker/Formula/
+cd homebrew-rxiv-maker/Formula/
 
 # Remove test-pypi option (optional)
 # Or keep it for future testing

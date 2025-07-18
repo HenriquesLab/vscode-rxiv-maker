@@ -106,10 +106,10 @@ hatch publish -r https://test.pypi.org/legacy/ -u __token__ -a <your-test-pypi-t
 #### 2. Test Homebrew Installation
 ```bash
 # Install from test-pypi
-brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 
 # Install from source (default)
-brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
+brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb
 ```
 
 #### 3. Manual System Dependencies
@@ -199,7 +199,7 @@ The AppVeyor workflow automatically tests:
 ## Files Modified
 
 - `setup.py` - Removed PostInstallCommand, cleaned up
-- `src/homebrew-rxiv-maker/Formula/rxiv-maker.rb` - Added test-pypi option
+- `homebrew-rxiv-maker/Formula/rxiv-maker.rb` - Added test-pypi option
 - `appveyor.yml` - Created comprehensive CI configuration
 - `docs/workflows/appveyor-testing.md` - Added testing documentation
 - `docs/workflows/test-pypi-workflow.md` - This summary document

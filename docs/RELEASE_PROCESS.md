@@ -167,7 +167,7 @@ ERROR: Invalid distribution
 **Formula syntax errors:**
 ```bash
 # Test formula locally
-brew audit --strict src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
+brew audit --strict homebrew-rxiv-maker/Formula/rxiv-maker.rb
 ```
 
 **Package not found on PyPI:**
@@ -200,14 +200,14 @@ git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 
 # Fix formula
-edit src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
+edit homebrew-rxiv-maker/Formula/rxiv-maker.rb
 
 # Test changes
-brew audit --strict src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
-brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
+brew audit --strict homebrew-rxiv-maker/Formula/rxiv-maker.rb
+brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb
 
 # Commit and push
-git add src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
+git add homebrew-rxiv-maker/Formula/rxiv-maker.rb
 git commit -m "Fix Homebrew formula"
 git push origin main
 ```

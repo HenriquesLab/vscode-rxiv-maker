@@ -33,7 +33,7 @@ brew install --cask basictex
 brew install python@3.11 node@20 r make
 
 # Install from local formula with test-pypi option
-brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 
 # Verify installation
 which rxiv
@@ -86,10 +86,10 @@ The Homebrew formula supports a `--with-test-pypi` option:
 
 ```ruby
 # Install from test PyPI
-brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 
 # Install from source (default)
-brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
+brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb
 ```
 
 ### Test PyPI Installation
@@ -138,10 +138,10 @@ brew cleanup || true
 #### Formula Installation Fails
 ```bash
 # Check formula syntax
-brew audit --strict ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb
+brew audit --strict ./homebrew-rxiv-maker/Formula/rxiv-maker.rb
 
 # Test formula locally
-brew install --build-from-source ./src/homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
 ```
 
 #### Package Not Found on test-pypi
