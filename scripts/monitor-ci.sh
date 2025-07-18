@@ -24,9 +24,9 @@ readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly GITHUB_API_BASE="https://api.github.com"
 
 # Repository configurations (using arrays since macOS has old bash)
-REPO_KEYS=("main" "homebrew" "scoop")
+REPO_KEYS=("main" "homebrew" "scoop" "vscode")
 REPO_NAMES=("HenriquesLab/rxiv-maker" "HenriquesLab/homebrew-rxiv-maker" "HenriquesLab/scoop-rxiv-maker" "HenriquesLab/vscode-rxiv-maker")
-REPO_BRANCHES=("main" "main" "main")
+REPO_BRANCHES=("dev" "main" "main" "main")
 
 # GitHub API token (optional, for higher rate limits)
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
@@ -58,6 +58,161 @@ github_api_request() {
     fi
 
     curl -s "${headers[@]}" "$GITHUB_API_BASE/$endpoint" 2>/dev/null || echo "{}"
+}
+
+# Function to format duration from seconds
+format_duration() {
+    local seconds=$1
+    local hours=$((seconds / 3600))
+    local minutes=$(((seconds % 3600) / 60))
+    local secs=$((seconds % 60))
+
+    if [[ $hours -gt 0 ]]; then
+        printf "%dh %dm %ds" $hours $minutes $secs
+    elif [[ $minutes -gt 0 ]]; then
+        printf "%dm %ds" $minutes $secs
+    else
+        printf "%ds" $secs
+    fi
+}
+
+# Function to get workflow performance metrics
+get_workflow_metrics() {
+    local repo="$1"
+    local branch="${2:-main}"
+    local days="${3:-7}"
+
+    print_status "INFO" "Getting performance metrics for $repo (last $days days)"
+
+    # Get workflow runs from the last week
+    local since_date
+    since_date=$(date -d "$days days ago" -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -j -v-${days}d +"%Y-%m-%dT%H:%M:%SZ")
+
+    local workflow_runs
+    workflow_runs=$(github_api_request "repos/$repo/actions/runs?branch=$branch&per_page=100&created=>$since_date")
+
+    if [[ "$workflow_runs" == "{}" ]]; then
+        print_status "FAIL" "Failed to fetch workflow runs for metrics"
+        return 1
+    fi
+
+    # Parse metrics with Python
+    local metrics
+    metrics=$(echo "$workflow_runs" | python3 -c "
+import json
+import sys
+from datetime import datetime
+try:
+    data = json.load(sys.stdin)
+    runs = data.get('workflow_runs', [])
+
+    if not runs:
+        print('no_runs')
+        exit()
+
+    success_count = 0
+    failure_count = 0
+    cancelled_count = 0
+    total_duration = 0
+    completed_runs = 0
+
+    for run in runs:
+        if run['conclusion'] == 'success':
+            success_count += 1
+        elif run['conclusion'] == 'failure':
+            failure_count += 1
+        elif run['conclusion'] == 'cancelled':
+            cancelled_count += 1
+
+        if run['status'] == 'completed' and run['created_at'] and run['updated_at']:
+            created = datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
+            updated = datetime.fromisoformat(run['updated_at'].replace('Z', '+00:00'))
+            duration = (updated - created).total_seconds()
+            total_duration += duration
+            completed_runs += 1
+
+    total_runs = len(runs)
+    success_rate = (success_count / total_runs * 100) if total_runs > 0 else 0
+    avg_duration = total_duration / completed_runs if completed_runs > 0 else 0
+
+    print(f'{total_runs}:{success_count}:{failure_count}:{cancelled_count}:{success_rate:.1f}:{avg_duration:.0f}')
+
+except Exception as e:
+    print('error')
+" 2>/dev/null)
+
+    if [[ "$metrics" == "error" ]]; then
+        print_status "FAIL" "Failed to parse workflow metrics"
+        return 1
+    elif [[ "$metrics" == "no_runs" ]]; then
+        print_status "INFO" "No workflow runs found for metrics"
+        return 0
+    fi
+
+    # Parse metrics
+    IFS=':' read -r total_runs success_count failure_count cancelled_count success_rate avg_duration <<< "$metrics"
+
+    echo "    📊 Metrics (last $days days):"
+    echo "    ├── Total runs: $total_runs"
+    echo "    ├── Success rate: ${success_rate}%"
+    echo "    ├── Failures: $failure_count"
+    echo "    ├── Cancelled: $cancelled_count"
+    echo "    └── Avg duration: $(format_duration $avg_duration)"
+}
+
+# Function to get job details for a workflow run
+get_job_details() {
+    local repo="$1"
+    local run_id="$2"
+
+    local jobs
+    jobs=$(github_api_request "repos/$repo/actions/runs/$run_id/jobs")
+
+    if [[ "$jobs" == "{}" ]]; then
+        return 1
+    fi
+
+    echo "$jobs" | python3 -c "
+import json
+import sys
+from datetime import datetime
+try:
+    data = json.load(sys.stdin)
+    jobs = data.get('jobs', [])
+
+    for job in jobs:
+        name = job.get('name', 'Unknown')
+        status = job.get('status', 'unknown')
+        conclusion = job.get('conclusion', 'unknown')
+
+        # Calculate duration
+        started_at = job.get('started_at')
+        completed_at = job.get('completed_at')
+        duration = 'N/A'
+
+        if started_at and completed_at:
+            started = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+            completed = datetime.fromisoformat(completed_at.replace('Z', '+00:00'))
+            duration_seconds = (completed - started).total_seconds()
+            duration = f'{int(duration_seconds)}s'
+
+        # Status emoji
+        if conclusion == 'success':
+            emoji = '✅'
+        elif conclusion == 'failure':
+            emoji = '❌'
+        elif conclusion == 'cancelled':
+            emoji = '⚠️'
+        elif status == 'in_progress':
+            emoji = '🔄'
+        else:
+            emoji = '⏳'
+
+        print(f'    {emoji} {name} ({status}/{conclusion}) - {duration}')
+
+except Exception as e:
+    print('    Error parsing job details')
+" 2>/dev/null || echo "    Error getting job details"
 }
 
 # Function to get repository CI status
@@ -170,14 +325,20 @@ OPTIONS:
     -h, --help          Show this help message
     -t, --token TOKEN   GitHub API token (or set GITHUB_TOKEN env var)
     -w, --watch         Watch mode - continuously monitor every 30 seconds
-    -r, --repo REPO     Monitor specific repository only (main|homebrew|scoop)
+    -r, --repo REPO     Monitor specific repository only (main|homebrew|scoop|vscode)
     -v, --verbose       Verbose output
+    -m, --metrics       Show performance metrics (last 7 days)
+    -d, --detailed      Show detailed job information
+    -j, --jobs          Show job details for latest workflow run
 
 EXAMPLES:
     $0                  # Check all repositories once
     $0 -w               # Watch mode
     $0 -r main          # Check only main repository
     $0 -t ghp_xxxx      # Use specific GitHub token
+    $0 -m               # Show performance metrics
+    $0 -j               # Show job details for latest runs
+    $0 -r homebrew -m -j # Check homebrew with metrics and job details
 
 ENVIRONMENT:
     GITHUB_TOKEN        GitHub API token for higher rate limits
@@ -197,7 +358,7 @@ watch_mode() {
         echo "Last updated: $(date)"
         echo ""
 
-        monitor_repositories "$repo_filter"
+        monitor_repositories "$repo_filter" "false" "false" "false"
 
         echo ""
         print_status "INFO" "Refreshing in 30 seconds..."
@@ -226,6 +387,9 @@ get_repo_info() {
 # Function to monitor all repositories
 monitor_repositories() {
     local repo_filter="$1"
+    local show_metrics="${2:-false}"
+    local detailed="${3:-false}"
+    local show_jobs="${4:-false}"
 
     local failed_repos=()
     local total_repos=0
@@ -260,6 +424,35 @@ monitor_repositories() {
             failed_repos+=("$repo")
         fi
 
+        # Show metrics if requested
+        if [[ "$show_metrics" == "true" ]]; then
+            get_workflow_metrics "$repo" "$branch"
+        fi
+
+        # Show job details if requested
+        if [[ "$show_jobs" == "true" ]]; then
+            # Get latest workflow run ID
+            local latest_run_id
+            latest_run_id=$(github_api_request "repos/$repo/actions/runs?branch=$branch&per_page=1" | python3 -c "
+import json
+import sys
+try:
+    data = json.load(sys.stdin)
+    runs = data.get('workflow_runs', [])
+    if runs:
+        print(runs[0]['id'])
+    else:
+        print('')
+except:
+    print('')
+" 2>/dev/null)
+
+            if [[ -n "$latest_run_id" ]]; then
+                echo "    🔍 Job Details:"
+                get_job_details "$repo" "$latest_run_id"
+            fi
+        fi
+
         ((checked_repos++))
     done
 
@@ -281,6 +474,9 @@ main() {
     local watch=false
     local repo_filter=""
     local verbose=false
+    local show_metrics=false
+    local detailed=false
+    local show_jobs=false
 
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
@@ -318,6 +514,18 @@ main() {
                 verbose=true
                 shift
                 ;;
+            -m|--metrics)
+                show_metrics=true
+                shift
+                ;;
+            -d|--detailed)
+                detailed=true
+                shift
+                ;;
+            -j|--jobs)
+                show_jobs=true
+                shift
+                ;;
             *)
                 print_status "FAIL" "Unknown option: $1"
                 show_help
@@ -349,7 +557,7 @@ main() {
     if [[ "$watch" == true ]]; then
         watch_mode "$repo_filter"
     else
-        monitor_repositories "$repo_filter"
+        monitor_repositories "$repo_filter" "$show_metrics" "$detailed" "$show_jobs"
     fi
 }
 
