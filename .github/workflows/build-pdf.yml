@@ -10,6 +10,23 @@ on:
         required: false
         default: 'MANUSCRIPT'
         type: string
+  workflow_call:
+    inputs:
+      manuscript_path:
+        description: 'Path to manuscript directory'
+        required: false
+        default: 'MANUSCRIPT'
+        type: string
+    outputs:
+      pdf-path:
+        description: 'Path to generated PDF'
+        value: ${{ jobs.build-pdf.outputs.pdf-path }}
+      artifact-name:
+        description: 'Name of the PDF artifact'
+        value: ${{ jobs.build-pdf.outputs.artifact-name }}
+      success:
+        description: 'Whether the build was successful'
+        value: ${{ jobs.build-pdf.outputs.success }}
 
 jobs:
   # First job: Determine which manuscript directory to use
@@ -52,6 +69,10 @@ jobs:
     container:
       image: henriqueslab/rxiv-maker-base:latest  # Pre-compiled image with all dependencies
       options: --platform linux/amd64 --user root
+    outputs:
+      pdf-path: ${{ steps.build-result.outputs.pdf-path }}
+      artifact-name: ${{ steps.build-result.outputs.artifact-name }}
+      success: ${{ steps.build-result.outputs.success }}
 
     steps:
     - name: Checkout repository
@@ -237,9 +258,9 @@ jobs:
         # Check for expected PDF - try both possible names for robustness
         PRIMARY_PDF_PATH="output/${MANUSCRIPT_PATH}.pdf"
         FALLBACK_PDF_PATH="output/MANUSCRIPT.pdf"
-        
+
         echo "🔍 Looking for PDF at: $PRIMARY_PDF_PATH"
-        
+
         if [ -f "$PRIMARY_PDF_PATH" ]; then
           PDF_PATH="$PRIMARY_PDF_PATH"
           echo "  ✅ PDF generated successfully!"
@@ -390,6 +411,23 @@ jobs:
           release/*.pdf
           release/build_info.txt
         retention-days: 90
+
+    - name: Set build outputs
+      id: build-result
+      run: |
+        # Find the generated PDF
+        pdf_file=$(find release -name "*.pdf" | head -1)
+        if [ -n "$pdf_file" ]; then
+          echo "pdf-path=$pdf_file" >> $GITHUB_OUTPUT
+          echo "artifact-name=generated-pdf" >> $GITHUB_OUTPUT
+          echo "success=true" >> $GITHUB_OUTPUT
+          echo "✅ PDF build successful: $pdf_file"
+        else
+          echo "pdf-path=" >> $GITHUB_OUTPUT
+          echo "artifact-name=" >> $GITHUB_OUTPUT
+          echo "success=false" >> $GITHUB_OUTPUT
+          echo "❌ PDF build failed: no PDF found"
+        fi
 
     - name: Get most recent tag
       id: get-tag
