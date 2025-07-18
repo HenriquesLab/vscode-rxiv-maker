@@ -124,12 +124,12 @@ all: pdf
 # Install Python dependencies (cross-platform)
 .PHONY: setup
 setup:
-	@$(PYTHON_CMD) -m pip install -e . || (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment)
+	@$(PYTHON_CMD) -m pip install -e . || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment
 
 # Reinstall Python dependencies (removes .venv and creates new one) - cross-platform
 .PHONY: setup-reinstall
 setup-reinstall:
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --reinstall)
+	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --reinstall
 
 # Check system dependencies
 .PHONY: check-deps
@@ -270,7 +270,7 @@ check: lint typecheck
 fix-bibliography:
 	@echo "🔧 Attempting to fix bibliography issues..."
 	@$(PYTHON_CMD) -m rxiv_maker.cli bibliography fix "$(MANUSCRIPT_PATH)" || \
-	 (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)") || { \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)" || { \
 		echo ""; \
 		echo "❌ Bibliography fixing failed!"; \
 		echo "💡 Run with --dry-run to see potential fixes first"; \
@@ -283,7 +283,7 @@ fix-bibliography:
 fix-bibliography-dry-run:
 	@echo "🔍 Checking potential bibliography fixes..."
 	@$(PYTHON_CMD) -m rxiv_maker.cli bibliography fix "$(MANUSCRIPT_PATH)" --dry-run || \
-	 (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)" --dry-run)
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)" --dry-run
 
 # Add bibliography entries from DOI
 .PHONY: add-bibliography
@@ -303,7 +303,7 @@ add-bibliography:
 	fi; \
 	echo "📚 Adding bibliography entries from DOI(s):$$DOI_ARGS"; \
 	$(PYTHON_CMD) -m rxiv_maker.cli bibliography add "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose) || \
-	 (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.add_bibliography "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose)); \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.add_bibliography "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose); \
 	exit 0
 
 # Allow DOI patterns as pseudo-targets
@@ -324,37 +324,37 @@ add-bibliography:
 .PHONY: clean
 clean:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli clean "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) || \
-	 MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/rxiv_maker/commands/cleanup.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR)
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR)
 
 # Clean only output directory
 .PHONY: clean-output
 clean-output:
 	@$(PYTHON_CMD) -m rxiv_maker.cli clean --output-only --output-dir $(OUTPUT_DIR) || \
-	 (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --output-only --output-dir $(OUTPUT_DIR))
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --output-only --output-dir $(OUTPUT_DIR)
 
 # Clean only generated figures
 .PHONY: clean-figures
 clean-figures:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli clean "$(MANUSCRIPT_PATH)" --figures-only || \
-	 (cd src && MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --figures-only --manuscript-path "$(MANUSCRIPT_PATH)")
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --figures-only --manuscript-path "$(MANUSCRIPT_PATH)"
 
 # Clean only arXiv files
 .PHONY: clean-arxiv
 clean-arxiv:
 	@$(PYTHON_CMD) -m rxiv_maker.cli clean --arxiv-only || \
-	 (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --arxiv-only)
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --arxiv-only
 
 # Clean only temporary files
 .PHONY: clean-temp
 clean-temp:
 	@$(PYTHON_CMD) -m rxiv_maker.cli clean --temp-only || \
-	 (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --temp-only)
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --temp-only
 
 # Clean only cache files
 .PHONY: clean-cache
 clean-cache:
 	@$(PYTHON_CMD) -m rxiv_maker.cli clean --cache-only || \
-	 (cd src && $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --cache-only)
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --cache-only
 
 # ======================================================================
 # 🐳 DOCKER ENGINE MODE

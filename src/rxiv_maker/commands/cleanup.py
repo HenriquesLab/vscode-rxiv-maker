@@ -29,8 +29,8 @@ class CleanupManager:
             output_dir: Output directory to clean
             verbose: Enable verbose output
         """
-        self.manuscript_path: str = manuscript_path or os.getenv(
-            "MANUSCRIPT_PATH", "MANUSCRIPT"
+        self.manuscript_path: str = (
+            manuscript_path or os.getenv("MANUSCRIPT_PATH") or "MANUSCRIPT"
         )
         self.output_dir = Path(output_dir)
         self.verbose = verbose
@@ -329,3 +329,65 @@ class CleanupManager:
             self.log("Cleanup completed with some warnings", "WARNING")
 
         return all_success
+
+
+def main():
+    """Main entry point for cleanup command."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Clean up generated files and directories"
+    )
+    parser.add_argument(
+        "--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory"
+    )
+    parser.add_argument("--output-dir", default="output", help="Output directory")
+    parser.add_argument(
+        "--figures-only", action="store_true", help="Clean only generated figures"
+    )
+    parser.add_argument(
+        "--output-only", action="store_true", help="Clean only output directory"
+    )
+    parser.add_argument(
+        "--arxiv-only", action="store_true", help="Clean only arXiv files"
+    )
+    parser.add_argument(
+        "--temp-only", action="store_true", help="Clean only temporary files"
+    )
+    parser.add_argument(
+        "--cache-only", action="store_true", help="Clean only cache files"
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+
+    args = parser.parse_args()
+
+    # Initialize cleanup manager
+    cleanup_manager = CleanupManager(
+        manuscript_path=args.manuscript_path,
+        output_dir=args.output_dir,
+        verbose=args.verbose,
+    )
+
+    success = True
+
+    # Run specific cleanup based on flags
+    if args.figures_only:
+        success = cleanup_manager.clean_generated_figures()
+    elif args.output_only:
+        success = cleanup_manager.clean_output_directory()
+    elif args.arxiv_only:
+        success = cleanup_manager.clean_arxiv_files()
+    elif args.temp_only:
+        success = cleanup_manager.clean_temporary_files()
+    elif args.cache_only:
+        success = cleanup_manager.clean_cache_files()
+    else:
+        # Run full cleanup
+        success = cleanup_manager.run_full_cleanup()
+
+    if not success:
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()
