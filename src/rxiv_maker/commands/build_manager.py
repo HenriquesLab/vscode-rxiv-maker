@@ -208,16 +208,16 @@ class BuildManager:
         try:
             # Import and run validation directly instead of subprocess
             from .validate import validate_manuscript
-            
+
             # Set up environment and working directory
             original_cwd = os.getcwd()
             manuscript_path = Path(self.manuscript_path)
             manuscript_abs_path = str(manuscript_path.resolve())
-            
+
             try:
                 # Change to manuscript directory for relative path resolution
                 os.chdir(manuscript_path.parent)
-                
+
                 # Run validation with proper arguments
                 result = validate_manuscript(
                     manuscript_path=manuscript_abs_path,
@@ -227,14 +227,14 @@ class BuildManager:
                     enable_doi_validation=True,
                     detailed=True,
                 )
-                
+
                 if result:
                     self.log("Validation completed successfully")
                     return True
                 else:
                     self.log("Validation failed", "ERROR")
                     return False
-                    
+
             finally:
                 # Always restore original working directory
                 os.chdir(original_cwd)
@@ -473,8 +473,8 @@ class BuildManager:
 
         try:
             # Import and call the generate_preprint function directly
-            from .generate_preprint import generate_preprint
             from ..processors.yaml_processor import extract_yaml_metadata
+            from .generate_preprint import generate_preprint
 
             # Find the manuscript file and extract metadata
             manuscript_md = None
@@ -494,7 +494,7 @@ class BuildManager:
             # Set the MANUSCRIPT_PATH environment variable so generate_preprint can find files
             original_env = os.environ.get("MANUSCRIPT_PATH")
             os.environ["MANUSCRIPT_PATH"] = os.path.basename(self.manuscript_path)
-            
+
             # Change to the parent directory so the relative path works
             original_cwd = os.getcwd()
             os.chdir(Path(self.manuscript_path).parent)

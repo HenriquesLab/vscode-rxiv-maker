@@ -1,6 +1,6 @@
 """Integration tests to verify PyPI package functionality.
 
-These tests verify that the installed package has all necessary files 
+These tests verify that the installed package has all necessary files
 and can successfully initialize and build manuscripts.
 """
 
@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+
 import pytest
 
 
@@ -17,6 +18,7 @@ class TestPyPIPackageIntegration:
     def test_latex_template_files_accessible(self):
         """Test that LaTeX template files are accessible in the installed package."""
         import rxiv_maker
+
         package_path = Path(rxiv_maker.__file__).parent
 
         # Check for tex files in the package (in development mode, these might not exist)
@@ -41,7 +43,7 @@ class TestPyPIPackageIntegration:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
 
-                with zipfile.ZipFile(str(wheel_path), 'r') as wheel_zip:
+                with zipfile.ZipFile(str(wheel_path), "r") as wheel_zip:
                     wheel_zip.extractall(temp_path)
 
                 package_dir = temp_path / "rxiv_maker"
@@ -53,18 +55,26 @@ class TestPyPIPackageIntegration:
 
                 # Verify files have content within the context manager
                 for tex_file in tex_files:
-                    assert tex_file.stat().st_size > 0, f"LaTeX template is empty: {tex_file}"
+                    assert tex_file.stat().st_size > 0, (
+                        f"LaTeX template is empty: {tex_file}"
+                    )
 
                 for cls_file in cls_files:
-                    assert cls_file.stat().st_size > 0, f"LaTeX style file is empty: {cls_file}"
+                    assert cls_file.stat().st_size > 0, (
+                        f"LaTeX style file is empty: {cls_file}"
+                    )
 
         else:
             # Verify files have content (for installed package)
             for tex_file in tex_files:
-                assert tex_file.stat().st_size > 0, f"LaTeX template is empty: {tex_file}"
+                assert tex_file.stat().st_size > 0, (
+                    f"LaTeX template is empty: {tex_file}"
+                )
 
             for cls_file in cls_files:
-                assert cls_file.stat().st_size > 0, f"LaTeX style file is empty: {cls_file}"
+                assert cls_file.stat().st_size > 0, (
+                    f"LaTeX style file is empty: {cls_file}"
+                )
 
         # Final assertions (these are already checked above, but for clarity)
         assert len(tex_files) > 0, (
@@ -79,83 +89,99 @@ class TestPyPIPackageIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
             manuscript_dir = tmpdir_path / "TEST_MANUSCRIPT"
-            
+
             # Change to temp directory
             original_cwd = os.getcwd()
             os.chdir(tmpdir)
-            
+
             try:
                 # Test 1: Initialize manuscript
-                init_result = subprocess.run([
-                    "python", "-m", "rxiv_maker.cli.main", 
-                    "init", str(manuscript_dir), 
-                    "--template", "basic"
-                ], 
-                input="Test Paper\\n\\nTest Author\\ntest@example.com\\nTest University\\n",
-                text=True, 
-                capture_output=True, 
-                timeout=30
+                init_result = subprocess.run(
+                    [
+                        "python",
+                        "-m",
+                        "rxiv_maker.cli.main",
+                        "init",
+                        str(manuscript_dir),
+                        "--template",
+                        "basic",
+                    ],
+                    input="Test Paper\\n\\nTest Author\\ntest@example.com\\nTest University\\n",
+                    text=True,
+                    capture_output=True,
+                    timeout=30,
                 )
-                
+
                 print("Init STDOUT:", init_result.stdout)
                 print("Init STDERR:", init_result.stderr)
-                
+
                 # Check that init was successful
                 assert init_result.returncode == 0, f"Init failed: {init_result.stderr}"
                 assert manuscript_dir.exists(), "Manuscript directory not created"
-                
+
                 # Verify essential files were created
-                required_files = [
-                    "00_CONFIG.yml",
-                    "01_MAIN.md", 
-                    "03_REFERENCES.bib"
-                ]
-                
+                required_files = ["00_CONFIG.yml", "01_MAIN.md", "03_REFERENCES.bib"]
+
                 for filename in required_files:
                     file_path = manuscript_dir / filename
                     assert file_path.exists(), f"Required file not created: {filename}"
-                    assert file_path.stat().st_size > 0, f"Required file is empty: {filename}"
-                
+                    assert file_path.stat().st_size > 0, (
+                        f"Required file is empty: {filename}"
+                    )
+
                 # Test 2: Validate manuscript
-                validate_result = subprocess.run([
-                    "python", "-m", "rxiv_maker.cli.main",
-                    "validate", str(manuscript_dir)
-                ], 
-                capture_output=True, 
-                text=True,
-                timeout=30
+                validate_result = subprocess.run(
+                    [
+                        "python",
+                        "-m",
+                        "rxiv_maker.cli.main",
+                        "validate",
+                        str(manuscript_dir),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
                 )
-                
+
                 print("Validate STDOUT:", validate_result.stdout)
                 print("Validate STDERR:", validate_result.stderr)
-                
+
                 # Validation might fail due to example references, but should run
-                assert validate_result.returncode in [0, 1], f"Validate command failed to run: {validate_result.stderr}"
-                
+                assert validate_result.returncode in [0, 1], (
+                    f"Validate command failed to run: {validate_result.stderr}"
+                )
+
                 # Test 3: Attempt PDF build (this is the critical test)
                 # Use --skip-validation to avoid validation failures stopping the build
-                pdf_result = subprocess.run([
-                    "python", "-m", "rxiv_maker.cli.main",
-                    "pdf", str(manuscript_dir), 
-                    "--skip-validation",
-                    "--verbose"
-                ],
-                capture_output=True,
-                text=True,
-                timeout=120  # PDF building can take time
+                pdf_result = subprocess.run(
+                    [
+                        "python",
+                        "-m",
+                        "rxiv_maker.cli.main",
+                        "pdf",
+                        str(manuscript_dir),
+                        "--skip-validation",
+                        "--verbose",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=120,  # PDF building can take time
                 )
-                
+
                 print("PDF STDOUT:", pdf_result.stdout)
                 print("PDF STDERR:", pdf_result.stderr)
-                
+
                 # The critical check: did the command at least try to build?
                 # We're mainly testing that LaTeX files are accessible
                 # Even if LaTeX isn't installed, it should get past the template loading phase
-                assert "template.tex" in pdf_result.stdout or "template.tex" in pdf_result.stderr or \
-                       "LaTeX" in pdf_result.stdout or "LaTeX" in pdf_result.stderr or \
-                       pdf_result.returncode == 0, \
-                       f"PDF build failed to access LaTeX templates: {pdf_result.stderr}"
-                
+                assert (
+                    "template.tex" in pdf_result.stdout
+                    or "template.tex" in pdf_result.stderr
+                    or "LaTeX" in pdf_result.stdout
+                    or "LaTeX" in pdf_result.stderr
+                    or pdf_result.returncode == 0
+                ), f"PDF build failed to access LaTeX templates: {pdf_result.stderr}"
+
                 # If the build got to the LaTeX compilation step, templates are accessible
                 if "pdflatex" in pdf_result.stderr or "latexmk" in pdf_result.stderr:
                     # This means LaTeX templates were successfully loaded
@@ -168,16 +194,21 @@ class TestPyPIPackageIntegration:
                     error_output = pdf_result.stderr + pdf_result.stdout
                     template_error_indicators = [
                         "template.tex",
-                        "rxiv_maker_style.cls", 
+                        "rxiv_maker_style.cls",
                         "template not found",
                         "style not found",
                         "FileNotFoundError.*tex",
-                        "FileNotFoundError.*cls"
+                        "FileNotFoundError.*cls",
                     ]
-                    
-                    has_template_error = any(indicator in error_output for indicator in template_error_indicators)
-                    assert not has_template_error, f"LaTeX template files are missing from package: {error_output}"
-                
+
+                    has_template_error = any(
+                        indicator in error_output
+                        for indicator in template_error_indicators
+                    )
+                    assert not has_template_error, (
+                        f"LaTeX template files are missing from package: {error_output}"
+                    )
+
             finally:
                 os.chdir(original_cwd)
 
@@ -187,35 +218,43 @@ class TestPyPIPackageIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
             manuscript_dir = tmpdir_path / "CI_TEST_MANUSCRIPT"
-            
-            original_cwd = os.getcwd() 
+
+            original_cwd = os.getcwd()
             os.chdir(tmpdir)
-            
+
             try:
                 # Initialize with minimal content
-                init_result = subprocess.run([
-                    "python", "-m", "rxiv_maker.cli.main",
-                    "init", str(manuscript_dir)
-                ],
-                input="CI Test Paper\\n\\nCI Test Author\\nci@test.com\\nCI University\\n",
-                text=True,
-                capture_output=True,
-                timeout=30
+                init_result = subprocess.run(
+                    [
+                        "python",
+                        "-m",
+                        "rxiv_maker.cli.main",
+                        "init",
+                        str(manuscript_dir),
+                    ],
+                    input="CI Test Paper\\n\\nCI Test Author\\nci@test.com\\nCI University\\n",
+                    text=True,
+                    capture_output=True,
+                    timeout=30,
                 )
-                
+
                 assert init_result.returncode == 0, f"Init failed: {init_result.stderr}"
-                
+
                 # Build PDF
-                pdf_result = subprocess.run([
-                    "python", "-m", "rxiv_maker.cli.main", 
-                    "pdf", str(manuscript_dir),
-                    "--skip-validation"
-                ],
-                capture_output=True,
-                text=True, 
-                timeout=300
+                pdf_result = subprocess.run(
+                    [
+                        "python",
+                        "-m",
+                        "rxiv_maker.cli.main",
+                        "pdf",
+                        str(manuscript_dir),
+                        "--skip-validation",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
                 )
-                
+
                 # In CI with LaTeX installed, this should succeed
                 if pdf_result.returncode == 0:
                     # Check that PDF was actually created
@@ -224,9 +263,11 @@ class TestPyPIPackageIntegration:
                 else:
                     # At minimum, check that template files were accessible
                     error_output = pdf_result.stderr + pdf_result.stdout
-                    assert "template.tex" not in error_output or "not found" not in error_output.lower(), \
-                           f"LaTeX template files missing: {error_output}"
-                
+                    assert (
+                        "template.tex" not in error_output
+                        or "not found" not in error_output.lower()
+                    ), f"LaTeX template files missing: {error_output}"
+
             finally:
                 os.chdir(original_cwd)
 
@@ -246,7 +287,7 @@ class TestPyPIPackageIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
-            with zipfile.ZipFile(str(wheel_path), 'r') as wheel_zip:
+            with zipfile.ZipFile(str(wheel_path), "r") as wheel_zip:
                 wheel_zip.extractall(temp_path)
 
             # Find package directory in extracted wheel

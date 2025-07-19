@@ -300,11 +300,9 @@ packages = ["src/rxiv_maker"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/src",
-    "/tests", 
+    "/tests",
     "/README.md",
     "/LICENSE",
     "/CHANGELOG.md",
     "/pyproject.toml"
 ]
-
-
