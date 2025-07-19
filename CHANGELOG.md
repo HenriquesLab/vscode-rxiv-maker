@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.5] - 2025-07-19
+
+### Fixed
+- **🚨 CRITICAL FIX: LaTeX Template Files Missing from PyPI Package**
+  - Fixed hatchling build configuration to properly include LaTeX template files (`template.tex` and `rxiv_maker_style.cls`) in wheel distribution
+  - Added `[tool.hatch.build.targets.wheel.force-include]` configuration to ensure template files are packaged
+  - Users can now successfully generate PDFs after installing from PyPI without "template not found" errors
+  - Added comprehensive integration tests (`test_pypi_package_integration.py`) to prevent this issue in future releases
+  - This resolves the critical issue where pip-installed packages could not build PDFs due to missing LaTeX templates
+
 ## [v1.3.0] - 2025-07-14
 
 ### Added

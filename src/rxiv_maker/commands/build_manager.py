@@ -206,38 +206,38 @@ class BuildManager:
         self.log("Running manuscript validation...", "STEP")
 
         try:
-            # Use subprocess to run validation to avoid import issues
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/validate.py",
-                self.manuscript_path,
-                "--detailed",
-            ]
-
-            if self.verbose:
-                cmd.append("--verbose")
-
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
-
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
-            )
-
-            if result.returncode == 0:
-                self.log("Validation completed successfully")
-                if result.stdout:
-                    print(result.stdout)
-                return True
-            else:
-                self.log("Validation failed", "ERROR")
-                # Always show validation output for debugging
-                if result.stdout:
-                    print(result.stdout)
-                if result.stderr:
-                    print(result.stderr)
-                return False
+            # Import and run validation directly instead of subprocess
+            from .validate import validate_manuscript
+            
+            # Set up environment and working directory
+            original_cwd = os.getcwd()
+            manuscript_path = Path(self.manuscript_path)
+            manuscript_abs_path = str(manuscript_path.resolve())
+            
+            try:
+                # Change to manuscript directory for relative path resolution
+                os.chdir(manuscript_path.parent)
+                
+                # Run validation with proper arguments
+                result = validate_manuscript(
+                    manuscript_path=manuscript_abs_path,
+                    verbose=self.verbose,
+                    include_info=False,
+                    check_latex=True,
+                    enable_doi_validation=True,
+                    detailed=True,
+                )
+                
+                if result:
+                    self.log("Validation completed successfully")
+                    return True
+                else:
+                    self.log("Validation failed", "ERROR")
+                    return False
+                    
+            finally:
+                # Always restore original working directory
+                os.chdir(original_cwd)
 
         except Exception as e:
             self.log(f"Validation error: {e}", "ERROR")
@@ -472,39 +472,50 @@ class BuildManager:
         self.log("Generating LaTeX files...", "STEP")
 
         try:
-            # Run the main generation script
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/generate_preprint.py",
-                "--output-dir",
-                str(self.output_dir),
-            ]
+            # Import and call the generate_preprint function directly
+            from .generate_preprint import generate_preprint
+            from ..processors.yaml_processor import extract_yaml_metadata
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Find the manuscript file and extract metadata
+            manuscript_md = None
+            for md_file in ["01_MAIN.md", "MAIN.md", "manuscript.md"]:
+                md_path = Path(self.manuscript_path) / md_file
+                if md_path.exists():
+                    manuscript_md = md_path
+                    break
 
-            # Set environment variables
-            env = os.environ.copy()
-            env["MANUSCRIPT_PATH"] = self.manuscript_path
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                encoding="utf-8",
-                errors="replace",
-            )
-
-            if result.returncode == 0:
-                self.log("LaTeX files generated successfully")
-                if self.verbose and result.stdout:
-                    print(result.stdout)
-                return True
-            else:
-                self.log(f"LaTeX generation failed: {result.stderr}", "ERROR")
+            if not manuscript_md:
+                self.log("Could not find manuscript markdown file", "ERROR")
                 return False
+
+            # Extract YAML metadata from the manuscript file
+            yaml_metadata = extract_yaml_metadata(str(manuscript_md))
+
+            # Set the MANUSCRIPT_PATH environment variable so generate_preprint can find files
+            original_env = os.environ.get("MANUSCRIPT_PATH")
+            os.environ["MANUSCRIPT_PATH"] = os.path.basename(self.manuscript_path)
+            
+            # Change to the parent directory so the relative path works
+            original_cwd = os.getcwd()
+            os.chdir(Path(self.manuscript_path).parent)
+
+            try:
+                # Generate the preprint
+                result = generate_preprint(str(self.output_dir), yaml_metadata)
+
+                if result:
+                    self.log("LaTeX files generated successfully")
+                    return True
+                else:
+                    self.log("LaTeX generation failed", "ERROR")
+                    return False
+            finally:
+                # Restore environment and working directory
+                os.chdir(original_cwd)
+                if original_env is not None:
+                    os.environ["MANUSCRIPT_PATH"] = original_env
+                else:
+                    os.environ.pop("MANUSCRIPT_PATH", None)
 
         except Exception as e:
             self.log(f"Error generating LaTeX files: {e}", "ERROR")

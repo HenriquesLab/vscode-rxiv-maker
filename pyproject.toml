@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rxiv-maker"
-version = "1.4.1"
+version = "1.4.5"
 authors = [
     {name = "Rxiv-Maker Contributors", email = "rxiv.maker@gmail.com"},
 ]
@@ -40,7 +40,7 @@ dependencies = [
     "pytest>=7.4.4",
     "ruff>=0.12.2",
     "pre-commit>=4.2.0",
-    "folder2md4llms>=0.4.31",
+    "folder2md4llms>=0.4.28",
     "click>=8.0.0",
     "rich>=13.0.0",
     "rich-click>=1.6.0",
@@ -67,6 +67,29 @@ dev = [
 minimal = []  # Same as base dependencies
 full = []     # Same as base dependencies (system deps handled by installer)
 system-deps = []  # Placeholder for system dependency installation
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest>=7.4,<8.0",
+    "pytest-xdist>=3.8.0",
+    "py>=1.11.0",
+    "ruff>=0.8.0",
+    "mypy>=1.0",
+    "types-PyYAML>=6.0.0",
+    "nox>=2023.0.0",
+    "pytest-cov>=4.0",
+    "coverage[toml]>=7.0",
+    "pytest-notebook>=0.10.0",
+    "nbstripout>=0.7.1",
+    "pre-commit>=4.0.0",
+    "lazydocs>=0.4.8",
+    "hatch>=1.14.1",
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.20.0",
+    "twine>=6.1.0",
+]
 
 # Ruff configuration (replaces black, isort, flake8, autoflake, docformatter)
 [tool.ruff]
@@ -163,7 +186,9 @@ python_functions = ["test_*"]
 addopts = [
     "-v",
     "--tb=short",
-    "--strict-markers"
+    "--strict-markers",
+    "-n",
+    "auto"
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -179,35 +204,6 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
 ]
-
-# Hatch configuration
-[tool.hatch.envs.default]
-dependencies = [
-    "pytest>=7.4.4",
-    "pytest-cov>=4.0",
-    "mypy>=1.0",
-    "ruff>=0.12.2",
-    "pre-commit>=4.2.0",
-]
-
-[tool.hatch.envs.default.scripts]
-test = "pytest {args:tests}"
-test-cov = "pytest --cov=src/rxiv_maker {args:tests}"
-lint = "ruff check {args:src}"
-format = "ruff format {args:src}"
-type-check = "mypy {args:src/rxiv_maker}"
-all = ["lint", "type-check", "test-cov"]
-
-[tool.hatch.envs.docs]
-dependencies = [
-    "mkdocs>=1.4.0",
-    "mkdocs-material>=9.0.0",
-    "mkdocstrings[python]>=0.20.0",
-]
-
-[tool.hatch.envs.docs.scripts]
-build = "mkdocs build"
-serve = "mkdocs serve"
 
 # Console scripts entry point
 [project.scripts]
@@ -294,7 +290,21 @@ textColor = "#ffffff"
 fontFamily = "Arial, sans-serif"
 fontSize = "16px"
 
-[dependency-groups]
-dev = [
-    "hatch>=1.14.1",
+# Hatchling build configuration
+[tool.hatch.build.targets.wheel]
+packages = ["src/rxiv_maker"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/tex" = "rxiv_maker/tex"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests", 
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/pyproject.toml"
 ]
+
+
