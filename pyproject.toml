@@ -68,9 +68,9 @@ minimal = []  # Same as base dependencies
 full = []     # Same as base dependencies (system deps handled by installer)
 system-deps = []  # Placeholder for system dependency installation
 
-[tool.rye]
-managed = true
-dev-dependencies = [
+# UV dependency groups configuration
+[dependency-groups]
+dev = [
     "pytest>=7.4,<8.0",
     "pytest-xdist>=3.8.0",
     "py>=1.11.0",
@@ -90,6 +90,10 @@ dev-dependencies = [
     "mkdocstrings[python]>=0.20.0",
     "twine>=6.1.0",
 ]
+
+# Keep Rye section for backwards compatibility but managed=false
+[tool.rye]
+managed = false
 
 # Ruff configuration (replaces black, isort, flake8, autoflake, docformatter)
 [tool.ruff]
