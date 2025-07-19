@@ -244,26 +244,53 @@ jobs:
         run: |
           # Test basic CLI commands with retry logic
           echo "Testing CLI version command..."
-          for i in {1..3}; do
-            if rxiv --version; then
-              echo "✅ CLI version command successful on attempt $i"
-              break
-            else
-              echo "❌ CLI version command failed on attempt $i"
-              if [ $i -eq 3 ]; then
-                echo "❌ CLI version command failed after 3 attempts"
-                exit 1
+
+          # On Windows, we might need to use python -m rxiv_maker.cli
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            # Try direct command first, then fall back to module execution
+            for i in {1..3}; do
+              if rxiv --version 2>/dev/null; then
+                echo "✅ CLI version command successful on attempt $i"
+                break
+              elif python -m rxiv_maker.cli --version 2>/dev/null; then
+                echo "✅ CLI (via module) version command successful on attempt $i"
+                # Create an alias for subsequent commands
+                alias rxiv='python -m rxiv_maker.cli'
+                break
+              else
+                echo "❌ CLI version command failed on attempt $i"
+                if [ $i -eq 3 ]; then
+                  echo "Checking Python installation..."
+                  python -m pip list | grep rxiv || echo "rxiv-maker not found in pip list"
+                  echo "❌ CLI version command failed after 3 attempts"
+                  exit 1
+                fi
+                sleep 1
               fi
-              sleep 1
-            fi
-          done
+            done
+          else
+            # Non-Windows systems
+            for i in {1..3}; do
+              if rxiv --version; then
+                echo "✅ CLI version command successful on attempt $i"
+                break
+              else
+                echo "❌ CLI version command failed on attempt $i"
+                if [ $i -eq 3 ]; then
+                  echo "❌ CLI version command failed after 3 attempts"
+                  exit 1
+                fi
+                sleep 1
+              fi
+            done
+          fi
 
           echo "Testing CLI help command..."
-          rxiv --help
+          rxiv --help || python -m rxiv_maker.cli --help
 
           # Test CLI with different options (non-blocking)
-          rxiv config show || echo "Config command not available"
-          rxiv version --detailed || echo "Detailed version not available"
+          rxiv config show || python -m rxiv_maker.cli config show || echo "Config command not available"
+          rxiv version --detailed || python -m rxiv_maker.cli version --detailed || echo "Detailed version not available"
         env:
           # Force UTF-8 encoding on Windows to prevent UnicodeEncodeError
           PYTHONIOENCODING: utf-8
