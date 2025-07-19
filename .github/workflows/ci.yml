@@ -216,9 +216,7 @@ jobs:
           echo "⚠️ Manuscript initialization may not have worked as expected"
         fi
 
-        cd ..
-
-  # Build and test distribution
+        cd ..  # Build and test distribution
   build:
     runs-on: ubuntu-latest
     needs: [lint, test]
