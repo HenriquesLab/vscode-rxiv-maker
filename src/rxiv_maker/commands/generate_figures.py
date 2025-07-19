@@ -441,3 +441,35 @@ class FigureGenerator:
     def _check_rscript(self):
         """Check if Rscript is available."""
         return self.platform.check_command_exists("Rscript")
+
+
+# CLI integration
+def main():
+    """Main function for CLI integration."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate figures from source files")
+    parser.add_argument(
+        "--figures-dir", default="FIGURES", help="Directory with source figures"
+    )
+    parser.add_argument("--output-dir", default="FIGURES", help="Output directory")
+    parser.add_argument(
+        "--format", default="png", help="Output format (png, svg, pdf, eps)"
+    )
+    parser.add_argument("--r-only", action="store_true", help="Process only R files")
+
+    args = parser.parse_args()
+
+    generator = FigureGenerator(
+        figures_dir=args.figures_dir,
+        output_dir=args.output_dir,
+        output_format=args.format,
+        r_only=args.r_only,
+    )
+
+    generator.generate_all_figures()
+    print("Figure generation complete!")
+
+
+if __name__ == "__main__":
+    main()

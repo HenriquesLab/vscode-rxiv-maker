@@ -1,5 +1,7 @@
 """Generate LaTeX preprint from markdown template."""
 
+import yaml
+
 from ..processors.template_processor import (
     generate_supplementary_tex,
     get_template_path,
@@ -32,3 +34,41 @@ def generate_preprint(output_dir, yaml_metadata):
     generate_supplementary_tex(output_dir, yaml_metadata)
 
     return manuscript_output
+
+
+# CLI integration
+def main():
+    """Main function for CLI integration."""
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(
+        description="Generate LaTeX preprint from markdown"
+    )
+    parser.add_argument("--output-dir", help="Output directory for generated files")
+    parser.add_argument("--config", help="YAML config file path")
+
+    args = parser.parse_args()
+
+    # Use current directory if no output dir specified
+    output_dir = args.output_dir or "."
+
+    # Load YAML metadata
+    config_path = args.config or "00_CONFIG.yml"
+    if Path(config_path).exists():
+        with open(config_path) as f:
+            yaml_metadata = yaml.safe_load(f)
+    else:
+        yaml_metadata = {}
+
+    try:
+        result = generate_preprint(output_dir, yaml_metadata)
+        print(f"Generated preprint: {result}")
+        return 0  # Success
+    except Exception as e:
+        print(f"Error generating preprint: {e}")
+        return 1  # Error
+
+
+if __name__ == "__main__":
+    main()

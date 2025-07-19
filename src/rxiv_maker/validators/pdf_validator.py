@@ -12,7 +12,13 @@ This validator extracts text from the generated PDF and verifies that:
 
 import logging
 import re
+import sys
+import os
 from pathlib import Path
+
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
     import pypdf
@@ -28,7 +34,7 @@ try:
     )
 except ImportError:
     # Fallback for script execution
-    from .base_validator import (
+    from rxiv_maker.validators.base_validator import (
         BaseValidator,
         ValidationError,
         ValidationLevel,

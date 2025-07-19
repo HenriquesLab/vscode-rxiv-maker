@@ -100,7 +100,7 @@ class TestPyPIPackageIntegration:
                     [
                         "python",
                         "-m",
-                        "rxiv_maker.cli.main",
+                        "rxiv_maker.cli",
                         "init",
                         str(manuscript_dir),
                         "--template",
@@ -134,7 +134,7 @@ class TestPyPIPackageIntegration:
                     [
                         "python",
                         "-m",
-                        "rxiv_maker.cli.main",
+                        "rxiv_maker.cli",
                         "validate",
                         str(manuscript_dir),
                     ],

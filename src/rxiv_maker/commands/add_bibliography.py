@@ -505,3 +505,31 @@ class BibliographyAdder:
 
         # Write back to file
         self.bib_file.write_text(new_content, encoding="utf-8")
+
+
+# CLI integration
+def main():
+    """Main function for CLI integration."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Add bibliography entries from DOIs")
+    parser.add_argument("manuscript_path", help="Path to manuscript directory")
+    parser.add_argument("dois", nargs="+", help="DOI strings to add")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite existing entries"
+    )
+
+    args = parser.parse_args()
+
+    adder = BibliographyAdder(args.manuscript_path)
+    success = adder.add_entries(args.dois, overwrite=args.overwrite)
+
+    if success:
+        print("Bibliography entries added successfully!")
+    else:
+        print("Some entries could not be added.")
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()
