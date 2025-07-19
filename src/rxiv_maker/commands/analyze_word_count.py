@@ -4,10 +4,20 @@ This module provides word count analysis functionality that can be run independe
 after manuscript generation to provide statistics about the document.
 """
 
+import os
+import sys
 from pathlib import Path
 
-from ..converters.md2tex import extract_content_sections
-from ..utils import find_manuscript_md
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from rxiv_maker.converters.md2tex import extract_content_sections
+    from rxiv_maker.utils import find_manuscript_md
+else:
+    from ..converters.md2tex import extract_content_sections
+    from ..utils import find_manuscript_md
 
 
 def count_words_in_text(text):
@@ -125,3 +135,7 @@ def analyze_manuscript_word_count(manuscript_path: str = None) -> int:
         print("Traceback:")
         traceback.print_exc()
         return 1
+
+
+if __name__ == "__main__":
+    sys.exit(analyze_manuscript_word_count())
