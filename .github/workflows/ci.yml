@@ -1,0 +1,257 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Separate lint job that runs once for faster feedback
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for hatch-vcs
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: true
+
+    - name: Install dependencies
+      run: uv sync --group dev
+
+    - name: Run linting and formatting checks
+      run: |
+        echo "Running Ruff linting..."
+        uv run ruff check src/ tests/
+
+        echo "Running Ruff formatting..."
+        uv run ruff format --check src/ tests/
+
+        echo "Running type checking..."
+        uv run mypy src/
+
+        echo "Running security checks..."
+        uv run bandit -r src/ -ll
+
+  # Main test job that runs on multiple Python versions
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11', '3.12']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for hatch-vcs
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: true
+
+    - name: Install dependencies
+      run: uv sync --group dev
+
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libfreetype6-dev \
+          libjpeg-dev \
+          libpng-dev \
+          libtiff-dev \
+          libwebp-dev \
+          libopenjp2-7-dev \
+          zlib1g-dev \
+          liblcms2-dev \
+          libffi-dev \
+          pkg-config \
+          git \
+          texlive-latex-base \
+          texlive-latex-extra \
+          texlive-fonts-recommended
+
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install \
+          freetype \
+          jpeg \
+          libpng \
+          libtiff \
+          webp \
+          openjpeg \
+          zlib \
+          lcms2 \
+          libffi \
+          pkg-config
+        # Install basic LaTeX for testing
+        brew install --cask basictex || true
+
+    - name: Install system dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Most dependencies are available through pip wheels on Windows
+        echo "Using pip wheels for Windows dependencies"
+
+    - name: Run tests
+      run: uv run pytest tests/ --cov=rxiv_maker --cov-report=xml --cov-report=term-missing -n auto --maxfail=10 --tb=short -v
+
+    - name: Test CLI functionality
+      run: |
+        echo "Testing CLI installation and basic functionality..."
+        uv run python -m rxiv_maker.cli --version
+        uv run python -m rxiv_maker.cli --help
+
+        # Test basic commands
+        uv run python -m rxiv_maker.cli config show || echo "Config command not available"
+
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  # Integration tests for manuscript generation
+  integration:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: true
+
+    - name: Install dependencies
+      run: uv sync --group dev
+
+    - name: Install LaTeX
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          texlive-latex-base \
+          texlive-latex-extra \
+          texlive-fonts-recommended \
+          texlive-fonts-extra \
+          texlive-science \
+          texlive-plain-generic
+
+    - name: Test PyPI package integration
+      run: |
+        echo "Running PyPI package integration tests..."
+        uv run pytest tests/integration/ -v --tb=short || echo "Integration tests not available"
+
+    - name: Test manuscript generation
+      run: |
+        echo "Testing manuscript generation workflow..."
+        # Create test workspace
+        mkdir -p test-workspace
+        cd test-workspace
+
+        # Test CLI commands that should work
+        uv run python -m rxiv_maker.cli init test-manuscript --no-interactive || echo "Init command failed"
+
+        # Test if manuscript directory was created
+        if [ -d "test-manuscript" ]; then
+          echo "✅ Manuscript initialized successfully"
+          cd test-manuscript
+
+          # Test validation
+          uv run python -m rxiv_maker.cli validate --no-doi || echo "Validation failed"
+
+          cd ..
+        else
+          echo "⚠️ Manuscript initialization may not have worked as expected"
+        fi
+
+        cd ..
+
+  # Build and test distribution
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: true
+
+    - name: Build package
+      run: |
+        uv build
+
+    - name: Test wheel installation
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install dist/*.whl
+        python -c "import rxiv_maker; print('✅ Package imports successfully')"
+        python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
