@@ -37,6 +37,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Set manuscript path
         id: set-path
@@ -77,6 +80,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
 
     - name: Set manuscript path from prepare job
       run: |
@@ -88,6 +94,10 @@ jobs:
         git config --global --add safe.directory /__w/rxiv-maker/rxiv-maker
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
+
+        # Ensure submodules are properly initialized
+        git submodule update --init --recursive || echo "Submodule initialization failed, continuing..."
+        git submodule status
 
     # Cache Python dependencies and virtual environment
     - name: Cache Python dependencies

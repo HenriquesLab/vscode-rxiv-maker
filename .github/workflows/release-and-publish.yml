@@ -89,6 +89,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history for versioning
+          submodules: recursive
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -284,6 +285,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -341,16 +343,34 @@ jobs:
           script: |
             const { owner, repo } = { owner: 'henriqueslab', repo: 'homebrew-rxiv-maker' };
 
-            try {
-              await github.rest.actions.createWorkflowDispatch({
-                owner,
-                repo,
-                workflow_id: 'update-formula.yml',
-                ref: 'main'
-              });
-              console.log('✅ Homebrew update triggered successfully');
-            } catch (error) {
-              console.error('❌ Failed to trigger Homebrew update:', error.message);
+            // Retry logic for API calls
+            let attempts = 0;
+            const maxAttempts = 3;
+            let delay = 5000; // 5 seconds
+
+            while (attempts < maxAttempts) {
+              attempts++;
+              try {
+                console.log(`🔄 Attempt ${attempts} of ${maxAttempts} to trigger Homebrew update...`);
+                await github.rest.actions.createWorkflowDispatch({
+                  owner,
+                  repo,
+                  workflow_id: 'update-formula.yml',
+                  ref: 'main'
+                });
+                console.log('✅ Homebrew update triggered successfully');
+                break;
+              } catch (error) {
+                console.error(`❌ Attempt ${attempts} failed:`, error.message);
+                if (attempts < maxAttempts) {
+                  console.log(`⏳ Waiting ${delay/1000}s before retry...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  delay *= 2; // Exponential backoff
+                } else {
+                  console.error('❌ All attempts to trigger Homebrew update failed');
+                  // Don't fail the workflow for this
+                }
+              }
             }
 
       - name: Trigger Scoop update
@@ -360,16 +380,34 @@ jobs:
           script: |
             const { owner, repo } = { owner: 'henriqueslab', repo: 'scoop-rxiv-maker' };
 
-            try {
-              await github.rest.actions.createWorkflowDispatch({
-                owner,
-                repo,
-                workflow_id: 'update-formula.yml',
-                ref: 'main'
-              });
-              console.log('✅ Scoop update triggered successfully');
-            } catch (error) {
-              console.error('❌ Failed to trigger Scoop update:', error.message);
+            // Retry logic for API calls
+            let attempts = 0;
+            const maxAttempts = 3;
+            let delay = 5000; // 5 seconds
+
+            while (attempts < maxAttempts) {
+              attempts++;
+              try {
+                console.log(`🔄 Attempt ${attempts} of ${maxAttempts} to trigger Scoop update...`);
+                await github.rest.actions.createWorkflowDispatch({
+                  owner,
+                  repo,
+                  workflow_id: 'update-formula.yml',
+                  ref: 'main'
+                });
+                console.log('✅ Scoop update triggered successfully');
+                break;
+              } catch (error) {
+                console.error(`❌ Attempt ${attempts} failed:`, error.message);
+                if (attempts < maxAttempts) {
+                  console.log(`⏳ Waiting ${delay/1000}s before retry...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  delay *= 2; // Exponential backoff
+                } else {
+                  console.error('❌ All attempts to trigger Scoop update failed');
+                  // Don't fail the workflow for this
+                }
+              }
             }
 
       - name: Create notification summary
