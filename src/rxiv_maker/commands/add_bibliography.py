@@ -1,15 +1,24 @@
 """Add bibliography entries from DOI to the bibliography file."""
 
 import logging
+import os
 import re
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 import requests
+
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+
 from crossref_commons.retrieval import get_publication_as_json
 
-from ..utils.doi_cache import DOICache
+from rxiv_maker.utils.doi_cache import DOICache
 
 logger = logging.getLogger(__name__)
 

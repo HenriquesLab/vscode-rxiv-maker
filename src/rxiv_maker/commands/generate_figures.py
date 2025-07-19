@@ -8,9 +8,17 @@ publication-ready output files. It supports:
 """
 
 import json
+import os
+import sys
 from pathlib import Path
 
-from ..utils.platform import platform_detector
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+
+from rxiv_maker.utils.platform import platform_detector
 
 PUPPETEER_CONFIG_PATH = Path(__file__).parent / "puppeteer-config.json"
 

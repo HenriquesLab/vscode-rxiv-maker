@@ -95,7 +95,7 @@ def generate_enhanced_index(docs_dir, successful_modules):
     return index_path
 
 
-def generate_api_docs(project_root: Path = None) -> bool:
+def generate_api_docs(project_root: Path | None = None) -> bool:
     """Generate API documentation using lazydocs with enhancements.
 
     Args:
@@ -186,3 +186,47 @@ def generate_api_docs(project_root: Path = None) -> bool:
     else:
         print("❌ No documentation could be generated")
         return False
+
+
+def main() -> int:
+    """Main entry point for the generate docs command.
+    
+    Returns:
+        0 for success, 1 for failure
+    """
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Generate API documentation")
+    parser.add_argument(
+        "--project-root",
+        help="Path to project root directory (default: auto-detect)",
+        type=Path
+    )
+    
+    args = parser.parse_args()
+    
+    try:
+        # Use provided project root or auto-detect
+        project_root = args.project_root
+        if project_root is None:
+            # Auto-detect based on current script location
+            current_file = Path(__file__).resolve()
+            # Navigate up from src/rxiv_maker/commands/generate_docs.py to project root
+            project_root = current_file.parent.parent.parent.parent
+            
+        if not project_root.exists():
+            print(f"❌ Project root not found: {project_root}")
+            return 1
+            
+        # Generate documentation
+        success = generate_api_docs(project_root)
+        return 0 if success else 1
+        
+    except Exception as e:
+        print(f"❌ Error generating documentation: {e}")
+        return 1
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

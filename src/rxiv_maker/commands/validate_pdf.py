@@ -5,7 +5,16 @@ for common issues like unresolved citations, malformed equations, and
 missing references.
 """
 
-from ..validators.pdf_validator import PDFValidator, ValidationLevel
+import os
+import sys
+
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+
+from rxiv_maker.validators.pdf_validator import PDFValidator, ValidationLevel
 
 
 def validate_pdf_output(

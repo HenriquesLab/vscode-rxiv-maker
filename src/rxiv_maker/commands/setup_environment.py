@@ -8,11 +8,19 @@ This script handles cross-platform environment setup including:
 - System dependency checking
 """
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 
-from ..utils.dependency_checker import DependencyChecker
-from ..utils.platform import platform_detector
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+
+from rxiv_maker.utils.dependency_checker import DependencyChecker
+from rxiv_maker.utils.platform import platform_detector
 
 
 class EnvironmentSetup:

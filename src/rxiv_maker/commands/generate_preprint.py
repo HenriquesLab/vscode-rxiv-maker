@@ -1,13 +1,22 @@
 """Generate LaTeX preprint from markdown template."""
 
+import os
+import sys
 import yaml
 
-from ..processors.template_processor import (
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+
+from rxiv_maker.processors.template_processor import (
     generate_supplementary_tex,
     get_template_path,
     process_template_replacements,
 )
-from ..utils import (
+from rxiv_maker.utils import (
+    create_output_dir,
     find_manuscript_md,
     write_manuscript_output,
 )
@@ -15,6 +24,9 @@ from ..utils import (
 
 def generate_preprint(output_dir, yaml_metadata):
     """Generate the preprint using the template."""
+    # Ensure output directory exists
+    create_output_dir(output_dir)
+    
     template_path = get_template_path()
     with open(template_path) as template_file:
         template_content = template_file.read()
