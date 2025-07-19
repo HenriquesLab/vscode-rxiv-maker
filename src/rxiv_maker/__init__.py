@@ -3,7 +3,7 @@
 A comprehensive toolkit for automated scientific article generation and building.
 """
 
-from ._version import __version__
+from .__version__ import __version__
 
 
 # Maintain backward compatibility

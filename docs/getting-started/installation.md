@@ -7,7 +7,8 @@ This is the comprehensive installation guide for Rxiv-Maker. **Choose ONE method
 | Method | Best For | Requirements | Setup Time | Skill Level |
 |--------|----------|--------------|------------|-------------|
 | **🌐 Google Colab** | First-time users, quick experiments | Google account | 2 minutes | Beginner |
-| **🐳 Docker Engine** | Most users, development work | Docker + Make | 3-5 minutes | Beginner |
+| **📦 Modern CLI** | Quick start, modern interface | Python 3.11+ | 2-3 minutes | Beginner |
+| **🐳 Docker Engine** | Consistent environment, teams | Docker + Make | 3-5 minutes | Beginner |
 | **🏠 Local Development** | Advanced users, offline work | Python, LaTeX, Make | 10-30 minutes | Advanced |
 | **⚡ GitHub Actions** | Team collaboration, automation | GitHub account | 5 minutes | Intermediate |
 
@@ -126,6 +127,61 @@ echo 'export RXIV_ENGINE=DOCKER' >> ~/.bashrc  # Linux/macOS
 
 ### Complete Guide
 For detailed Docker information, see: [Docker Engine Mode Guide](../docker-engine-mode.md)
+
+---
+
+## 📦 Modern CLI Installation (Recommended)
+
+**The easiest way to get started with Rxiv-Maker using the modern command-line interface.**
+
+### Quick Install
+```bash
+# Install from PyPI
+pip install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+
+# Install system dependencies (if needed)
+rxiv check-installation --fix
+
+# Initialize your first manuscript
+rxiv init MY_PAPER/
+
+# Build PDF
+rxiv pdf MY_PAPER/
+```
+
+### Benefits
+- ✅ Beautiful terminal output with progress indicators
+- ✅ Auto-completion for bash/zsh/fish shells
+- ✅ Unified command interface replacing complex Make commands
+- ✅ Intelligent error messages and suggestions
+- ✅ Works on Windows, macOS, and Linux
+
+### Installation Options
+```bash
+# Standard installation
+pip install rxiv-maker
+
+# Development installation (for contributing)
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+pip install -e .
+
+# Enable shell auto-completion
+rxiv --install-completion bash  # or zsh, fish
+```
+
+### System Dependencies
+The CLI will automatically detect and help install required system dependencies:
+```bash
+# Check what's missing
+rxiv check-installation --detailed
+
+# Auto-install missing dependencies (admin rights may be required)
+rxiv check-installation --fix
+```
 
 ---
 

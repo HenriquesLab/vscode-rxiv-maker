@@ -1,11 +1,10 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
 name = "rxiv-maker"
-# version managed by hatch-vcs from git tags
-dynamic = ["version"]
+version = "1.4.1"
 authors = [
     {name = "Rxiv-Maker Contributors", email = "rxiv.maker@gmail.com"},
 ]
@@ -41,7 +40,7 @@ dependencies = [
     "pytest>=7.4.4",
     "ruff>=0.12.2",
     "pre-commit>=4.2.0",
-    "folder2md4llms>=0.3.0",
+    "folder2md4llms>=0.4.31",
     "click>=8.0.0",
     "rich>=13.0.0",
     "rich-click>=1.6.0",
@@ -182,13 +181,6 @@ filterwarnings = [
 ]
 
 # Hatch configuration
-[tool.hatch.version]
-source = "vcs"
-fallback-version = "1.4.0"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "src/rxiv_maker/_version.py"
-
 [tool.hatch.envs.default]
 dependencies = [
     "pytest>=7.4.4",

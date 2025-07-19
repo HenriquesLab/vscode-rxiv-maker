@@ -95,7 +95,7 @@ rxiv check-installation
 rxiv init MY_PAPER/
 
 # Build PDF
-rxiv build MY_PAPER/
+rxiv pdf MY_PAPER/
 
 # Enable auto-completion (optional)
 rxiv --install-completion bash  # or zsh, fish
@@ -159,7 +159,7 @@ pip install rxiv-maker
 rxiv init MY_PAPER/
 
 # Build PDF
-rxiv build MY_PAPER/
+rxiv pdf MY_PAPER/
 
 # Validate manuscript
 rxiv validate MY_PAPER/
@@ -323,9 +323,9 @@ Existing users can continue using Make commands or migrate to the CLI:
 | `make pdf FORCE_FIGURES=true` | `rxiv build --force-figures` | Force figures |
 | `MANUSCRIPT_PATH=path/ make pdf` | `rxiv build path/` | Custom path |
 
-📖 **Complete migration guide**: [MIGRATION.md](MIGRATION.md)  
-📚 **Complete CLI reference**: [CLI_REFERENCE.md](CLI_REFERENCE.md)  
-📋 **CLI modernization changelog**: [CHANGELOG_CLI.md](CHANGELOG_CLI.md)
+📖 **Complete migration guide**: [docs/MIGRATION.md](docs/MIGRATION.md)  
+📚 **Complete CLI reference**: [docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md)  
+📋 **CLI modernization changelog**: [docs/CHANGELOG_CLI.md](docs/CHANGELOG_CLI.md)
 
 **⚡ GitHub Actions** (Team collaboration)
 - **Prerequisites**: GitHub account only

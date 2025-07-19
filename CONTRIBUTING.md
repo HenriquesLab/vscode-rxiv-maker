@@ -85,6 +85,10 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
    **Benefits**: Faster iteration, better IDE integration, offline development
    
    - **Installation**: Follow [Local Development Setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for your platform
+   - **Development mode**: Install rxiv-maker in editable mode:
+     ```bash
+     pip install -e .
+     ```
    - **Pre-commit**: Install hooks after setup:
      ```bash
      pre-commit install
@@ -95,7 +99,12 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
 3. **Verify Setup**
    
    ```bash
-   # Test your setup by building the example manuscript
+   # Test your setup with modern CLI
+   rxiv --version                             # Check CLI installation
+   rxiv validate EXAMPLE_MANUSCRIPT/          # Validate example
+   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
+   
+   # Or use legacy commands
    MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker mode
    ```
 
@@ -117,10 +126,16 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
 3. **Test Your Changes**
    ```bash
    # Run tests
-   pytest                                      # Local development
-   make test RXIV_ENGINE=DOCKER               # Docker development
+   pytest                                      # Unit tests
+   nox -s tests                               # Test multiple Python versions
+   hatch run test                             # Alternative test runner
    
-   # Test with manuscripts
+   # Test with manuscripts using modern CLI
+   rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
+   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
+   rxiv pdf EXAMPLE_MANUSCRIPT/ --engine docker  # Build in Docker
+   
+   # Or use legacy commands
    MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker
    make validate                              # Add RXIV_ENGINE=DOCKER for Docker
    ```
