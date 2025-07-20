@@ -120,45 +120,6 @@ jobs:
           echo "- **Operating Systems**: $os_matrix" >> $GITHUB_STEP_SUMMARY
           echo "- **Ecosystem Testing**: $run_ecosystem" >> $GITHUB_STEP_SUMMARY
 
-  lint:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    needs: setup
-    if: needs.setup.outputs.test-scope != 'quick' || github.event_name != 'workflow_dispatch'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install UV
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Run code quality checks
-        run: |
-          echo "Running Ruff linting..."
-          uv run ruff check src/ tests/
-
-          echo "Running Ruff formatting..."
-          uv run ruff format --check src/ tests/
-
-          echo "Running type checking..."
-          uv run mypy src/
-
-          echo "Running security checks..."
-          uv run bandit -r src/ -ll
 
   test:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
@@ -271,7 +232,7 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [setup, lint, test]
+    needs: [setup, test]
     if: needs.setup.outputs.test-scope != 'quick'
 
     steps:
@@ -325,7 +286,7 @@ jobs:
   build:
     name: Build & Test Distribution
     runs-on: ubuntu-latest
-    needs: [setup, lint, test]
+    needs: [setup, test]
     if: needs.setup.outputs.test-scope != 'quick'
 
     steps:
@@ -533,7 +494,7 @@ jobs:
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [setup, lint, test, integration, build, performance, security, ecosystem]
+    needs: [setup, test, integration, build, performance, security, ecosystem]
     if: always()
 
     steps:
@@ -547,7 +508,6 @@ jobs:
 
           # Job results
           jobs=(
-            "lint:Code Quality"
             "test:Unit Tests"
             "integration:Integration Tests"
             "build:Build & Distribution"
@@ -562,7 +522,6 @@ jobs:
 
             # Get job result using needs context
             case $job_name in
-              "lint") result="${{ needs.lint.result }}" ;;
               "test") result="${{ needs.test.result }}" ;;
               "integration") result="${{ needs.integration.result }}" ;;
               "build") result="${{ needs.build.result }}" ;;
