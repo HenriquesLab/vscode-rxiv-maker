@@ -1,14 +1,10 @@
 """Main CLI entry point for rxiv-maker."""
 
 import os
-import sys
 from pathlib import Path
 
 import rich_click as click
 from rich.console import Console
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from .. import __version__
 from ..utils.update_checker import check_for_updates_async, show_update_notification

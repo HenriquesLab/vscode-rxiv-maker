@@ -5,30 +5,23 @@ This module handles template content generation and replacement operations.
 
 import os
 import re
-import sys
 from pathlib import Path
 
-# Add path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 try:
-    from converters.md2tex import extract_content_sections
-    from processors.author_processor import (
+    from ..converters.md2tex import extract_content_sections
+    from .author_processor import (
         generate_authors_and_affiliations,
         generate_corresponding_authors,
         generate_extended_author_info,
     )
 except ImportError:
     # Fallback for when run as script
-    sys.path.insert(0, str(Path(__file__).parent))
-    from author_processor import (
+    from ..converters.md2tex import extract_content_sections
+    from .author_processor import (
         generate_authors_and_affiliations,
         generate_corresponding_authors,
         generate_extended_author_info,
     )
-
-    sys.path.insert(0, str(Path(__file__).parent.parent / "converters"))
-    from md2tex import extract_content_sections
 
 
 def get_template_path():
@@ -99,7 +92,7 @@ def generate_supplementary_cover_page(yaml_metadata):
 
 def generate_supplementary_tex(output_dir, yaml_metadata=None):
     """Generate Supplementary.tex file from supplementary markdown."""
-    from converters.md2tex import convert_markdown_to_latex
+    from ..converters.md2tex import convert_markdown_to_latex
 
     supplementary_md = find_supplementary_md()
     if not supplementary_md:

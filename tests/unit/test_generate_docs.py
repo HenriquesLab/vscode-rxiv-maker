@@ -29,8 +29,10 @@ class TestGenerateModuleDocs:
     """Tests for the generate_module_docs function."""
 
     @patch("subprocess.run")
-    def test_generate_module_docs_success(self, mock_run, temp_docs_dir):
+    @patch("shutil.which")
+    def test_generate_module_docs_success(self, mock_which, mock_run, temp_docs_dir):
         """Test successful generation of module docs."""
+        mock_which.return_value = "/usr/bin/lazydocs"
         mock_run.return_value = MagicMock(returncode=0)
 
         result = generate_module_docs(temp_docs_dir, "dummy_module.py")
@@ -38,7 +40,7 @@ class TestGenerateModuleDocs:
         assert result is True
         mock_run.assert_called_once()
         cmd_args = mock_run.call_args[0][0]
-        assert "lazydocs" in cmd_args
+        assert "/usr/bin/lazydocs" in cmd_args
         assert "dummy_module.py" in cmd_args
         assert "--src-base-url" in cmd_args
 
@@ -225,7 +227,7 @@ class PartiallyDocumentedClass:
         This test creates a minimal 'main' function that directly simulates
         the failure scenario without complex mocking.
         """
-        from src.rxiv_maker.commands.generate_docs import main as original_main
+        from rxiv_maker.commands.generate_docs import main as original_main
 
         def simplified_main_for_test():
             """A simplified version of main that always simulates failures."""
@@ -242,9 +244,9 @@ class PartiallyDocumentedClass:
             return True
 
         # Replace the original main with our simplified version
-        import src.rxiv_maker.commands.generate_docs
+        import rxiv_maker.commands.generate_docs
 
-        src.rxiv_maker.commands.generate_docs.main = simplified_main_for_test
+        rxiv_maker.commands.generate_docs.main = simplified_main_for_test
 
         try:
             # Run our simplified main
@@ -254,7 +256,7 @@ class PartiallyDocumentedClass:
             assert result is False
         finally:
             # Restore the original main function
-            src.rxiv_maker.commands.generate_docs.main = original_main
+            rxiv_maker.commands.generate_docs.main = original_main
 
 
 if __name__ == "__main__":

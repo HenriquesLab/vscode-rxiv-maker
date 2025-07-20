@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Unified validation command for rxiv-maker manuscripts.
 
 This command provides a comprehensive validation system that checks:
@@ -14,36 +13,29 @@ The command produces user-friendly output with clear error messages,
 suggestions for fixes, and optional detailed statistics.
 """
 
-import argparse
 import os
-import sys
-from pathlib import Path
 from typing import Any
 
-# Add path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 try:
-    from validators.base_validator import ValidationLevel
-    from validators.citation_validator import CitationValidator
-    from validators.figure_validator import FigureValidator
-    from validators.latex_error_parser import LaTeXErrorParser
-    from validators.math_validator import MathValidator
-    from validators.reference_validator import ReferenceValidator
-    from validators.syntax_validator import SyntaxValidator
+    from ..validators.base_validator import ValidationLevel
+    from ..validators.citation_validator import CitationValidator
+    from ..validators.figure_validator import FigureValidator
+    from ..validators.latex_error_parser import LaTeXErrorParser
+    from ..validators.math_validator import MathValidator
+    from ..validators.reference_validator import ReferenceValidator
+    from ..validators.syntax_validator import SyntaxValidator
 
     VALIDATORS_AVAILABLE = True
 except ImportError:
-    # Fallback for when run as script
     try:
-        sys.path.insert(0, str(Path(__file__).parent.parent / "validators"))
-        from base_validator import ValidationLevel
-        from citation_validator import CitationValidator
-        from figure_validator import FigureValidator
-        from latex_error_parser import LaTeXErrorParser
-        from math_validator import MathValidator
-        from reference_validator import ReferenceValidator
-        from syntax_validator import SyntaxValidator
+        # Try absolute import when run as script
+        from rxiv_maker.validators.base_validator import ValidationLevel
+        from rxiv_maker.validators.citation_validator import CitationValidator
+        from rxiv_maker.validators.figure_validator import FigureValidator
+        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser
+        from rxiv_maker.validators.math_validator import MathValidator
+        from rxiv_maker.validators.reference_validator import ReferenceValidator
+        from rxiv_maker.validators.syntax_validator import SyntaxValidator
 
         VALIDATORS_AVAILABLE = True
     except ImportError:
@@ -363,73 +355,85 @@ class UnifiedValidator:
                 print(f"  {i}. {info.message}{location}")
 
 
-def main():
-    """Main entry point for unified validation command."""
-    parser = argparse.ArgumentParser(
-        description="Comprehensive manuscript validation for rxiv-maker",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s MANUSCRIPT                    # Basic validation
-  %(prog)s MANUSCRIPT --verbose          # Detailed output
-  %(prog)s MANUSCRIPT --include-info     # Include informational messages
-  %(prog)s MANUSCRIPT --no-latex         # Skip LaTeX error parsing
-  %(prog)s MANUSCRIPT --no-doi           # Skip DOI validation
-  %(prog)s MANUSCRIPT --detailed         # Full detailed report
-        """,
-    )
+def validate_manuscript(
+    manuscript_path: str,
+    verbose: bool = False,
+    include_info: bool = False,
+    check_latex: bool = True,
+    enable_doi_validation: bool = True,
+    detailed: bool = False,
+) -> bool:
+    """Validate manuscript with comprehensive checks.
 
-    parser.add_argument("manuscript_path", help="Path to the manuscript directory")
+    Args:
+        manuscript_path: Path to the manuscript directory
+        verbose: Show detailed validation progress and statistics
+        include_info: Include informational messages in output
+        check_latex: Skip LaTeX compilation error parsing
+        enable_doi_validation: Skip DOI validation against CrossRef API
+        detailed: Show detailed error report with context and suggestions
 
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Show detailed validation progress and statistics",
-    )
-
-    parser.add_argument(
-        "--include-info",
-        action="store_true",
-        help="Include informational messages in output",
-    )
-
-    parser.add_argument(
-        "--no-latex", action="store_true", help="Skip LaTeX compilation error parsing"
-    )
-
-    parser.add_argument(
-        "--detailed",
-        action="store_true",
-        help="Show detailed error report with context and suggestions",
-    )
-
-    parser.add_argument(
-        "--no-doi",
-        action="store_true",
-        help="Skip DOI validation against CrossRef API",
-    )
-
-    args = parser.parse_args()
-
+    Returns:
+        True if validation passed, False otherwise
+    """
     # Create and run validator
     validator = UnifiedValidator(
-        manuscript_path=args.manuscript_path,
-        verbose=args.verbose,
-        include_info=args.include_info,
-        check_latex=not args.no_latex,
-        enable_doi_validation=not args.no_doi,
+        manuscript_path=manuscript_path,
+        verbose=verbose,
+        include_info=include_info,
+        check_latex=check_latex,
+        enable_doi_validation=enable_doi_validation,
     )
 
     validation_passed = validator.validate_all()
 
-    if args.detailed:
+    if detailed:
         validator.print_detailed_report()
     else:
         validator.print_summary()
 
-    # Exit with appropriate code
-    sys.exit(0 if validation_passed else 1)
+    return validation_passed
+
+
+def main():
+    """Main entry point for validate command."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Validate rxiv-maker manuscript structure and content"
+    )
+    parser.add_argument(
+        "manuscript_path",
+        nargs="?",
+        default="MANUSCRIPT",
+        help="Path to manuscript directory",
+    )
+    parser.add_argument(
+        "--detailed", action="store_true", help="Show detailed validation report"
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument(
+        "--include-info", action="store_true", help="Include informational messages"
+    )
+    parser.add_argument(
+        "--check-latex", action="store_true", help="Check LaTeX compilation"
+    )
+    parser.add_argument("--no-doi", action="store_true", help="Disable DOI validation")
+
+    args = parser.parse_args()
+
+    # Run validation
+    success = validate_manuscript(
+        manuscript_path=args.manuscript_path,
+        detailed=args.detailed,
+        verbose=args.verbose,
+        include_info=args.include_info,
+        check_latex=args.check_latex,
+        enable_doi_validation=not args.no_doi,
+    )
+
+    if not success:
+        exit(1)
 
 
 if __name__ == "__main__":

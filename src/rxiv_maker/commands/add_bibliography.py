@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """Add bibliography entries from DOI to the bibliography file."""
 
-import argparse
 import logging
+import os
 import re
 import sys
 import time
@@ -10,14 +9,16 @@ from pathlib import Path
 from typing import Any
 
 import requests
+
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+
 from crossref_commons.retrieval import get_publication_as_json
 
-try:
-    from ..utils.doi_cache import DOICache
-except ImportError:
-    # Fallback for script execution
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from utils.doi_cache import DOICache
+from rxiv_maker.utils.doi_cache import DOICache
 
 logger = logging.getLogger(__name__)
 
@@ -515,29 +516,28 @@ class BibliographyAdder:
         self.bib_file.write_text(new_content, encoding="utf-8")
 
 
+# CLI integration
 def main():
-    """Main entry point for add-bibliography command."""
-    parser = argparse.ArgumentParser(
-        description="Add bibliography entries from DOI to the bibliography file"
-    )
+    """Main function for CLI integration."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Add bibliography entries from DOIs")
     parser.add_argument("manuscript_path", help="Path to manuscript directory")
-    parser.add_argument("dois", nargs="+", help="DOI(s) to add to bibliography")
+    parser.add_argument("dois", nargs="+", help="DOI strings to add")
     parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing entries"
     )
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
-    # Setup logging
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
-
-    # Create adder and process DOIs
     adder = BibliographyAdder(args.manuscript_path)
-    success = adder.add_entries(args.dois, args.overwrite)
+    success = adder.add_entries(args.dois, overwrite=args.overwrite)
 
-    sys.exit(0 if success else 1)
+    if success:
+        print("Bibliography entries added successfully!")
+    else:
+        print("Some entries could not be added.")
+        exit(1)
 
 
 if __name__ == "__main__":

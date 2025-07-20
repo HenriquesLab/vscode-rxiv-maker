@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Bibliography fixing tool that attempts to find and correct citation information.
 
 This script analyzes bibliography validation issues and attempts to automatically
@@ -6,8 +5,8 @@ fix them by searching for publications using CrossRef API based on titles,
 authors, and other available metadata.
 """
 
-import argparse
 import logging
+import os
 import re
 import sys
 import time
@@ -17,6 +16,12 @@ from typing import Any
 
 import requests
 
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+
 try:
     from crossref_commons.retrieval import get_publication_as_json
 except ImportError:
@@ -24,16 +29,8 @@ except ImportError:
     print("Install with: pip install crossref-commons")
     sys.exit(1)
 
-try:
-    from ..utils.doi_cache import DOICache
-    from ..validators.doi_validator import DOIValidator
-except ImportError:
-    # Fallback for script execution
-    import os
-
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from utils.doi_cache import DOICache
-    from validators.doi_validator import DOIValidator
+from rxiv_maker.utils.doi_cache import DOICache
+from rxiv_maker.validators.doi_validator import DOIValidator
 
 logger = logging.getLogger(__name__)
 
@@ -592,21 +589,30 @@ class BibliographyFixer:
         return success_count
 
 
-def main():
-    """Main entry point for the bibliography fixer."""
+def main() -> int:
+    """Main entry point for the fix bibliography command.
+
+    Returns:
+        0 for success, 1 for failure
+    """
+    import argparse
+
     parser = argparse.ArgumentParser(
-        description="Automatically fix bibliography issues by searching CrossRef"
+        description="Fix bibliography issues automatically"
     )
-    parser.add_argument("manuscript_path", help="Path to manuscript directory")
+    parser.add_argument(
+        "manuscript_path",
+        help="Path to the manuscript directory",
+        default=".",
+        nargs="?",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be fixed without making changes",
     )
     parser.add_argument(
-        "--no-backup",
-        action="store_true",
-        help="Don't create backup before modifying bibliography",
+        "--no-backup", action="store_true", help="Don't create backup files"
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose logging"
@@ -614,44 +620,34 @@ def main():
 
     args = parser.parse_args()
 
-    # Set up logging
+    # Configure logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=log_level, format="%(levelname)s: %(message)s")
 
-    # Create fixer and run
-    fixer = BibliographyFixer(args.manuscript_path, backup=not args.no_backup)
-
     try:
-        result = fixer.fix_bibliography(dry_run=args.dry_run)
+        fixer = BibliographyFixer(
+            manuscript_path=args.manuscript_path, backup=not args.no_backup
+        )
 
-        if result["success"]:
-            if args.dry_run:
-                print(
-                    f"\n✅ Dry run completed. Found {result.get('potential_fixes', 0)} potential fixes."
-                )
+        results = fixer.fix_bibliography(dry_run=args.dry_run)
+
+        if results["success"]:
+            fixes_applied = results.get("fixes_applied", 0)
+            if fixes_applied > 0:
+                print(f"✅ Successfully applied {fixes_applied} bibliography fixes")
             else:
-                fixed_count = result.get("fixed_count", 0)
-                if fixed_count > 0:
-                    print(
-                        f"\n✅ Successfully fixed {fixed_count} bibliography entries."
-                    )
-                    if result.get("backup_created"):
-                        print("📄 Backup created: 03_REFERENCES.bib.backup")
-                else:
-                    print(
-                        "\n📝 No fixes were applied. All entries either had no issues or couldn't be automatically fixed."
-                    )
+                print("✅ No fixes were needed")
+            return 0
         else:
-            print(f"\n❌ Error: {result.get('error', 'Unknown error')}")
-            sys.exit(1)
+            print(
+                f"❌ Failed to fix bibliography: {results.get('error', 'Unknown error')}"
+            )
+            return 1
 
-    except KeyboardInterrupt:
-        print("\n\n⏹️  Operation cancelled by user")
-        sys.exit(1)
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        sys.exit(1)
+        print(f"❌ Error fixing bibliography: {e}")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

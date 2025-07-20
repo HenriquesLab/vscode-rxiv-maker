@@ -1,0 +1,89 @@
+version: 1.0.{build}
+
+# AppVeyor configuration for testing Homebrew installation
+image: macos-monterey
+
+# Environment variables
+environment:
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+  HOMEBREW_NO_ANALYTICS: 1
+
+# Install phase
+install:
+  # Fix Homebrew configuration issues in CI
+  - brew untap homebrew/homebrew-cask-versions || true
+  - brew cleanup || true
+
+  # Update Homebrew
+  - brew update
+
+  # Install system dependencies first
+  - brew install --cask basictex
+  - brew install python@3.11 node@20 r make
+
+  # Install from local formula with test-pypi option
+  - brew install --build-from-source ./homebrew-rxiv-maker/Formula/rxiv-maker.rb --with-test-pypi
+
+  # Verify installation
+  - which rxiv
+  - rxiv --version
+
+# Build phase (tests)
+build_script:
+  # Test basic functionality
+  - echo "Testing basic rxiv functionality..."
+  - rxiv --help
+
+  # Test check-installation command
+  - echo "Testing installation verification..."
+  - rxiv check-installation --json
+
+  # Test initialization
+  - echo "Testing manuscript initialization..."
+  - rxiv init test-manuscript
+  - ls -la test-manuscript/
+
+  # Test validation
+  - echo "Testing manuscript validation..."
+  - cd test-manuscript
+  - rxiv validate --detailed
+
+  # Test that no automatic system dependency installation occurred
+  - echo "Verifying no automatic system dependencies were installed during pip install..."
+  - python3 -c "import sys; print('Python path:', sys.path)"
+
+# Test phase
+test_script:
+  # Test that the package was installed from test-pypi
+  - echo "Verifying package installation source..."
+  - pip show rxiv-maker
+
+  # Test that CLI commands work
+  - echo "Testing CLI commands..."
+  - rxiv setup --check-deps-only
+  - rxiv config show
+
+  # Test that verification logic works
+  - echo "Testing verification logic..."
+  - rxiv check-installation --detailed
+
+# Artifacts to collect
+artifacts:
+  - path: test-manuscript/
+    name: test-manuscript-output
+    type: zip
+
+# Notifications
+notifications:
+  - provider: Email
+    to:
+      - rxiv.maker@gmail.com
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: true
+
+# Cache configuration
+cache:
+  - /usr/local/Homebrew/Library/Taps/
+  - /usr/local/Homebrew/Library/Homebrew/

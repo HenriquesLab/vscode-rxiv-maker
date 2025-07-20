@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Environment setup command for Rxiv-Maker.
 
 This script handles cross-platform environment setup including:
@@ -9,16 +8,19 @@ This script handles cross-platform environment setup including:
 - System dependency checking
 """
 
-import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
 
-from utils.dependency_checker import DependencyChecker
-from utils.platform import platform_detector
+from rxiv_maker.utils.dependency_checker import DependencyChecker
+from rxiv_maker.utils.platform import platform_detector
 
 
 class EnvironmentSetup:
@@ -299,62 +301,37 @@ class EnvironmentSetup:
 
 
 def main():
-    """Main entry point for environment setup."""
-    parser = argparse.ArgumentParser(description="Set up Rxiv-Maker Python environment")
+    """Main entry point for setup environment command."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Set up development environment for rxiv-maker"
+    )
     parser.add_argument(
         "--reinstall",
         action="store_true",
-        help="Remove existing virtual environment and reinstall",
+        help="Reinstall dependencies (removes .venv and creates new one)",
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show verbose output"
+        "--check-deps-only", action="store_true", help="Only check system dependencies"
     )
-    parser.add_argument(
-        "--no-check-system-deps",
-        action="store_true",
-        help="Skip system dependency checking (not recommended)",
-    )
-    parser.add_argument(
-        "--check-deps-only",
-        action="store_true",
-        help="Only check system dependencies, don't set up Python environment",
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
 
-    try:
-        # Handle check-deps-only mode
-        if args.check_deps_only:
-            from utils.dependency_checker import print_dependency_report
+    # Initialize setup manager
+    setup_manager = EnvironmentSetup(
+        reinstall=args.reinstall,
+        check_system_deps=not args.check_deps_only,
+        verbose=args.verbose,
+    )
 
-            print_dependency_report(verbose=args.verbose)
-            return 0
+    # Run setup
+    success = setup_manager.run_setup()
 
-        setup = EnvironmentSetup(
-            reinstall=args.reinstall,
-            verbose=args.verbose,
-            check_system_deps=not args.no_check_system_deps,
-        )
-
-        success = setup.run_setup()
-
-        if success:
-            return 0
-        else:
-            setup.log("Setup failed!", "ERROR")
-            return 1
-
-    except KeyboardInterrupt:
-        print("\n❌ Setup interrupted by user")
-        return 1
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        if args.verbose:
-            import traceback
-
-            traceback.print_exc()
-        return 1
+    if not success:
+        exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

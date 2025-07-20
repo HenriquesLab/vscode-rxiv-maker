@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
@@ -41,7 +41,7 @@ dependencies = [
     "pytest>=7.4.4",
     "ruff>=0.12.2",
     "pre-commit>=4.2.0",
-    "folder2md4llms>=0.3.0",
+    "folder2md4llms>=0.4.28",
     "click>=8.0.0",
     "rich>=13.0.0",
     "rich-click>=1.6.0",
@@ -64,10 +64,78 @@ dev = [
     "nbstripout>=0.7.1",
     "pre-commit>=4.0.0",
     "lazydocs>=0.4.8",
+    "pytest-timeout>=2.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-sugar>=0.9.7",
+    "pytest-benchmark>=4.0.0",
+    "pytest-env>=1.0.0",
+    "pytest-snapshot>=0.9.0",
+    "pytest-datadir>=1.4.0",
+    "pytest-clarity>=1.0.0",
 ]
 minimal = []  # Same as base dependencies
 full = []     # Same as base dependencies (system deps handled by installer)
 system-deps = []  # Placeholder for system dependency installation
+
+# UV dependency groups configuration
+[dependency-groups]
+dev = [
+    "pytest>=7.4,<8.0",
+    "pytest-xdist>=3.8.0",
+    "py>=1.11.0",
+    "ruff>=0.8.0",
+    "mypy>=1.0",
+    "types-PyYAML>=6.0.0",
+    "nox>=2023.0.0",
+    "pytest-cov>=4.0",
+    "coverage[toml]>=7.0",
+    "pytest-notebook>=0.10.0",
+    "nbstripout>=0.7.1",
+    "pre-commit>=4.0.0",
+    "lazydocs>=0.4.8",
+    "hatch>=1.14.1",
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.20.0",
+    "twine>=6.1.0",
+    "pytest-timeout>=2.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-sugar>=0.9.7",
+    "pytest-benchmark>=4.0.0",
+    "pytest-env>=1.0.0",
+    "pytest-snapshot>=0.9.0",
+    "pytest-datadir>=1.4.0",
+    "pytest-clarity>=1.0.0",
+]
+
+# Configure rye to use uv for dependency resolution
+[tool.rye]
+managed = false
+
+# UV configuration for dependency management
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.4.4",
+    "pytest-xdist>=3.8.0",
+    "pytest-benchmark>=5.0.1",
+    "pytest-sugar>=1.0.0",
+    "pytest-timeout>=2.4.0",
+    "pytest-env>=1.1.3",
+    "pytest-mock>=3.14.1",
+    "pytest-snapshot>=0.9.0",
+    "pytest-datadir>=1.4.0",
+    "pytest-clarity>=1.0.1",
+    "pytest-cov>=6.2.1",
+    "pytest-notebook>=0.10.0",
+    "nox>=2024.10.9",
+    "mypy>=1.17.0",
+    "ruff>=0.12.2",
+    "pre-commit>=4.2.0",
+    "coverage>=7.9.2",
+    "types-requests>=2.32.4.20250611",
+    "types-pyyaml>=6.0.12.20250516",
+    "types-python-dateutil>=2.9.0.20250708",
+]
 
 # Ruff configuration (replaces black, isort, flake8, autoflake, docformatter)
 [tool.ruff]
@@ -164,7 +232,9 @@ python_functions = ["test_*"]
 addopts = [
     "-v",
     "--tb=short",
-    "--strict-markers"
+    "--strict-markers",
+    "-n",
+    "auto"
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -175,7 +245,6 @@ markers = [
     "build_manager: marks tests as build manager-related tests",
     "pdf_validation: marks tests as PDF validation-related tests",
     "cli: marks tests as CLI-related tests",
-    "slow: marks tests as slow tests that may be skipped in CI",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
@@ -217,7 +286,6 @@ dependencies = [
 [tool.hatch.envs.docs.scripts]
 build = "mkdocs build"
 serve = "mkdocs serve"
-
 # Console scripts entry point
 [project.scripts]
 rxiv = "rxiv_maker.cli:main"
@@ -303,7 +371,19 @@ textColor = "#ffffff"
 fontFamily = "Arial, sans-serif"
 fontSize = "16px"
 
-[dependency-groups]
-dev = [
-    "hatch>=1.14.1",
+# Hatchling build configuration
+[tool.hatch.build.targets.wheel]
+packages = ["src/rxiv_maker"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/tex" = "rxiv_maker/tex"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/pyproject.toml"
 ]

@@ -6,17 +6,14 @@ for Rxiv-Maker functionality, including LaTeX, Make, Node.js, and R.
 
 import shutil
 import subprocess
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
 # Handle imports when run as script or module
 try:
     from .platform import platform_detector
 except ImportError:
-    # Add parent directory to path for standalone execution
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from utils.platform import platform_detector
+    # Fallback for standalone execution
+    from .platform import platform_detector
 
 
 @dataclass

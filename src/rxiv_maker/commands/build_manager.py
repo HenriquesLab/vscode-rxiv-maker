@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build manager for Rxiv-Maker.
 
 This script orchestrates the complete build process including:
@@ -8,25 +7,13 @@ This script orchestrates the complete build process including:
 - PDF output management
 """
 
-import argparse
 import os
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 
-try:
-    # Relative imports for when run as module
-    from ..utils.figure_checksum import get_figure_checksum_manager
-    from ..utils.platform import platform_detector
-except ImportError:
-    # Fallback for when run as script
-    import sys
-    from pathlib import Path
-
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from utils.figure_checksum import get_figure_checksum_manager
-    from utils.platform import platform_detector
+from ..utils.figure_checksum import get_figure_checksum_manager
+from ..utils.platform import platform_detector
 
 
 # Import FigureGenerator dynamically to avoid import issues
@@ -219,38 +206,38 @@ class BuildManager:
         self.log("Running manuscript validation...", "STEP")
 
         try:
-            # Use subprocess to run validation to avoid import issues
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/validate.py",
-                self.manuscript_path,
-                "--detailed",
-            ]
+            # Import and run validation directly instead of subprocess
+            from .validate import validate_manuscript
 
-            if self.verbose:
-                cmd.append("--verbose")
+            # Set up environment and working directory
+            original_cwd = os.getcwd()
+            manuscript_path = Path(self.manuscript_path)
+            manuscript_abs_path = str(manuscript_path.resolve())
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            try:
+                # Change to manuscript directory for relative path resolution
+                os.chdir(manuscript_path.parent)
 
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
-            )
+                # Run validation with proper arguments
+                result = validate_manuscript(
+                    manuscript_path=manuscript_abs_path,
+                    verbose=self.verbose,
+                    include_info=False,
+                    check_latex=True,
+                    enable_doi_validation=True,
+                    detailed=True,
+                )
 
-            if result.returncode == 0:
-                self.log("Validation completed successfully")
-                if result.stdout:
-                    print(result.stdout)
-                return True
-            else:
-                self.log("Validation failed", "ERROR")
-                # Always show validation output for debugging
-                if result.stdout:
-                    print(result.stdout)
-                if result.stderr:
-                    print(result.stderr)
-                return False
+                if result:
+                    self.log("Validation completed successfully")
+                    return True
+                else:
+                    self.log("Validation failed", "ERROR")
+                    return False
+
+            finally:
+                # Always restore original working directory
+                os.chdir(original_cwd)
 
         except Exception as e:
             self.log(f"Validation error: {e}", "ERROR")
@@ -485,39 +472,50 @@ class BuildManager:
         self.log("Generating LaTeX files...", "STEP")
 
         try:
-            # Run the main generation script
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/generate_preprint.py",
-                "--output-dir",
-                str(self.output_dir),
-            ]
+            # Import and call the generate_preprint function directly
+            from ..processors.yaml_processor import extract_yaml_metadata
+            from .generate_preprint import generate_preprint
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Find the manuscript file and extract metadata
+            manuscript_md = None
+            for md_file in ["01_MAIN.md", "MAIN.md", "manuscript.md"]:
+                md_path = Path(self.manuscript_path) / md_file
+                if md_path.exists():
+                    manuscript_md = md_path
+                    break
 
-            # Set environment variables
-            env = os.environ.copy()
-            env["MANUSCRIPT_PATH"] = self.manuscript_path
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                encoding="utf-8",
-                errors="replace",
-            )
-
-            if result.returncode == 0:
-                self.log("LaTeX files generated successfully")
-                if self.verbose and result.stdout:
-                    print(result.stdout)
-                return True
-            else:
-                self.log(f"LaTeX generation failed: {result.stderr}", "ERROR")
+            if not manuscript_md:
+                self.log("Could not find manuscript markdown file", "ERROR")
                 return False
+
+            # Extract YAML metadata from the manuscript file
+            yaml_metadata = extract_yaml_metadata(str(manuscript_md))
+
+            # Set the MANUSCRIPT_PATH environment variable so generate_preprint can find files
+            original_env = os.environ.get("MANUSCRIPT_PATH")
+            os.environ["MANUSCRIPT_PATH"] = os.path.basename(self.manuscript_path)
+
+            # Change to the parent directory so the relative path works
+            original_cwd = os.getcwd()
+            os.chdir(Path(self.manuscript_path).parent)
+
+            try:
+                # Generate the preprint
+                result = generate_preprint(str(self.output_dir), yaml_metadata)
+
+                if result:
+                    self.log("LaTeX files generated successfully")
+                    return True
+                else:
+                    self.log("LaTeX generation failed", "ERROR")
+                    return False
+            finally:
+                # Restore environment and working directory
+                os.chdir(original_cwd)
+                if original_env is not None:
+                    os.environ["MANUSCRIPT_PATH"] = original_env
+                else:
+                    os.environ.pop("MANUSCRIPT_PATH", None)
 
         except Exception as e:
             self.log(f"Error generating LaTeX files: {e}", "ERROR")
@@ -830,14 +828,16 @@ class BuildManager:
 
 
 def main():
-    """Main entry point for build manager."""
-    parser = argparse.ArgumentParser(description="Build manager for Rxiv-Maker")
-    parser.add_argument(
-        "--manuscript-path", default=None, help="Path to manuscript directory"
+    """Main entry point for build manager command."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Build manager for Rxiv-Maker manuscript compilation"
     )
     parser.add_argument(
-        "--output-dir", default="output", help="Output directory for generated files"
+        "--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory"
     )
+    parser.add_argument("--output-dir", default="output", help="Output directory")
     parser.add_argument(
         "--force-figures", action="store_true", help="Force regeneration of all figures"
     )
@@ -845,68 +845,30 @@ def main():
         "--skip-validation", action="store_true", help="Skip manuscript validation"
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
+        "--skip-pdf-validation", action="store_true", help="Skip PDF validation"
     )
-    parser.add_argument(
-        "--track-changes", metavar="TAG", help="Track changes against specified git tag"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--track-changes", help="Git tag to track changes against")
 
     args = parser.parse_args()
 
-    try:
-        # Handle track changes mode
-        if args.track_changes:
-            try:
-                from commands.track_changes import TrackChangesManager
-            except ImportError:
-                # Fallback import
-                sys.path.insert(0, str(Path(__file__).parent))
-                from track_changes import TrackChangesManager
+    # Initialize build manager
+    build_manager = BuildManager(
+        manuscript_path=args.manuscript_path,
+        output_dir=args.output_dir,
+        force_figures=args.force_figures,
+        skip_validation=args.skip_validation,
+        skip_pdf_validation=args.skip_pdf_validation,
+        verbose=args.verbose,
+        track_changes_tag=args.track_changes,
+    )
 
-            track_changes = TrackChangesManager(
-                manuscript_path=args.manuscript_path
-                or os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT"),
-                output_dir=args.output_dir,
-                git_tag=args.track_changes,
-                verbose=args.verbose,
-            )
+    # Run the build process
+    success = build_manager.run()
 
-            success = track_changes.generate_change_tracked_pdf()
-
-            if success:
-                return 0
-            else:
-                print("❌ Change tracking failed!")
-                return 1
-
-        # Normal build mode
-        build_manager = BuildManager(
-            manuscript_path=args.manuscript_path,
-            output_dir=args.output_dir,
-            force_figures=args.force_figures,
-            skip_validation=args.skip_validation,
-            verbose=args.verbose,
-        )
-
-        success = build_manager.run_full_build()
-
-        if success:
-            return 0
-        else:
-            print("❌ Build failed!")
-            return 1
-
-    except KeyboardInterrupt:
-        print("\n❌ Build interrupted by user")
-        return 1
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        if args.verbose:
-            import traceback
-
-            traceback.print_exc()
-        return 1
+    if not success:
+        exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

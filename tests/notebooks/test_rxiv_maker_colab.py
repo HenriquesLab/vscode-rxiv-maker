@@ -87,11 +87,10 @@ def test_notebook_has_required_sections():
 
     # Check for essential sections
     required_sections = [
-        "Setup and Installation",
+        "Docker Setup and Installation",
         "Clone Rxiv-Maker Repository",
-        "Generate Figures",
-        "Generate LaTeX Article",
-        "Compile LaTeX to PDF",
+        "Generate PDF Article",
+        "Preview and Download",
         "Troubleshooting",
     ]
 

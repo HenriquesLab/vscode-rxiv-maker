@@ -43,7 +43,7 @@ def test_full_documentation_generation():
 
         # Copy a small subset of files for testing
         sample_files = [
-            "utils.py",
+            "utils/__init__.py",
             "commands/generate_docs.py",
             "processors/yaml_processor.py",
         ]

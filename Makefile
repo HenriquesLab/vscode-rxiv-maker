@@ -124,36 +124,36 @@ all: pdf
 # Install Python dependencies (cross-platform)
 .PHONY: setup
 setup:
-	@$(PYTHON_CMD) -m pip install -e . || $(PYTHON_CMD) src/rxiv_maker/commands/setup_environment.py
+	@$(PYTHON_CMD) -m pip install -e . || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment
 
 # Reinstall Python dependencies (removes .venv and creates new one) - cross-platform
 .PHONY: setup-reinstall
 setup-reinstall:
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || $(PYTHON_CMD) src/rxiv_maker/commands/setup_environment.py --reinstall
+	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --reinstall
 
 # Check system dependencies
 .PHONY: check-deps
 check-deps:
 	@echo "🔍 Checking system dependencies..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --check-deps-only || $(PYTHON_CMD) src/rxiv_maker/commands/setup_environment.py --check-deps-only
+	@$(PYTHON_CMD) -m rxiv_maker.cli setup --check-deps-only || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --check-deps-only
 
 # Check system dependencies (verbose)
 .PHONY: check-deps-verbose
 check-deps-verbose:
 	@echo "🔍 Checking system dependencies (verbose)..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --check-deps-only --verbose || $(PYTHON_CMD) src/rxiv_maker/commands/setup_environment.py --check-deps-only --verbose
+	@$(PYTHON_CMD) -m rxiv_maker.cli setup --check-deps-only --verbose || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --check-deps-only --verbose
 
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
 pdf:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures) || \
-	 MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/rxiv_maker/commands/build_manager.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --verbose $(if $(FORCE_FIGURES),--force-figures)
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --verbose $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF without validation (for debugging)
 .PHONY: pdf-no-validate
 pdf-no-validate:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures) || \
-	 MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/rxiv_maker/commands/build_manager.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures)
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF with change tracking against a git tag
 .PHONY: pdf-track-changes
@@ -163,7 +163,7 @@ ifndef TAG
 endif
 	@echo "🔍 Generating PDF with change tracking against tag: $(TAG)"
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli track-changes "$(MANUSCRIPT_PATH)" $(TAG) --output-dir $(OUTPUT_DIR) --verbose || \
-	 MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/rxiv_maker/commands/build_manager.py \
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager \
 		--manuscript-path "$(MANUSCRIPT_PATH)" \
 		--output-dir $(OUTPUT_DIR) \
 		--track-changes $(TAG) \
@@ -174,11 +174,11 @@ endif
 arxiv: pdf
 	@echo "Preparing arXiv submission package..."
 	@$(PYTHON_CMD) -m rxiv_maker.cli arxiv "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) || \
-	 $(PYTHON_CMD) src/rxiv_maker/commands/prepare_arxiv.py --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --zip
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.prepare_arxiv --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --zip
 	@echo "✅ arXiv package ready: $(OUTPUT_DIR)/for_arxiv.zip"
 	@echo "Copying arXiv package to manuscript directory with naming convention..."
-	@YEAR=$$($(PYTHON_CMD) -c "import yaml; import sys; sys.path.insert(0, 'src/py'); config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \
-	FIRST_AUTHOR=$$($(PYTHON_CMD) -c "import yaml; import sys; sys.path.insert(0, 'src/py'); config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); authors = config.get('authors', []); name = authors[0]['name'] if authors and len(authors) > 0 else 'Unknown'; print(name.split()[-1] if ' ' in name else name)"); \
+	@YEAR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \
+	FIRST_AUTHOR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); authors = config.get('authors', []); name = authors[0]['name'] if authors and len(authors) > 0 else 'Unknown'; print(name.split()[-1] if ' ' in name else name)"); \
 	ARXIV_FILENAME="$${YEAR}__$${FIRST_AUTHOR}_et_al__for_arxiv.zip"; \
 	cp $(OUTPUT_DIR)/for_arxiv.zip $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}; \
 	echo "✅ arXiv package copied to: $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}"
@@ -194,7 +194,7 @@ validate:
 	@echo "🔍 Running manuscript validation..."
 	@# Use command line variable or make variable with detailed and verbose output
 	@$(PYTHON_CMD) -m rxiv_maker.cli validate "$(MANUSCRIPT_PATH)" --detailed || \
-	 $(PYTHON_CMD) src/rxiv_maker/commands/validate.py "$(MANUSCRIPT_PATH)" --detailed || { \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.validate "$(MANUSCRIPT_PATH)" --detailed || { \
 		echo ""; \
 		echo "❌ Validation failed! Please fix the issues above before building PDF."; \
 		echo "💡 Run 'make validate --help' for validation options"; \
@@ -208,7 +208,7 @@ validate:
 _validate_quiet:
 	@echo "🔍 Validating manuscript: $(MANUSCRIPT_PATH)"
 	@$(PYTHON_CMD) -m rxiv_maker.cli validate "$(MANUSCRIPT_PATH)" || \
-	 $(PYTHON_CMD) src/rxiv_maker/commands/validate.py "$(MANUSCRIPT_PATH)" || { \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.validate "$(MANUSCRIPT_PATH)" || { \
 		echo ""; \
 		echo "❌ Validation failed! Please fix the issues above before building PDF."; \
 		echo "💡 Run 'make validate' for detailed error analysis"; \
@@ -269,7 +269,8 @@ check: lint typecheck
 .PHONY: fix-bibliography
 fix-bibliography:
 	@echo "🔧 Attempting to fix bibliography issues..."
-	@$(PYTHON_CMD) src/py/commands/fix_bibliography.py "$(MANUSCRIPT_PATH)" || { \
+	@$(PYTHON_CMD) -m rxiv_maker.cli bibliography fix "$(MANUSCRIPT_PATH)" || \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)" || { \
 		echo ""; \
 		echo "❌ Bibliography fixing failed!"; \
 		echo "💡 Run with --dry-run to see potential fixes first"; \
@@ -281,7 +282,8 @@ fix-bibliography:
 .PHONY: fix-bibliography-dry-run
 fix-bibliography-dry-run:
 	@echo "🔍 Checking potential bibliography fixes..."
-	@$(PYTHON_CMD) src/py/commands/fix_bibliography.py "$(MANUSCRIPT_PATH)" --dry-run
+	@$(PYTHON_CMD) -m rxiv_maker.cli bibliography fix "$(MANUSCRIPT_PATH)" --dry-run || \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)" --dry-run
 
 # Add bibliography entries from DOI
 .PHONY: add-bibliography
@@ -300,7 +302,8 @@ add-bibliography:
 		exit 1; \
 	fi; \
 	echo "📚 Adding bibliography entries from DOI(s):$$DOI_ARGS"; \
-	$(PYTHON_CMD) src/py/commands/add_bibliography.py "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose); \
+	$(PYTHON_CMD) -m rxiv_maker.cli bibliography add "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose) || \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.add_bibliography "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose); \
 	exit 0
 
 # Allow DOI patterns as pseudo-targets
@@ -321,34 +324,37 @@ add-bibliography:
 .PHONY: clean
 clean:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli clean "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) || \
-	 MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/rxiv_maker/commands/cleanup.py --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR)
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR)
 
 # Clean only output directory
 .PHONY: clean-output
 clean-output:
 	@$(PYTHON_CMD) -m rxiv_maker.cli clean --output-only --output-dir $(OUTPUT_DIR) || \
-	 $(PYTHON_CMD) src/rxiv_maker/commands/cleanup.py --output-only --output-dir $(OUTPUT_DIR)
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --output-only --output-dir $(OUTPUT_DIR)
 
 # Clean only generated figures
 .PHONY: clean-figures
 clean-figures:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli clean "$(MANUSCRIPT_PATH)" --figures-only || \
-	 MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/rxiv_maker/commands/cleanup.py --figures-only --manuscript-path "$(MANUSCRIPT_PATH)"
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --figures-only --manuscript-path "$(MANUSCRIPT_PATH)"
 
 # Clean only arXiv files
 .PHONY: clean-arxiv
 clean-arxiv:
-	@$(PYTHON_CMD) src/py/commands/cleanup.py --arxiv-only
+	@$(PYTHON_CMD) -m rxiv_maker.cli clean --arxiv-only || \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --arxiv-only
 
 # Clean only temporary files
 .PHONY: clean-temp
 clean-temp:
-	@$(PYTHON_CMD) src/py/commands/cleanup.py --temp-only
+	@$(PYTHON_CMD) -m rxiv_maker.cli clean --temp-only || \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --temp-only
 
 # Clean only cache files
 .PHONY: clean-cache
 clean-cache:
-	@$(PYTHON_CMD) src/py/commands/cleanup.py --cache-only
+	@$(PYTHON_CMD) -m rxiv_maker.cli clean --cache-only || \
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --cache-only
 
 # ======================================================================
 # 🐳 DOCKER ENGINE MODE
@@ -360,7 +366,7 @@ clean-cache:
 # Show help
 .PHONY: help
 help:
-	@VERSION=$$($(PYTHON_CMD) -c "import sys; sys.path.insert(0, 'src/rxiv_maker'); from src.rxiv_maker import __version__; print(__version__)" 2>/dev/null || echo "unknown"); \
+	@VERSION=$$(PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -c "from rxiv_maker import __version__; print(__version__)" 2>/dev/null || echo "unknown"); \
 	echo "Rxiv-Maker v$$VERSION ($(DETECTED_OS))"; \
 	echo ""; \
 	echo "Essential Commands:"; \

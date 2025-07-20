@@ -1,19 +1,23 @@
-#!/usr/bin/env python3
 """Word count analysis command for Rxiv-Maker.
 
 This module provides word count analysis functionality that can be run independently
 after manuscript generation to provide statistics about the document.
 """
 
-import argparse
+import os
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from converters.md2tex import extract_content_sections
-from utils import find_manuscript_md
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from rxiv_maker.converters.md2tex import extract_content_sections
+    from rxiv_maker.utils import find_manuscript_md
+else:
+    from ..converters.md2tex import extract_content_sections
+    from ..utils import find_manuscript_md
 
 
 def count_words_in_text(text):
@@ -94,23 +98,19 @@ def analyze_section_word_counts(content_sections):
     print("=" * 50)
 
 
-def main():
-    """Main function to analyze word counts from manuscript markdown."""
-    parser = argparse.ArgumentParser(
-        description="Analyze word counts in manuscript sections"
-    )
-    parser.add_argument(
-        "--manuscript-path",
-        "-m",
-        help="Path to manuscript markdown file (auto-detected if not provided)",
-    )
+def analyze_manuscript_word_count(manuscript_path: str = None) -> int:
+    """Analyze word counts from manuscript markdown.
 
-    args = parser.parse_args()
+    Args:
+        manuscript_path: Path to manuscript markdown file (auto-detected if not provided)
 
+    Returns:
+        0 if successful, 1 if error
+    """
     try:
         # Find the manuscript markdown file
-        if args.manuscript_path:
-            manuscript_md = Path(args.manuscript_path)
+        if manuscript_path:
+            manuscript_md = Path(manuscript_path)
             if not manuscript_md.exists():
                 print(f"Error: Manuscript file not found: {manuscript_md}")
                 return 1
@@ -138,4 +138,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(analyze_manuscript_word_count())

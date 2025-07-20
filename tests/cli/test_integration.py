@@ -50,13 +50,13 @@ class TestCLIIntegration:
 
             # Test build command (mocked)
             with patch(
-                "rxiv_maker.commands.build_manager.BuildManager"
+                "rxiv_maker.cli.commands.build.BuildManager"
             ) as mock_build_manager:
-                mock_build_manager.return_value.build.return_value = True
+                mock_build_manager.return_value.run_full_build.return_value = True
 
                 result = self.runner.invoke(
                     main,
-                    ["build", str(manuscript_dir)],
+                    ["pdf", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
                 )
 
@@ -266,16 +266,16 @@ authors:
         # Test with nonexistent manuscript
         result = self.runner.invoke(
             main,
-            ["build", "/nonexistent/path"],
+            ["pdf", "/nonexistent/path"],
             obj={"verbose": False, "engine": "local"},
         )
-        assert result.exit_code == 1
+        assert result.exit_code == 2  # Click parameter validation error
         assert "does not exist" in result.output
 
         # Test with invalid engine
         result = self.runner.invoke(
             main,
-            ["--engine", "invalid", "build"],
+            ["--engine", "invalid", "pdf"],
             obj={"verbose": False, "engine": "local"},
         )
         assert result.exit_code != 0

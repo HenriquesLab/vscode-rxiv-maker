@@ -216,3 +216,116 @@ def is_unix_like() -> bool:
 def run_platform_command(cmd: str, **kwargs) -> subprocess.CompletedProcess:
     """Run a command with platform-appropriate settings."""
     return platform_detector.run_command(cmd, **kwargs)
+
+
+def safe_print(
+    message: str, success_symbol: str = "✅", fallback_symbol: str = "[OK]"
+) -> None:
+    """Print a message with cross-platform compatible symbols.
+
+    Args:
+        message: The message to print
+        success_symbol: Unicode symbol to use on capable terminals
+        fallback_symbol: ASCII fallback symbol
+    """
+    import sys
+
+    # Try to use Unicode symbols on capable terminals
+    if hasattr(sys.stdout, "encoding") and sys.stdout.encoding:
+        try:
+            # Test if we can encode the success symbol
+            success_symbol.encode(sys.stdout.encoding)
+            print(f"{success_symbol} {message}")
+        except (UnicodeEncodeError, LookupError):
+            # Fall back to ASCII
+            print(f"{fallback_symbol} {message}")
+    else:
+        # Default to ASCII fallback
+        print(f"{fallback_symbol} {message}")
+
+
+def safe_console_print(
+    console, message: str, style: str | None = None, **kwargs
+) -> None:
+    """Print a message using Rich console with cross-platform Unicode fallback.
+
+    Args:
+        console: Rich console instance
+        message: The message to print
+        style: Rich style to apply
+        **kwargs: Additional arguments to pass to console.print
+    """
+    try:
+        # Try Rich console first
+        console.print(message, style=style, **kwargs)
+    except UnicodeEncodeError:
+        # Try without emoji/unicode characters
+        ascii_message = _convert_to_ascii(message)
+        try:
+            console.print(ascii_message, style=style, **kwargs)
+        except UnicodeEncodeError:
+            # Final fallback to plain print
+            print(ascii_message)
+
+
+def _convert_to_ascii(message: str) -> str:
+    """Convert Unicode emoji and symbols to ASCII equivalents.
+
+    Args:
+        message: The message to convert
+
+    Returns:
+        ASCII-safe version of the message
+    """
+    # Common emoji/symbol replacements
+    replacements = {
+        "🔍": "[SEARCH]",
+        "📦": "[PACKAGE]",
+        "✅": "[OK]",
+        "❌": "[ERROR]",
+        "⚠️": "[WARNING]",
+        "📁": "[FOLDER]",
+        "🐍": "[PYTHON]",
+        "📊": "[STATS]",
+        "🧪": "[TEST]",
+        "🐳": "[DOCKER]",
+        "🍺": "[HOMEBREW]",
+        "🪣": "[SCOOP]",
+        "🎉": "[SUCCESS]",
+        "🔗": "[LINK]",
+        "📥": "[DOWNLOAD]",
+        "📄": "[PDF]",
+        "🔒": "[SECURE]",
+        "→": "->",
+        "←": "<-",
+        "↑": "^",
+        "↓": "v",
+        "⏭️": "[SKIP]",
+        "⏯️": "[PAUSE]",
+        "⏹️": "[STOP]",
+        "🔧": "[CONFIG]",
+        "🧹": "[CLEAN]",
+        "📝": "[NOTE]",
+        "🚀": "[LAUNCH]",
+        "🔥": "[HOT]",
+        "💡": "[IDEA]",
+        "⭐": "[STAR]",
+        "🎯": "[TARGET]",
+        "🎪": "[CIRCUS]",
+        "🎨": "[ART]",
+        "🌟": "[STAR]",
+        "💫": "[SPARKLE]",
+        "🌈": "[RAINBOW]",
+        "🎈": "[BALLOON]",
+        "🎭": "[THEATRE]",
+        "🔮": "[CRYSTAL]",
+        "🪄": "[MAGIC]",
+        "🎲": "[DICE]",
+        # Add more as needed
+    }
+
+    ascii_message = message
+    for emoji, replacement in replacements.items():
+        ascii_message = ascii_message.replace(emoji, replacement)
+
+    return ascii_message

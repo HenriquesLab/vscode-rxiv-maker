@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Command-line tool for PDF validation.
 
 This script validates PDF output quality by extracting text and checking
@@ -6,38 +5,45 @@ for common issues like unresolved citations, malformed equations, and
 missing references.
 """
 
-import argparse
+import os
 import sys
-from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from validators.pdf_validator import PDFValidator, ValidationLevel
-
-
-def main():
-    """Main entry point for PDF validation command."""
-    parser = argparse.ArgumentParser(description="Validate PDF output quality")
-    parser.add_argument("manuscript_path", help="Path to manuscript directory")
-    parser.add_argument("--pdf-path", help="Path to PDF file (optional)")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
-    parser.add_argument(
-        "--detailed", "-d", action="store_true", help="Detailed output with statistics"
+# Add the parent directory to the path to allow imports when run as a script
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
 
-    args = parser.parse_args()
+from rxiv_maker.validators.pdf_validator import PDFValidator, ValidationLevel
 
+
+def validate_pdf_output(
+    manuscript_path: str,
+    pdf_path: str = None,
+    verbose: bool = False,
+    detailed: bool = False,
+) -> int:
+    """Validate PDF output quality.
+
+    Args:
+        manuscript_path: Path to manuscript directory
+        pdf_path: Path to PDF file (optional)
+        verbose: Enable verbose output
+        detailed: Enable detailed output with statistics
+
+    Returns:
+        0 if successful, 1 if errors found
+    """
     try:
         # Create validator
-        validator = PDFValidator(args.manuscript_path, args.pdf_path)
+        validator = PDFValidator(manuscript_path, pdf_path)
 
         # Run validation
         result = validator.validate()
 
         # Display results
-        if args.detailed:
-            print(f"\nPDF Validation Results for {args.manuscript_path}")
+        if detailed:
+            print(f"\nPDF Validation Results for {manuscript_path}")
             print("=" * 60)
 
         # Count issues by level
@@ -61,7 +67,7 @@ def main():
                 elif error.level == ValidationLevel.INFO:
                     print(f"ℹ️  INFO: {error.message}")
 
-                if args.verbose:
+                if verbose:
                     if error.context:
                         print(f"   Context: {error.context}")
                     if error.suggestion:
@@ -73,7 +79,7 @@ def main():
                     print()
 
         # Print statistics if detailed mode
-        if args.detailed and result.metadata:
+        if detailed and result.metadata:
             print("\n📊 PDF Statistics:")
             print("-" * 30)
             for key, value in result.metadata.items():
@@ -101,7 +107,7 @@ def main():
                     print(f"📏 {key.replace('_', ' ').title()}: {value:.0f}")
 
         # Summary
-        if args.detailed:
+        if detailed:
             print("\n📋 Summary:")
             print(f"   Errors: {error_count}")
             print(f"   Warnings: {warning_count}")
@@ -112,12 +118,8 @@ def main():
 
     except Exception as e:
         print(f"❌ PDF validation failed: {e}")
-        if args.verbose:
+        if verbose:
             import traceback
 
             traceback.print_exc()
         return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

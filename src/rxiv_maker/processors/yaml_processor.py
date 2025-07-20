@@ -19,24 +19,12 @@ def _get_email_processor():
 
         return process_author_emails
     except ImportError:
-        # Try absolute import
-        try:
-            from src.py.utils.email_encoder import process_author_emails
+        # Fallback if utils package is not available
+        def fallback_processor(authors):
+            """Fallback function if email_encoder is not available."""
+            return authors
 
-            return process_author_emails
-        except ImportError:
-            # Try direct import (if running from src/py directory)
-            try:
-                from utils.email_encoder import process_author_emails
-
-                return process_author_emails
-            except ImportError:
-                # Fallback if utils package is not available
-                def fallback_processor(authors):
-                    """Fallback function if email_encoder is not available."""
-                    return authors
-
-                return fallback_processor
+        return fallback_processor
 
 
 process_author_emails = _get_email_processor()

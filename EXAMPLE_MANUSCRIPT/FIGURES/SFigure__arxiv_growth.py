@@ -12,6 +12,7 @@ Usage:
     python SFigure__arxiv_growth.py --help    # Show help message
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -164,9 +165,17 @@ def create_figure():
 
 def save_figure(fig, output_path=None):
     """Save the figure in multiple formats."""
-    # Use current working directory (which is the figure subdirectory
-    # when called by generate_figures.py)
-    output_path = Path.cwd() if output_path is None else Path(output_path)
+    # Use environment variable if set, otherwise current working directory
+    if output_path is None:
+        env_output_dir = os.environ.get("RXIV_FIGURE_OUTPUT_DIR")
+        if env_output_dir:
+            output_path = Path(env_output_dir)
+        else:
+            # Fallback to current working directory (which is the figure subdirectory
+            # when called by generate_figures.py)
+            output_path = Path.cwd()
+    else:
+        output_path = Path(output_path)
 
     # Save as PDF (vector format for LaTeX)
     fig.savefig(

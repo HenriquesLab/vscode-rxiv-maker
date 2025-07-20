@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Documentation generation script using lazydocs.
 
 This script generates comprehensive markdown documentation for the rxiv-maker
@@ -10,16 +9,21 @@ signatures.
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 
 def generate_module_docs(docs_dir, module_path):
     """Generate documentation for a specific module using lazydocs."""
     try:
+        # Find lazydocs executable
+        lazydocs_cmd = shutil.which("lazydocs")
+        if not lazydocs_cmd:
+            print("❌ lazydocs not found in PATH")
+            return False
+
         # Generate documentation for the specific module
         cmd = [
-            "lazydocs",
+            lazydocs_cmd,
             str(module_path),
             "--output-path",
             str(docs_dir),
@@ -44,6 +48,9 @@ def generate_module_docs(docs_dir, module_path):
         print(f"❌ Error generating documentation for {module_path}: {e}")
         if e.stderr:
             print(f"STDERR: {e.stderr}")
+        return False
+    except FileNotFoundError as e:
+        print(f"❌ lazydocs command not found: {e}")
         return False
 
 
@@ -97,10 +104,19 @@ def generate_enhanced_index(docs_dir, successful_modules):
     return index_path
 
 
-def main():
-    """Generate API documentation using lazydocs with enhancements."""
+def generate_api_docs(project_root: Path | None = None) -> bool:
+    """Generate API documentation using lazydocs with enhancements.
+
+    Args:
+        project_root: Root directory of the project. If None, attempts to find it.
+
+    Returns:
+        True if documentation generation was successful, False otherwise.
+    """
     # Get the project root directory (script is in src/rxiv_maker/commands/)
-    project_root = Path(__file__).parent.parent.parent.parent
+    if project_root is None:
+        project_root = Path(__file__).parent.parent.parent.parent
+
     src_dir = project_root / "src" / "py"
     docs_dir = project_root / "docs" / "api"
 
@@ -181,6 +197,46 @@ def main():
         return False
 
 
+def main() -> int:
+    """Main entry point for the generate docs command.
+
+    Returns:
+        0 for success, 1 for failure
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate API documentation")
+    parser.add_argument(
+        "--project-root",
+        help="Path to project root directory (default: auto-detect)",
+        type=Path,
+    )
+
+    args = parser.parse_args()
+
+    try:
+        # Use provided project root or auto-detect
+        project_root = args.project_root
+        if project_root is None:
+            # Auto-detect based on current script location
+            current_file = Path(__file__).resolve()
+            # Navigate up from src/rxiv_maker/commands/generate_docs.py to project root
+            project_root = current_file.parent.parent.parent.parent
+
+        if not project_root.exists():
+            print(f"❌ Project root not found: {project_root}")
+            return 1
+
+        # Generate documentation
+        success = generate_api_docs(project_root)
+        return 0 if success else 1
+
+    except Exception as e:
+        print(f"❌ Error generating documentation: {e}")
+        return 1
+
+
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    import sys
+
+    sys.exit(main())
