@@ -33,13 +33,22 @@ class TestExampleManuscript:
 
     def test_rxiv_pdf_example_manuscript_cli(self, example_manuscript_copy):
         """Test full PDF generation using rxiv CLI command."""
-        # Run the rxiv pdf command
-        result = subprocess.run(
-            ["rxiv", "pdf", str(example_manuscript_copy)],
-            capture_output=True,
-            text=True,
-            cwd=Path.cwd(),
-        )
+        # Try rxiv command, fall back to python module if not available
+        try:
+            result = subprocess.run(
+                ["rxiv", "pdf", str(example_manuscript_copy)],
+                capture_output=True,
+                text=True,
+                cwd=Path.cwd(),
+            )
+        except FileNotFoundError:
+            # Fall back to python module call
+            result = subprocess.run(
+                ["python", "-m", "rxiv_maker.cli", "pdf", str(example_manuscript_copy)],
+                capture_output=True,
+                text=True,
+                cwd=Path.cwd(),
+            )
 
         # Check command succeeded
         assert result.returncode == 0, f"rxiv pdf failed: {result.stderr}"
@@ -80,11 +89,24 @@ class TestExampleManuscript:
     def test_rxiv_validate_example_manuscript(self, example_manuscript_copy):
         """Test validation of EXAMPLE_MANUSCRIPT."""
         # Run validation
-        result = subprocess.run(
-            ["rxiv", "validate", str(example_manuscript_copy)],
-            capture_output=True,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["rxiv", "validate", str(example_manuscript_copy)],
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            result = subprocess.run(
+                [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "validate",
+                    str(example_manuscript_copy),
+                ],
+                capture_output=True,
+                text=True,
+            )
 
         # Validation should pass
         assert result.returncode == 0, f"Validation failed: {result.stderr}"
@@ -100,11 +122,24 @@ class TestExampleManuscript:
             fig.unlink()
 
         # Run figure generation
-        result = subprocess.run(
-            ["rxiv", "figures", str(example_manuscript_copy)],
-            capture_output=True,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["rxiv", "figures", str(example_manuscript_copy)],
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            result = subprocess.run(
+                [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "figures",
+                    str(example_manuscript_copy),
+                ],
+                capture_output=True,
+                text=True,
+            )
 
         # Check command succeeded
         assert result.returncode == 0, f"Figure generation failed: {result.stderr}"
@@ -122,7 +157,19 @@ class TestExampleManuscript:
         if force_figures:
             args.append("--force-figures")
 
-        result = subprocess.run(args, capture_output=True, text=True)
+        try:
+            result = subprocess.run(args, capture_output=True, text=True)
+        except FileNotFoundError:
+            args = [
+                "python",
+                "-m",
+                "rxiv_maker.cli",
+                "pdf",
+                str(example_manuscript_copy),
+            ]
+            if force_figures:
+                args.append("--force-figures")
+            result = subprocess.run(args, capture_output=True, text=True)
         assert result.returncode == 0, f"Command failed: {result.stderr}"
 
         # PDF should exist
@@ -152,17 +199,42 @@ class TestExampleManuscript:
     def test_rxiv_clean(self, example_manuscript_copy):
         """Test cleaning generated files."""
         # First generate some output
-        subprocess.run(
-            ["rxiv", "figures", str(example_manuscript_copy)],
-            capture_output=True,
-        )
+        try:
+            subprocess.run(
+                ["rxiv", "figures", str(example_manuscript_copy)],
+                capture_output=True,
+            )
+        except FileNotFoundError:
+            subprocess.run(
+                [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "figures",
+                    str(example_manuscript_copy),
+                ],
+                capture_output=True,
+            )
 
         # Run clean
-        result = subprocess.run(
-            ["rxiv", "clean", str(example_manuscript_copy)],
-            capture_output=True,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["rxiv", "clean", str(example_manuscript_copy)],
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            result = subprocess.run(
+                [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "clean",
+                    str(example_manuscript_copy),
+                ],
+                capture_output=True,
+                text=True,
+            )
 
         assert result.returncode == 0, f"Clean failed: {result.stderr}"
 

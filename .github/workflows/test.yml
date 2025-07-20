@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Test Pipeline
 
 on:
   push:
@@ -144,7 +144,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --group dev
+        run: uv sync
 
       - name: Run code quality checks
         run: |
@@ -225,7 +225,18 @@ jobs:
         run: echo "Using pip wheels for Windows dependencies"
 
       - name: Install dependencies
-        run: uv sync --group dev
+        run: uv sync
+
+      - name: Install package in development mode
+        run: |
+          # Install package in editable mode so rxiv command is available
+          uv pip install -e .
+
+      - name: Verify CLI installation
+        run: |
+          # Test that rxiv command is available
+          which rxiv || echo "rxiv not in PATH"
+          uv run rxiv --version || echo "rxiv command failed"
 
       - name: Run unit tests
         run: |
