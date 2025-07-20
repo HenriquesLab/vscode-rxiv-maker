@@ -4,8 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rxiv-maker"
-# version managed by hatch-vcs from git tags
-dynamic = ["version"]
+version = "1.4.5"
 authors = [
     {name = "Rxiv-Maker Contributors", email = "rxiv.maker@gmail.com"},
 ]
@@ -111,6 +110,9 @@ dev = [
 # Configure rye to use uv for dependency resolution
 [tool.rye]
 managed = false
+dev-dependencies = [
+    "pytest-xdist>=3.8.0",
+]
 
 # UV configuration for dependency management
 [tool.uv]
@@ -252,12 +254,6 @@ filterwarnings = [
 ]
 
 # Hatch configuration
-[tool.hatch.version]
-source = "vcs"
-fallback-version = "1.4.0"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "src/rxiv_maker/_version.py"
 
 [tool.hatch.envs.default]
 dependencies = [
