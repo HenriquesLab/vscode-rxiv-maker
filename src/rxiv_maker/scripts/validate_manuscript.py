@@ -39,7 +39,21 @@ try:
 
     ENHANCED_VALIDATION_AVAILABLE = True
 except ImportError:
-    ENHANCED_VALIDATION_AVAILABLE = False
+    try:
+        # Try absolute import when run as script
+        from rxiv_maker.validators import (
+            CitationValidator,
+            FigureValidator,
+            LaTeXErrorParser,
+            MathValidator,
+            ReferenceValidator,
+            SyntaxValidator,
+            ValidationLevel,
+        )
+
+        ENHANCED_VALIDATION_AVAILABLE = True
+    except ImportError:
+        ENHANCED_VALIDATION_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -587,9 +601,18 @@ For LaTeX compilation errors after building, check the .log file in output/
 
     # Handle detailed mode by calling the unified validator
     if args.detailed:
+        import os
         import subprocess
 
         try:
+            # Set PYTHONPATH to include src directory
+            env = os.environ.copy()
+            src_path = os.path.join(os.getcwd(), "src")
+            if "PYTHONPATH" in env:
+                env["PYTHONPATH"] = src_path + ":" + env["PYTHONPATH"]
+            else:
+                env["PYTHONPATH"] = src_path
+
             cmd = [
                 sys.executable,
                 "src/rxiv_maker/commands/validate.py",
@@ -597,7 +620,7 @@ For LaTeX compilation errors after building, check the .log file in output/
                 "--detailed",
                 "--verbose",
             ]
-            result = subprocess.run(cmd, check=False)
+            result = subprocess.run(cmd, check=False, env=env)
             sys.exit(result.returncode)
         except FileNotFoundError:
             print("❌ Detailed validation not available")

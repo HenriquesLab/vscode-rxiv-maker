@@ -2,6 +2,7 @@
 
 import os
 import sys
+
 import yaml
 
 # Add the parent directory to the path to allow imports when run as a script
@@ -26,7 +27,7 @@ def generate_preprint(output_dir, yaml_metadata):
     """Generate the preprint using the template."""
     # Ensure output directory exists
     create_output_dir(output_dir)
-    
+
     template_path = get_template_path()
     with open(template_path) as template_file:
         template_content = template_file.read()

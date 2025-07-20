@@ -591,13 +591,15 @@ class BibliographyFixer:
 
 def main() -> int:
     """Main entry point for the fix bibliography command.
-    
+
     Returns:
         0 for success, 1 for failure
     """
     import argparse
-    
-    parser = argparse.ArgumentParser(description="Fix bibliography issues automatically")
+
+    parser = argparse.ArgumentParser(
+        description="Fix bibliography issues automatically"
+    )
     parser.add_argument(
         "manuscript_path",
         help="Path to the manuscript directory",
@@ -607,36 +609,28 @@ def main() -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what would be fixed without making changes"
+        help="Show what would be fixed without making changes",
     )
     parser.add_argument(
-        "--no-backup",
-        action="store_true",
-        help="Don't create backup files"
+        "--no-backup", action="store_true", help="Don't create backup files"
     )
     parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose logging"
+        "--verbose", "-v", action="store_true", help="Enable verbose logging"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Configure logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(
-        level=log_level,
-        format="%(levelname)s: %(message)s"
-    )
-    
+    logging.basicConfig(level=log_level, format="%(levelname)s: %(message)s")
+
     try:
         fixer = BibliographyFixer(
-            manuscript_path=args.manuscript_path,
-            backup=not args.no_backup
+            manuscript_path=args.manuscript_path, backup=not args.no_backup
         )
-        
+
         results = fixer.fix_bibliography(dry_run=args.dry_run)
-        
+
         if results["success"]:
             fixes_applied = results.get("fixes_applied", 0)
             if fixes_applied > 0:
@@ -645,9 +639,11 @@ def main() -> int:
                 print("✅ No fixes were needed")
             return 0
         else:
-            print(f"❌ Failed to fix bibliography: {results.get('error', 'Unknown error')}")
+            print(
+                f"❌ Failed to fix bibliography: {results.get('error', 'Unknown error')}"
+            )
             return 1
-            
+
     except Exception as e:
         print(f"❌ Error fixing bibliography: {e}")
         return 1

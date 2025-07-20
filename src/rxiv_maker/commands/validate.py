@@ -27,7 +27,19 @@ try:
 
     VALIDATORS_AVAILABLE = True
 except ImportError:
-    VALIDATORS_AVAILABLE = False
+    try:
+        # Try absolute import when run as script
+        from rxiv_maker.validators.base_validator import ValidationLevel
+        from rxiv_maker.validators.citation_validator import CitationValidator
+        from rxiv_maker.validators.figure_validator import FigureValidator
+        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser
+        from rxiv_maker.validators.math_validator import MathValidator
+        from rxiv_maker.validators.reference_validator import ReferenceValidator
+        from rxiv_maker.validators.syntax_validator import SyntaxValidator
+
+        VALIDATORS_AVAILABLE = True
+    except ImportError:
+        VALIDATORS_AVAILABLE = False
 
 
 class UnifiedValidator:

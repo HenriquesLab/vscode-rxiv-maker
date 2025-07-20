@@ -168,8 +168,12 @@ Reference to undefined figure @fig:nonexistent.
         # Use CLI validation directly with --no-doi to skip slow DOI validation
         result = subprocess.run(
             [
-                "python", "-m", "rxiv_maker.cli", "validate", 
-                self.manuscript_dir, "--no-doi"
+                "python",
+                "-m",
+                "rxiv_maker.cli",
+                "validate",
+                self.manuscript_dir,
+                "--no-doi",
             ],
             cwd=project_root,
             capture_output=True,
@@ -189,8 +193,12 @@ Reference to undefined figure @fig:nonexistent.
         # Use CLI validation directly with --no-doi to skip slow DOI validation
         result = subprocess.run(
             [
-                "python", "-m", "rxiv_maker.cli", "validate", 
-                self.manuscript_dir, "--no-doi"
+                "python",
+                "-m",
+                "rxiv_maker.cli",
+                "validate",
+                self.manuscript_dir,
+                "--no-doi",
             ],
             cwd=project_root,
             capture_output=True,
@@ -210,6 +218,10 @@ Reference to undefined figure @fig:nonexistent.
         project_root = Path(__file__).parent.parent.parent
 
         # Run detailed validation
+        import os
+
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root / "src") + ":" + env.get("PYTHONPATH", "")
         result = subprocess.run(
             [
                 "python",
@@ -220,6 +232,7 @@ Reference to undefined figure @fig:nonexistent.
             cwd=project_root,
             capture_output=True,
             text=True,
+            env=env,
         )
 
         # Should fail validation and provide detailed feedback
@@ -241,8 +254,12 @@ Reference to undefined figure @fig:nonexistent.
         # Use CLI validation directly with --no-doi to skip slow DOI validation
         result = subprocess.run(
             [
-                "python", "-m", "rxiv_maker.cli", "validate", 
-                self.manuscript_dir, "--no-doi"
+                "python",
+                "-m",
+                "rxiv_maker.cli",
+                "validate",
+                self.manuscript_dir,
+                "--no-doi",
             ],
             cwd=project_root,
             capture_output=True,
@@ -262,8 +279,12 @@ Reference to undefined figure @fig:nonexistent.
         # Use CLI validation directly with --no-doi to skip slow DOI validation
         validation_result = subprocess.run(
             [
-                "python", "-m", "rxiv_maker.cli", "validate", 
-                self.manuscript_dir, "--no-doi"
+                "python",
+                "-m",
+                "rxiv_maker.cli",
+                "validate",
+                self.manuscript_dir,
+                "--no-doi",
             ],
             cwd=project_root,
             capture_output=True,
