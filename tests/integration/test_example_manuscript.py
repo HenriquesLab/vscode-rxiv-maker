@@ -33,10 +33,10 @@ class TestExampleManuscript:
 
     def test_rxiv_pdf_example_manuscript_cli(self, example_manuscript_copy):
         """Test full PDF generation using rxiv CLI command."""
-        # Try rxiv command, fall back to python module if not available
+        # Try uv run rxiv first, then fall back to python module if not available
         try:
             result = subprocess.run(
-                ["rxiv", "pdf", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "pdf", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
                 cwd=Path.cwd(),
@@ -90,7 +90,7 @@ class TestExampleManuscript:
         # Run validation
         try:
             result = subprocess.run(
-                ["rxiv", "validate", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "validate", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
             )
@@ -123,7 +123,7 @@ class TestExampleManuscript:
         # Run figure generation
         try:
             result = subprocess.run(
-                ["rxiv", "figures", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "figures", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
             )
@@ -152,7 +152,7 @@ class TestExampleManuscript:
     @pytest.mark.parametrize("force_figures", [True, False])
     def test_rxiv_pdf_force_figures(self, example_manuscript_copy, force_figures):
         """Test PDF generation with and without force_figures option."""
-        args = ["rxiv", "pdf", str(example_manuscript_copy)]
+        args = ["uv", "run", "rxiv", "pdf", str(example_manuscript_copy)]
         if force_figures:
             args.append("--force-figures")
 
@@ -200,7 +200,7 @@ class TestExampleManuscript:
         # First generate some output
         try:
             subprocess.run(
-                ["rxiv", "figures", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "figures", str(example_manuscript_copy)],
                 capture_output=True,
             )
         except FileNotFoundError:
@@ -218,7 +218,7 @@ class TestExampleManuscript:
         # Run clean
         try:
             result = subprocess.run(
-                ["rxiv", "clean", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "clean", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
             )
