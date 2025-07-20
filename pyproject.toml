@@ -4,7 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rxiv-maker"
-version = "1.4.5"
+# version managed by hatch-vcs from git tags
+dynamic = ["version"]
 authors = [
     {name = "Rxiv-Maker Contributors", email = "rxiv.maker@gmail.com"},
 ]
@@ -250,6 +251,41 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
 ]
 
+# Hatch configuration
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "1.4.0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/rxiv_maker/_version.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=7.4.4",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.12.2",
+    "pre-commit>=4.2.0",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "pytest --cov=src/rxiv_maker {args:tests}"
+lint = "ruff check {args:src}"
+format = "ruff format {args:src}"
+type-check = "mypy {args:src/rxiv_maker}"
+all = ["lint", "type-check", "test-cov"]
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.20.0",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build"
+serve = "mkdocs serve"
 # Console scripts entry point
 [project.scripts]
 rxiv = "rxiv_maker.cli:main"
