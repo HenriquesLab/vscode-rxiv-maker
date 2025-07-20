@@ -44,6 +44,8 @@ distlib==0.4.0
     # via virtualenv
 et-xmlfile==2.0.0
     # via openpyxl
+execnet==2.1.1
+    # via pytest-xdist
 fastjsonschema==2.21.1
     # via nbformat
 filelock==3.18.0
@@ -159,7 +161,9 @@ pypdf==5.8.0
 pyperclip==1.9.0
     # via folder2md4llms
 pytest==8.4.1
+    # via pytest-xdist
     # via rxiv-maker
+pytest-xdist==3.8.0
 python-dateutil==2.9.0.post0
     # via jupyter-client
     # via matplotlib

@@ -77,13 +77,6 @@ repos:
         language: system
         files: ^src/py/.*\.py$
         pass_filenames: false
-      - id: pytest
-        name: Run pytest
-        entry: python -m pytest
-        language: system
-        args: [--tb=short, --maxfail=5, -q]
-        files: ^(src/|tests/).*\.py$
-        pass_filenames: false
 
 default_language_version:
   python: python3
