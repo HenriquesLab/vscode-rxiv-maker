@@ -126,7 +126,15 @@ create_figure <- function(df) {
 
 # Save the figure
 save_figure <- function(p, output_path = NULL) {
-  output_path <- ifelse(is.null(output_path), getwd(), output_path)
+  # Use environment variable if set, otherwise current working directory
+  if (is.null(output_path)) {
+    env_output_dir <- Sys.getenv("RXIV_FIGURE_OUTPUT_DIR", unset = "")
+    if (env_output_dir != "") {
+      output_path <- env_output_dir
+    } else {
+      output_path <- getwd()
+    }
+  }
 
   # Ensure the output directory exists
   if (!dir.exists(output_path)) {

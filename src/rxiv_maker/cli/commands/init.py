@@ -21,9 +21,16 @@ console = Console()
     help="Template to use for initialization",
 )
 @click.option("--force", "-f", is_flag=True, help="Force overwrite existing files")
+@click.option(
+    "--no-interactive", is_flag=True, help="Skip interactive prompts and use defaults"
+)
 @click.pass_context
 def init(
-    ctx: click.Context, manuscript_path: str | None, template: str, force: bool
+    ctx: click.Context,
+    manuscript_path: str | None,
+    template: str,
+    force: bool,
+    no_interactive: bool,
 ) -> None:
     """Initialize a new manuscript directory with template files and structure.
 
@@ -80,18 +87,25 @@ def init(
             f"📁 Created manuscript directory: {manuscript_path}", style="green"
         )
 
-        # Get interactive input for metadata
-        console.print("\\n📝 Please provide manuscript information:", style="blue")
+        # Get metadata (interactive or defaults)
+        if no_interactive:
+            title = "My Research Paper"
+            subtitle = ""
+            author_name = "Your Name"
+            author_email = "your.email@example.com"
+            author_affiliation = "Your Institution"
+        else:
+            console.print("\\n📝 Please provide manuscript information:", style="blue")
 
-        title = Prompt.ask("Title", default="My Research Paper")
-        subtitle = Prompt.ask("Subtitle (optional)", default="")
+            title = Prompt.ask("Title", default="My Research Paper")
+            subtitle = Prompt.ask("Subtitle (optional)", default="")
 
-        # Author information
-        author_name = Prompt.ask("Author name", default="Your Name")
-        author_email = Prompt.ask("Author email", default="your.email@example.com")
-        author_affiliation = Prompt.ask(
-            "Author affiliation", default="Your Institution"
-        )
+            # Author information
+            author_name = Prompt.ask("Author name", default="Your Name")
+            author_email = Prompt.ask("Author email", default="your.email@example.com")
+            author_affiliation = Prompt.ask(
+                "Author affiliation", default="Your Institution"
+            )
 
         # Create 00_CONFIG.yml
         today = datetime.date.today().strftime("%Y-%m-%d")

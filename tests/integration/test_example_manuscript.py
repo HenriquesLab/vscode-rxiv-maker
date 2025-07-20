@@ -58,21 +58,20 @@ class TestExampleManuscript:
         assert output_pdf.exists(), "Output PDF was not created"
         assert output_pdf.stat().st_size > 1000, "Output PDF is too small"
 
-        # Check figures were generated
+        # Check figures were generated (search recursively in subdirectories)
         figures_dir = example_manuscript_copy / "FIGURES"
-        generated_figures = list(figures_dir.glob("*.pdf")) + list(
-            figures_dir.glob("*.png")
+        generated_figures = list(figures_dir.rglob("*.pdf")) + list(
+            figures_dir.rglob("*.png")
         )
         assert len(generated_figures) > 0, "No figures were generated"
 
     def test_rxiv_pdf_example_manuscript_python(self, example_manuscript_copy):
         """Test full PDF generation using Python API."""
-        from rxiv_maker.cli.commands.build import BuildManager
+        from rxiv_maker.commands.build_manager import BuildManager
 
         # Create build manager and run build
         build_manager = BuildManager(
             manuscript_path=str(example_manuscript_copy),
-            engine="local",
             verbose=False,
             force_figures=False,
             skip_validation=False,
@@ -114,11 +113,11 @@ class TestExampleManuscript:
 
     def test_rxiv_figures_example_manuscript(self, example_manuscript_copy):
         """Test figure generation for EXAMPLE_MANUSCRIPT."""
-        # Clean existing figures
+        # Clean existing figures (including subdirectories)
         figures_dir = example_manuscript_copy / "FIGURES"
-        for fig in figures_dir.glob("*.pdf"):
+        for fig in figures_dir.rglob("*.pdf"):
             fig.unlink()
-        for fig in figures_dir.glob("*.png"):
+        for fig in figures_dir.rglob("*.png"):
             fig.unlink()
 
         # Run figure generation
@@ -144,9 +143,9 @@ class TestExampleManuscript:
         # Check command succeeded
         assert result.returncode == 0, f"Figure generation failed: {result.stderr}"
 
-        # Check figures were created
-        generated_figures = list(figures_dir.glob("*.pdf")) + list(
-            figures_dir.glob("*.png")
+        # Check figures were created (search recursively in subdirectories)
+        generated_figures = list(figures_dir.rglob("*.pdf")) + list(
+            figures_dir.rglob("*.png")
         )
         assert len(generated_figures) >= 2, "Expected at least 2 figures"
 

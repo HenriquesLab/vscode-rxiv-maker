@@ -68,7 +68,7 @@ def figures(
             from ...commands.generate_figures import main as generate_figures_main
 
             # Prepare arguments
-            args = ["--figures-dir", figures_dir]
+            args = ["--figures-dir", figures_dir, "--output-dir", figures_dir]
             if force:
                 args.append("--force")
             if verbose:

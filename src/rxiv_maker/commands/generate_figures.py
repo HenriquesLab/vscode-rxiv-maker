@@ -258,11 +258,18 @@ class FigureGenerator:
             else:
                 cmd = [python_cmd, str(py_file.absolute())]
 
+            # Set environment variable to ensure script saves to correct location
+            import os
+
+            env = os.environ.copy()
+            env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
+
             result = self.platform.run_command(
                 " ".join(cmd),
                 capture_output=True,
                 text=True,
                 cwd=str(figure_dir.absolute()),
+                env=env,
             )
 
             if result.stdout:
@@ -354,11 +361,19 @@ class FigureGenerator:
             # Execute the R script in the figure-specific subdirectory
             # Use platform-appropriate command execution
             cmd = f"Rscript {str(r_file.absolute())}"
+
+            # Set environment variable to ensure script saves to correct location
+            import os
+
+            env = os.environ.copy()
+            env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
+
             result = self.platform.run_command(
                 cmd,
                 capture_output=True,
                 text=True,
                 cwd=str(figure_dir.absolute()),
+                env=env,
             )
 
             if result.stdout:
