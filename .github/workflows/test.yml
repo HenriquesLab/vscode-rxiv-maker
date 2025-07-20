@@ -8,7 +8,7 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'uv.lock'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/test.yml'
   pull_request:
     branches: [main, dev]
     paths:
@@ -16,7 +16,7 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'uv.lock'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/test.yml'
   workflow_dispatch:
     inputs:
       test-scope:
@@ -254,7 +254,7 @@ jobs:
 
       - name: Install dependencies and LaTeX
         run: |
-          uv sync --group dev
+          uv sync
           sudo apt-get update
           sudo apt-get install -y \
             texlive-latex-base \
