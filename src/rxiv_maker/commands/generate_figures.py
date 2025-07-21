@@ -252,11 +252,28 @@ class FigureGenerator:
 
             # Execute the Python script in the figure-specific subdirectory
             # Use platform-appropriate Python command
+            import shlex
+
             python_cmd = self.platform.python_cmd
             if "uv run" in python_cmd:
-                cmd = ["uv", "run", "python", str(py_file.absolute())]
+                # For uv run, we need to run from the project root but change to the
+                # figure directory within the script execution
+                exec_code = (
+                    f"import os; "
+                    f"__file__ = '{py_file.absolute()}'; "
+                    f"os.chdir('{figure_dir.absolute()}'); "
+                    f"exec(open('{py_file.absolute()}').read())"
+                )
+                cmd_parts = ["uv", "run", "python", "-c", exec_code]
+                # Use manual shell escaping for compatibility
+                cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                # Run from current working directory (project root) not figure_dir
+                cwd = None
             else:
-                cmd = [python_cmd, str(py_file.absolute())]
+                cmd_parts = [python_cmd, str(py_file.absolute())]
+                cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                # For other Python commands, run from figure directory
+                cwd = str(figure_dir.absolute())
 
             # Set environment variable to ensure script saves to correct location
             import os
@@ -265,10 +282,10 @@ class FigureGenerator:
             env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
 
             result = self.platform.run_command(
-                " ".join(cmd),
+                cmd,
                 capture_output=True,
                 text=True,
-                cwd=str(figure_dir.absolute()),
+                cwd=cwd,
                 env=env,
             )
 

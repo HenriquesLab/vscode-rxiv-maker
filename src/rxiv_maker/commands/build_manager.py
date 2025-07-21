@@ -53,7 +53,12 @@ class BuildManager:
         self.manuscript_path: str = manuscript_path or os.getenv(
             "MANUSCRIPT_PATH", "MANUSCRIPT"
         )
-        self.output_dir = Path(output_dir)
+        # Make output_dir absolute relative to manuscript directory
+        self.manuscript_dir_path = Path(self.manuscript_path)
+        if Path(output_dir).is_absolute():
+            self.output_dir = Path(output_dir)
+        else:
+            self.output_dir = self.manuscript_dir_path / output_dir
         self.force_figures = force_figures
         self.skip_validation = skip_validation
         self.skip_pdf_validation = skip_pdf_validation
@@ -62,7 +67,7 @@ class BuildManager:
         self.platform = platform_detector
 
         # Set up paths
-        self.manuscript_dir = Path(self.manuscript_path)
+        self.manuscript_dir = self.manuscript_dir_path
         self.figures_dir = self.manuscript_dir / "FIGURES"
         self.style_dir = Path("src/tex/style")
         self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
@@ -491,7 +496,7 @@ class BuildManager:
             # Extract YAML metadata from the manuscript file
             yaml_metadata = extract_yaml_metadata(str(manuscript_md))
 
-            # Set the MANUSCRIPT_PATH environment variable so generate_preprint can find files
+            # Set MANUSCRIPT_PATH env var for generate_preprint
             original_env = os.environ.get("MANUSCRIPT_PATH")
             os.environ["MANUSCRIPT_PATH"] = os.path.basename(self.manuscript_path)
 
