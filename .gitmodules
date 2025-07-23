@@ -7,3 +7,6 @@
 [submodule "git_submodules/vscode-rxiv-maker"]
 	path = git_submodules/vscode-rxiv-maker
 	url = https://github.com/HenriquesLab/vscode-rxiv-maker
+[submodule "git_submodules/docker-rxiv-maker"]
+	path = git_submodules/docker-rxiv-maker
+	url = https://github.com/HenriquesLab/docker-rxiv-maker.git
