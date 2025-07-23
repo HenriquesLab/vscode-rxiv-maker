@@ -31,24 +31,20 @@ def validate(
     ## Examples
 
     **Validate default manuscript:**
-    ```
-    $ rxiv validate
-    ```
+
+        $ rxiv validate
 
     **Validate custom manuscript directory:**
-    ```
-    $ rxiv validate MY_PAPER/
-    ```
+
+        $ rxiv validate MY_PAPER/
 
     **Show detailed validation report:**
-    ```
-    $ rxiv validate --detailed
-    ```
+
+        $ rxiv validate --detailed
 
     **Skip DOI validation:**
-    ```
-    $ rxiv validate --no-doi
-    ```
+
+        $ rxiv validate --no-doi
     """
     verbose = ctx.obj.get("verbose", False)
 

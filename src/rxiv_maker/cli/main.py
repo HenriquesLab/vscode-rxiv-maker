@@ -165,32 +165,30 @@ def main(
     ## Examples
 
     **Get help:**
-    ```
-    $ rxiv --help
-    ```
+
+        $ rxiv --help
 
     **Initialize a new manuscript:**
-    ```
-    $ rxiv init MY_PAPER/
-    ```
+
+        $ rxiv init MY_PAPER/
 
     **Build PDF from manuscript:**
-    ```
-    $ rxiv pdf                      # Build from MANUSCRIPT/
-    $ rxiv pdf MY_PAPER/            # Build from custom directory
-    $ rxiv pdf --force-figures      # Force regenerate figures
-    ```
+
+        $ rxiv pdf                      # Build from MANUSCRIPT/
+
+        $ rxiv pdf MY_PAPER/            # Build from custom directory
+
+        $ rxiv pdf --force-figures      # Force regenerate figures
 
     **Validate manuscript:**
-    ```
-    $ rxiv validate                 # Validate current manuscript
-    $ rxiv validate --no-doi        # Skip DOI validation
-    ```
+
+        $ rxiv validate                 # Validate current manuscript
+
+        $ rxiv validate --no-doi        # Skip DOI validation
 
     **Prepare arXiv submission:**
-    ```
-    $ rxiv arxiv                    # Prepare arXiv package
-    ```
+
+        $ rxiv arxiv                    # Prepare arXiv package
     """
     # Handle completion installation
     if install_completion:

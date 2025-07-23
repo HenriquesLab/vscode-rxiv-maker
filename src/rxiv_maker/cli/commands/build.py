@@ -54,29 +54,24 @@ def build(
     ## Examples
 
     **Build from default directory:**
-    ```
-    $ rxiv pdf
-    ```
+
+        $ rxiv pdf
 
     **Build from custom directory:**
-    ```
-    $ rxiv pdf MY_PAPER/
-    ```
+
+        $ rxiv pdf MY_PAPER/
 
     **Force regenerate all figures:**
-    ```
-    $ rxiv pdf --force-figures
-    ```
+
+        $ rxiv pdf --force-figures
 
     **Skip validation for debugging:**
-    ```
-    $ rxiv pdf --skip-validation
-    ```
+
+        $ rxiv pdf --skip-validation
 
     **Track changes against git tag:**
-    ```
-    $ rxiv pdf --track-changes v1.0.0
-    ```
+
+        $ rxiv pdf --track-changes v1.0.0
     """
     verbose = ctx.obj.get("verbose", False)
 
