@@ -46,6 +46,8 @@ dependencies = [
     "rich-click>=1.6.0",
     "typing-extensions>=4.0.0",
     "packaging>=21.0.0",
+    "tomli-w>=1.0.0",
+    "tomli>=2.0.0;python_version<'3.11'",
 ]
 
 [project.optional-dependencies]
@@ -195,7 +197,6 @@ convention = "google"
 "trace_*.py" = ["D"]
 "notebooks/*" = ["D", "E501"]
 # Ignore auto-generated files
-"src/rxiv_maker/_version.py" = ["ALL"]
 "rxiv_maker_colab.ipynb" = ["ALL"]
 
 [tool.mypy]

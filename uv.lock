@@ -2721,6 +2721,7 @@ dependencies = [
     { name = "ruff" },
     { name = "scipy" },
     { name = "seaborn" },
+    { name = "tomli-w" },
     { name = "types-requests" },
     { name = "typing-extensions" },
 ]
@@ -2863,6 +2864,8 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
     { name = "scipy", specifier = ">=1.10.0" },
     { name = "seaborn", specifier = ">=0.12.0" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.0" },
+    { name = "tomli-w", specifier = ">=1.0.0" },
     { name = "types-pyyaml", marker = "extra == 'all'", specifier = ">=6.0.0" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "types-requests", specifier = ">=2.32.4.20250611" },
