@@ -537,7 +537,7 @@ wheels = [
 
 [[package]]
 name = "folder2md4llms"
-version = "0.4.35"
+version = "0.4.37"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -561,9 +561,9 @@ dependencies = [
     { name = "striprtf" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/08/1b/1f44e02a32cf6d9c837c0c7aa87df741f328ba00517d52b7010b6eb00757/folder2md4llms-0.4.35.tar.gz", hash = "sha256:a18b59884c060a7923ec1d71682d0f65e8886e9e4150cb56e3ea82581df0bcb2", size = 256148, upload-time = "2025-07-19T15:47:36.094Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/00/fe2f71b1b190c82bea70677c1aa5fa4a623408b2b25a68ddfb18e55b622f/folder2md4llms-0.4.37.tar.gz", hash = "sha256:771ba69f2b6167cf47d4045e3387e442f9ee57200b7ed8809d7366218e603984", size = 222622, upload-time = "2025-07-23T09:38:21.582Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/da/d9f99183bb3bc7585b95003dc89d18297709cd81bf67615b64a419e8af80/folder2md4llms-0.4.35-py3-none-any.whl", hash = "sha256:13b9a8f03c7fa3bf6c5c5d33bca23db399aff3c12a3aa7eb7e6e713a86b14c24", size = 101943, upload-time = "2025-07-19T15:47:33.054Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/26/35b37a91e2fe9045e4958f97f699b2afb88356af580ffe7e1c86bac6cb99/folder2md4llms-0.4.37-py3-none-any.whl", hash = "sha256:5fb9a35c1bffc26b0cad191c304e7198410e82dbee82816d7193440b25448e33", size = 102074, upload-time = "2025-07-23T09:38:20.608Z" },
 ]
 
 [[package]]
