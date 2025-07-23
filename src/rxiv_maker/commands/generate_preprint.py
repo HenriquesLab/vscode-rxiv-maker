@@ -29,7 +29,7 @@ def generate_preprint(output_dir, yaml_metadata):
     create_output_dir(output_dir)
 
     template_path = get_template_path()
-    with open(template_path) as template_file:
+    with open(template_path, encoding="utf-8") as template_file:
         template_content = template_file.read()
 
     # Find and process the manuscript markdown
@@ -69,7 +69,7 @@ def main():
     # Load YAML metadata
     config_path = args.config or "00_CONFIG.yml"
     if Path(config_path).exists():
-        with open(config_path) as f:
+        with open(config_path, encoding="utf-8") as f:
             yaml_metadata = yaml.safe_load(f)
     else:
         yaml_metadata = {}

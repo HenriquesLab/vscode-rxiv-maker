@@ -83,7 +83,7 @@ def generate_enhanced_index(docs_dir, successful_modules):
             categories["core"].append(module_path)
 
     # Generate the index.md file
-    with open(index_path, "w") as f:
+    with open(index_path, "w", encoding="utf-8") as f:
         f.write("# API Documentation\n\n")
         f.write("Welcome to the API documentation for rxiv-maker.\n\n")
 

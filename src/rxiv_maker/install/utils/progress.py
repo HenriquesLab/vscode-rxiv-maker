@@ -4,6 +4,8 @@ import sys
 import threading
 import time
 
+from rxiv_maker.utils.unicode_safe import get_safe_icon
+
 
 class ProgressIndicator:
     """Progress indicator for installation tasks."""
@@ -46,14 +48,18 @@ class ProgressIndicator:
         if self.current_task:
             if success:
                 if not self.verbose:
-                    print("\r✅", self.current_task, "- completed")
+                    success_icon = get_safe_icon("✅", "[SUCCESS]")
+                    print("\r" + success_icon, self.current_task, "- completed")
                 else:
-                    print(f"✅ {self.current_task} - completed")
+                    success_icon = get_safe_icon("✅", "[SUCCESS]")
+                    print(f"{success_icon} {self.current_task} - completed")
             else:
                 if not self.verbose:
-                    print("\r❌", self.current_task, "- failed")
+                    error_icon = get_safe_icon("❌", "[ERROR]")
+                    print("\r" + error_icon, self.current_task, "- failed")
                 else:
-                    print(f"❌ {self.current_task} - failed")
+                    error_icon = get_safe_icon("❌", "[ERROR]")
+                    print(f"{error_icon} {self.current_task} - failed")
 
         self.current_task = None
 

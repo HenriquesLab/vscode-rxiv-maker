@@ -81,7 +81,9 @@ def generate_markdown_doc(module_name, module, output_dir):
 
     # Write to file
     os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, f"{module_name}.md"), "w") as f:
+    with open(
+        os.path.join(output_dir, f"{module_name}.md"), "w", encoding="utf-8"
+    ) as f:
         f.write(doc)
 
 
@@ -136,7 +138,7 @@ def main():
     process_directory(src_dir, output_dir)
 
     # Generate index.md
-    with open(os.path.join(output_dir, "index.md"), "w") as f:
+    with open(os.path.join(output_dir, "index.md"), "w", encoding="utf-8") as f:
         f.write("# API Documentation\n\n")
         f.write("Welcome to the API documentation for rxiv-maker.\n\n")
         f.write("## Modules\n\n")

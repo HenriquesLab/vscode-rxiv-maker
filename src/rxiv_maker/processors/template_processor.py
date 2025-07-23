@@ -98,12 +98,12 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
     if not supplementary_md:
         # Create empty supplementary file
         supplementary_tex_path = Path(output_dir) / "Supplementary.tex"
-        with open(supplementary_tex_path, "w") as f:
+        with open(supplementary_tex_path, "w", encoding="utf-8") as f:
             f.write("% No supplementary information provided\n")
         return
 
     # Read and parse supplementary markdown content
-    with open(supplementary_md) as f:
+    with open(supplementary_md, encoding="utf-8") as f:
         supplementary_content = f.read()
 
     # Parse and separate content into sections
@@ -237,7 +237,7 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
 
     # Write Supplementary.tex file
     supplementary_tex_path = Path(output_dir) / "Supplementary.tex"
-    with open(supplementary_tex_path, "w") as f:
+    with open(supplementary_tex_path, "w", encoding="utf-8") as f:
         f.write(final_latex)
 
     print(f"Generated supplementary information: {supplementary_tex_path}")

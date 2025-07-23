@@ -104,12 +104,12 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
         if source_file.exists():
             # Copy and modify the main tex file to use arxiv style
             if filename == main_tex_file:
-                with open(source_file) as f:
+                with open(source_file, encoding="utf-8") as f:
                     content = f.read()
                 # No need to replace documentclass - unified style is arXiv-compatible
                 # Keep the original style file name since it's unified
                 # Write the modified content
-                with open(arxiv_path / filename, "w") as f:
+                with open(arxiv_path / filename, "w", encoding="utf-8") as f:
                     f.write(content)
                 print(f"✓ Copied and modified {filename} for arXiv compatibility")
             else:
@@ -335,7 +335,7 @@ def test_arxiv_compilation(arxiv_path):
 
             # Check for common LaTeX warnings/errors in log
             if Path(log_file).exists():
-                with open(log_file) as f:
+                with open(log_file, encoding="utf-8") as f:
                     log_content = f.read()
 
                 error_count = log_content.count("! ")
@@ -365,7 +365,7 @@ def test_arxiv_compilation(arxiv_path):
 
             # Show compilation errors from log if available
             if Path(log_file).exists():
-                with open(log_file) as f:
+                with open(log_file, encoding="utf-8") as f:
                     log_content = f.read()
                     print("\n📋 Last few lines from compilation log:")
                     lines = log_content.split("\n")

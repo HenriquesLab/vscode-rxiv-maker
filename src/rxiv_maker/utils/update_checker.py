@@ -19,6 +19,8 @@ except ImportError:
 
 from rich.console import Console
 
+from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
+
 console = Console()
 
 
@@ -91,7 +93,7 @@ class UpdateChecker:
         """
         try:
             if self.cache_file.exists():
-                with open(self.cache_file) as f:
+                with open(self.cache_file, encoding="utf-8") as f:
                     return json.load(f)
         except (json.JSONDecodeError, OSError):
             pass
@@ -104,7 +106,7 @@ class UpdateChecker:
             data: Data to cache
         """
         try:
-            with open(self.cache_file, "w") as f:
+            with open(self.cache_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except OSError:
             pass  # Ignore cache write failures
@@ -189,9 +191,10 @@ class UpdateChecker:
         if current == "unknown" or latest == "unknown":
             return None
 
-        # Format the notification message
+        # Format the notification message with safe icons
+        package_icon = get_safe_icon("📦", "[UPDATE]")
         notification_lines = [
-            f"📦 Update available: {self.package_name} v{current} → v{latest}",
+            f"{package_icon} Update available: {self.package_name} v{current} → v{latest}",
             f"   Run: pip install --upgrade {self.package_name}",
             f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
         ]
@@ -202,7 +205,11 @@ class UpdateChecker:
         """Show update notification if available."""
         notification = self.get_update_notification()
         if notification:
-            console.print(f"\n{notification}", style="blue")
+            try:
+                console.print(f"\n{notification}", style="blue")
+            except Exception:
+                # Fallback to safe print for environments with encoding issues
+                safe_print(f"\n{notification}")
 
     def force_check(self) -> tuple[bool, str | None]:
         """Force an immediate update check.

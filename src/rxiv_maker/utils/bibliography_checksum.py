@@ -47,7 +47,7 @@ class BibliographyChecksumManager:
             return {}
 
         try:
-            with open(self.checksum_file) as f:
+            with open(self.checksum_file, encoding="utf-8") as f:
                 checksum_data = json.load(f)
             logger.debug(f"Loaded bibliography checksum from {self.checksum_file}")
             return checksum_data
@@ -60,7 +60,7 @@ class BibliographyChecksumManager:
     def _save_checksum(self) -> None:
         """Save checksum to cache file."""
         try:
-            with open(self.checksum_file, "w") as f:
+            with open(self.checksum_file, "w", encoding="utf-8") as f:
                 json.dump(self._checksum_data, f, indent=2, sort_keys=True)
             logger.debug(f"Saved bibliography checksum to {self.checksum_file}")
         except OSError as e:

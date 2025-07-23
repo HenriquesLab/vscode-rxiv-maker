@@ -50,13 +50,21 @@ class SystemLibsHandler:
         try:
             # Check for gcc/clang
             result = subprocess.run(
-                ["gcc", "--version"], capture_output=True, timeout=10
+                ["gcc", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
 
             if result.returncode != 0:
                 # Try clang
                 result = subprocess.run(
-                    ["clang", "--version"], capture_output=True, timeout=10
+                    ["clang", "--version"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=10,
                 )
 
             return result.returncode == 0

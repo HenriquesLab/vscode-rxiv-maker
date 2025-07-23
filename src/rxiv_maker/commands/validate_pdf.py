@@ -14,6 +14,14 @@ if __name__ == "__main__":
         0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
 
+from rxiv_maker.utils.unicode_safe import (
+    get_safe_icon,
+    print_error,
+    print_info,
+    print_success,
+    print_warning,
+    safe_print,
+)
 from rxiv_maker.validators.pdf_validator import PDFValidator, ValidationLevel
 
 
@@ -59,13 +67,13 @@ def validate_pdf_output(
         if result.errors:
             for error in result.errors:
                 if error.level == ValidationLevel.ERROR:
-                    print(f"❌ ERROR: {error.message}")
+                    print_error(f"ERROR: {error.message}")
                 elif error.level == ValidationLevel.WARNING:
-                    print(f"⚠️  WARNING: {error.message}")
+                    print_warning(f"WARNING: {error.message}")
                 elif error.level == ValidationLevel.SUCCESS:
-                    print(f"✅ SUCCESS: {error.message}")
+                    print_success(f"SUCCESS: {error.message}")
                 elif error.level == ValidationLevel.INFO:
-                    print(f"ℹ️  INFO: {error.message}")
+                    print_info(f"INFO: {error.message}")
 
                 if verbose:
                     if error.context:
@@ -80,35 +88,48 @@ def validate_pdf_output(
 
         # Print statistics if detailed mode
         if detailed and result.metadata:
-            print("\n📊 PDF Statistics:")
+            stats_icon = get_safe_icon("📊", "[STATS]")
+            safe_print(f"\n{stats_icon} PDF Statistics:")
             print("-" * 30)
             for key, value in result.metadata.items():
                 if key == "pdf_file":
-                    print(f"📄 PDF File: {value}")
+                    pdf_icon = get_safe_icon("📄", "[PDF]")
+                    safe_print(f"{pdf_icon} PDF File: {value}")
                 elif key == "total_pages":
-                    print(f"📑 Total Pages: {value}")
+                    pages_icon = get_safe_icon("📑", "[PAGES]")
+                    safe_print(f"{pages_icon} Total Pages: {value}")
                 elif key == "total_words":
-                    print(f"📝 Total Words: {value}")
+                    words_icon = get_safe_icon("📝", "[WORDS]")
+                    safe_print(f"{words_icon} Total Words: {value}")
                 elif key == "citations_found":
-                    print(f"📚 Citations Found: {value}")
+                    citations_icon = get_safe_icon("📚", "[CITATIONS]")
+                    safe_print(f"{citations_icon} Citations Found: {value}")
                 elif key == "figure_references":
-                    print(f"🖼️  Figure References: {value}")
+                    figures_icon = get_safe_icon("🖼️", "[FIGURES]")
+                    safe_print(f"{figures_icon} Figure References: {value}")
                 elif key == "table_references":
-                    print(f"📊 Table References: {value}")
+                    tables_icon = get_safe_icon("📊", "[TABLES]")
+                    safe_print(f"{tables_icon} Table References: {value}")
                 elif key == "equation_references":
-                    print(f"🔢 Equation References: {value}")
+                    equations_icon = get_safe_icon("🔢", "[EQUATIONS]")
+                    safe_print(f"{equations_icon} Equation References: {value}")
                 elif key == "section_references":
-                    print(f"📖 Section References: {value}")
+                    sections_icon = get_safe_icon("📖", "[SECTIONS]")
+                    safe_print(f"{sections_icon} Section References: {value}")
                 elif (
                     key.startswith("avg_")
                     or key.startswith("min_")
                     or key.startswith("max_")
                 ):
-                    print(f"📏 {key.replace('_', ' ').title()}: {value:.0f}")
+                    measure_icon = get_safe_icon("📏", "[MEASURE]")
+                    safe_print(
+                        f"{measure_icon} {key.replace('_', ' ').title()}: {value:.0f}"
+                    )
 
         # Summary
         if detailed:
-            print("\n📋 Summary:")
+            summary_icon = get_safe_icon("📋", "[SUMMARY]")
+            safe_print(f"\n{summary_icon} Summary:")
             print(f"   Errors: {error_count}")
             print(f"   Warnings: {warning_count}")
             print(f"   Success: {success_count}")
@@ -117,7 +138,7 @@ def validate_pdf_output(
         return 1 if error_count > 0 else 0
 
     except Exception as e:
-        print(f"❌ PDF validation failed: {e}")
+        print_error(f"PDF validation failed: {e}")
         if verbose:
             import traceback
 

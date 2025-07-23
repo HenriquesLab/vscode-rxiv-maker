@@ -129,7 +129,11 @@ class WindowsInstaller:
         """Check if LaTeX is installed."""
         try:
             result = subprocess.run(
-                ["pdflatex", "--version"], capture_output=True, timeout=10
+                ["pdflatex", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
             return result.returncode == 0
         except:
@@ -139,10 +143,18 @@ class WindowsInstaller:
         """Check if Node.js is installed."""
         try:
             node_result = subprocess.run(
-                ["node", "--version"], capture_output=True, timeout=10
+                ["node", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
             npm_result = subprocess.run(
-                ["npm", "--version"], capture_output=True, timeout=10
+                ["npm", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
             return node_result.returncode == 0 and npm_result.returncode == 0
         except:
@@ -151,7 +163,13 @@ class WindowsInstaller:
     def _is_r_installed(self) -> bool:
         """Check if R is installed."""
         try:
-            result = subprocess.run(["R", "--version"], capture_output=True, timeout=10)
+            result = subprocess.run(
+                ["R", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+            )
             return result.returncode == 0
         except:
             return False
@@ -185,7 +203,13 @@ class WindowsInstaller:
 
         try:
             # Check if chocolatey is available
-            subprocess.run(["choco", "--version"], capture_output=True, timeout=10)
+            subprocess.run(
+                ["choco", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+            )
 
             # Install MiKTeX
             result = subprocess.run(
@@ -264,7 +288,13 @@ class WindowsInstaller:
 
         try:
             # Check if chocolatey is available
-            subprocess.run(["choco", "--version"], capture_output=True, timeout=10)
+            subprocess.run(
+                ["choco", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+            )
 
             # Install Node.js
             result = subprocess.run(
@@ -343,7 +373,13 @@ class WindowsInstaller:
 
         try:
             # Check if chocolatey is available
-            subprocess.run(["choco", "--version"], capture_output=True, timeout=10)
+            subprocess.run(
+                ["choco", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+            )
 
             # Install R
             result = subprocess.run(

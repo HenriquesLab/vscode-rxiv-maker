@@ -45,7 +45,7 @@ class FigureChecksumManager:
             return {}
 
         try:
-            with open(self.checksum_file) as f:
+            with open(self.checksum_file, encoding="utf-8") as f:
                 checksums = json.load(f)
             logger.debug(f"Loaded {len(checksums)} checksums from {self.checksum_file}")
             return checksums
@@ -56,7 +56,7 @@ class FigureChecksumManager:
     def _save_checksums(self) -> None:
         """Save checksums to cache file."""
         try:
-            with open(self.checksum_file, "w") as f:
+            with open(self.checksum_file, "w", encoding="utf-8") as f:
                 json.dump(self._checksums, f, indent=2, sort_keys=True)
             logger.debug(
                 f"Saved {len(self._checksums)} checksums to {self.checksum_file}"

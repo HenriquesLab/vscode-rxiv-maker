@@ -21,7 +21,11 @@ class LaTeXHandler:
         try:
             # Check pdflatex
             result = subprocess.run(
-                ["pdflatex", "--version"], capture_output=True, timeout=10
+                ["pdflatex", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
 
             if result.returncode != 0:
@@ -29,7 +33,11 @@ class LaTeXHandler:
 
             # Check bibtex
             result = subprocess.run(
-                ["bibtex", "--version"], capture_output=True, timeout=10
+                ["bibtex", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
 
             return result.returncode == 0

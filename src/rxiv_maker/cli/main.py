@@ -239,7 +239,7 @@ def install_shell_completion(shell: str) -> None:
                 return
 
         # Add completion
-        with open(install_path, "a") as f:
+        with open(install_path, "a", encoding="utf-8") as f:
             f.write(f"\n# Rxiv-Maker completion\n{completion_line}\n")
 
         console.print(

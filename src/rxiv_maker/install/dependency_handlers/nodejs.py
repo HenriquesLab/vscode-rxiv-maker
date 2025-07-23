@@ -21,12 +21,20 @@ class NodeJSHandler:
         try:
             # Check node
             node_result = subprocess.run(
-                ["node", "--version"], capture_output=True, timeout=10
+                ["node", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
 
             # Check npm
             npm_result = subprocess.run(
-                ["npm", "--version"], capture_output=True, timeout=10
+                ["npm", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
 
             return node_result.returncode == 0 and npm_result.returncode == 0
@@ -99,7 +107,11 @@ class NodeJSHandler:
         """Verify Mermaid CLI installation."""
         try:
             result = subprocess.run(
-                ["mmdc", "--version"], capture_output=True, timeout=10
+                ["mmdc", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
             return result.returncode == 0
         except:
