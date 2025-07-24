@@ -235,6 +235,17 @@ jobs:
         submodules: recursive
         fetch-depth: 0
 
+    - name: Verify checkout
+      run: |
+        echo "📁 Verifying repository checkout..."
+        echo "Working directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+        echo "Git status:"
+        git status --porcelain || echo "Not a git repository"
+        echo "Submodules:"
+        git submodule status || echo "No submodules"
+
     - name: Set manuscript path from prepare job
       run: |
         echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> $GITHUB_ENV

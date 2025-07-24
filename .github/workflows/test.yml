@@ -147,6 +147,7 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
+          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
 
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
@@ -285,6 +286,7 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
+          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
 
       - name: Install dependencies and LaTeX
         run: |
@@ -343,6 +345,7 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
+          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
 
       - name: Build package
         run: uv build

@@ -5,7 +5,6 @@ This module tests the Cairo-only Docker image functionality,
 ensuring SVG processing works correctly without browser dependencies.
 """
 
-import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -18,16 +17,20 @@ class TestDockerCairoFunctionality(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.test_dir = tempfile.mkdtemp()
+        # Create test directory within the project to avoid path issues with Docker
+        project_root = Path(__file__).parent.parent.parent
+        self.test_dir = project_root / "test_temp_docker"
+        self.test_dir.mkdir(exist_ok=True)
         self.figure_generator = FigureGenerator(engine="docker")
 
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
 
-        shutil.rmtree(self.test_dir, ignore_errors=True)
+        if self.test_dir.exists():
+            shutil.rmtree(self.test_dir, ignore_errors=True)
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_cairo_svg_processing(self, mock_run):
         """Test that Cairo processes SVG files correctly in Docker."""
         # Mock successful Docker execution with Cairo
@@ -50,7 +53,7 @@ class TestDockerCairoFunctionality(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("Cairo", result.stdout)
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_docker_image_uses_cairo_only(self, mock_run):
         """Test that Docker commands use the Cairo-only base image."""
         mock_run.return_value = Mock(returncode=0, stdout="Success", stderr="")
@@ -63,11 +66,7 @@ class TestDockerCairoFunctionality(unittest.TestCase):
 
         # Generate figure with Docker engine
         try:
-            self.figure_generator.generate_python_figures(
-                py_files=[test_py_file],
-                figure_dir=Path(self.test_dir),
-                manuscript_dir=Path(self.test_dir),
-            )
+            self.figure_generator.generate_python_figure(test_py_file)
         except Exception:
             pass  # We're testing the Docker command, not the actual execution
 
@@ -176,7 +175,7 @@ class TestDockerCairoFunctionality(unittest.TestCase):
         self.assertIn("Cairo functionality verified", result.stdout)
         self.assertIn("Successfully converted", result.stdout)
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_docker_build_args_cairo_optimized(self, mock_run):
         """Test that Docker containers use Cairo-optimized build arguments."""
         mock_run.return_value = Mock(
@@ -189,11 +188,7 @@ class TestDockerCairoFunctionality(unittest.TestCase):
 
         # Mock the Docker execution
         try:
-            self.figure_generator.generate_python_figures(
-                py_files=[test_file],
-                figure_dir=Path(self.test_dir),
-                manuscript_dir=Path(self.test_dir),
-            )
+            self.figure_generator.generate_python_figure(test_file)
         except Exception:
             pass  # We're testing the command structure
 

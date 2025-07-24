@@ -20,24 +20,28 @@ class TestDockerCairoIntegration(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.test_dir = Path(tempfile.mkdtemp())
+        # Create test directory within the project to avoid path issues with Docker
+        project_root = Path(__file__).parent.parent.parent
+        self.test_dir = project_root / "test_temp_integration"
+        self.test_dir.mkdir(exist_ok=True)
         self.manuscript_dir = self.test_dir / "manuscript"
         self.figures_dir = self.manuscript_dir / "FIGURES"
         self.python_figures_dir = self.figures_dir / "PYTHON"
         self.r_figures_dir = self.figures_dir / "R"
 
         # Create directory structure
-        self.manuscript_dir.mkdir()
-        self.figures_dir.mkdir()
-        self.python_figures_dir.mkdir()
-        self.r_figures_dir.mkdir()
+        self.manuscript_dir.mkdir(exist_ok=True)
+        self.figures_dir.mkdir(exist_ok=True)
+        self.python_figures_dir.mkdir(exist_ok=True)
+        self.r_figures_dir.mkdir(exist_ok=True)
 
         # Set up figure generator with Docker engine
         self.figure_generator = FigureGenerator(engine="docker")
 
     def tearDown(self):
         """Clean up test environment."""
-        shutil.rmtree(self.test_dir, ignore_errors=True)
+        if self.test_dir.exists():
+            shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_cairo_docker_image_integration(self):
         """Test that Cairo Docker integration works end-to-end."""
@@ -94,7 +98,9 @@ cat("R figure generated successfully with Cairo backend\\n")
 """)
 
         # Mock Docker execution to simulate successful figure generation
-        with patch("subprocess.run") as mock_run:
+        with patch(
+            "rxiv_maker.utils.platform.platform_detector.run_command"
+        ) as mock_run:
             mock_run.return_value = Mock(
                 returncode=0,
                 stdout="Figure generated successfully with Cairo backend",
@@ -103,11 +109,7 @@ cat("R figure generated successfully with Cairo backend\\n")
 
             # Test Python figure generation
             try:
-                self.figure_generator.generate_python_figures(
-                    py_files=[python_script],
-                    figure_dir=self.python_figures_dir,
-                    manuscript_dir=self.manuscript_dir,
-                )
+                self.figure_generator.generate_python_figure(python_script)
             except Exception:
                 # In mocked scenario, we expect this might raise an exception
                 # but we're testing the Docker command construction
@@ -130,7 +132,7 @@ cat("R figure generated successfully with Cairo backend\\n")
                 call_args = str(docker_calls[0])
                 self.assertIn("henriqueslab/rxiv-maker-base:latest", call_args)
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_mermaid_cairo_integration(self, mock_run):
         """Test Mermaid diagram generation with Cairo backend."""
         # Create a Mermaid diagram file
@@ -158,11 +160,14 @@ graph TD
 
         # In a real scenario, this would be handled by the build manager
         # For testing, we simulate the Mermaid + Cairo workflow
-        result = mock_run.side_effect[0]
+        if mock_run.side_effect:
+            result = list(mock_run.side_effect)[0]
+        else:
+            result = mock_run.return_value
         self.assertEqual(result.returncode, 0)
         self.assertIn("SVG generated", result.stdout)
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_font_rendering_integration(self, mock_run):
         """Test that enhanced fonts work correctly in Cairo integration."""
         # Create a script that uses enhanced fonts
@@ -237,13 +242,13 @@ This is a test manuscript for Cairo Docker integration.
 
         # Initialize BuildManager with Docker engine
         build_manager = BuildManager(
-            manuscript_dir=self.manuscript_dir, engine="docker"
+            manuscript_path=str(self.manuscript_dir), engine="docker"
         )
 
         # Test that BuildManager properly configures Docker engine
         self.assertEqual(build_manager.engine, "docker")
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_error_handling_cairo_integration(self, mock_run):
         """Test error handling in Cairo Docker integration."""
         # Mock Docker execution failure
@@ -260,7 +265,7 @@ This is a test manuscript for Cairo Docker integration.
         self.assertEqual(result.returncode, 1)
         self.assertIn("Cairo library error", result.stderr)
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_performance_cairo_integration(self, mock_run):
         """Test performance characteristics of Cairo integration."""
         # Mock performance metrics
@@ -286,7 +291,7 @@ This is a test manuscript for Cairo Docker integration.
         rel_python_dir = self.python_figures_dir.relative_to(self.manuscript_dir)
         self.assertEqual(str(rel_python_dir), "FIGURES/PYTHON")
 
-    @patch("subprocess.run")
+    @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_multi_format_output_cairo(self, mock_run):
         """Test multiple output formats with Cairo backend."""
         # Mock successful multi-format generation

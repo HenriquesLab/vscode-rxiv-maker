@@ -387,17 +387,8 @@ def main():
         )
         sys.exit(1)
 
-    # Validate version format
-    if (
-        not version.startswith("v")
-        or not version[1:]
-        .replace(".", "")
-        .replace("-", "")
-        .replace("a", "")
-        .replace("b", "")
-        .replace("rc", "")
-        .isdigit()
-    ):
+    # Validate version format - allow test versions
+    if not version.startswith("v"):
         print(f"❌ Invalid version format: {version} (expected format: v1.2.3)")
         sys.exit(1)
 

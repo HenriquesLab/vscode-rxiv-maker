@@ -1,7 +1,9 @@
 """Tests for CI testing matrix and binary compatibility across platforms."""
 
+import os
 import platform
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -215,7 +217,6 @@ class TestBinaryCompatibilityMatrix:
 
     def test_file_system_compatibility(self):
         """Test file system operations across platforms."""
-        import tempfile
 
         # Test path handling
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -240,8 +241,6 @@ class TestBinaryCompatibilityMatrix:
         """Test that text encoding works across platforms."""
         # Test UTF-8 handling
         test_content = "Test content with Unicode: áéíóú 中文 🚀"
-
-        import tempfile
 
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as f:
             f.write(test_content)

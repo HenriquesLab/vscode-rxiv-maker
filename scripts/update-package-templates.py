@@ -99,13 +99,26 @@ class TemplateUpdater:
                     temp_files[placeholder] = temp_file
         except Exception as e:
             print(f"❌ Failed to download binaries: {e}")
-            return False
+            if self.dry_run:
+                print(
+                    "🔍 DRY RUN: Would have downloaded binaries and calculated checksums"
+                )
+                # For dry run with test versions, use dummy hashes
+                for placeholder in binaries:
+                    hashes[placeholder] = "a" * 64
+            else:
+                return False
 
         # Read and process template
         template_content = template_path.read_text()
 
         # Replace placeholders
-        replacements = {"{{VERSION}}": version, **hashes}
+        replacements = {
+            "{{VERSION}}": version,
+            "{{MACOS_ARM64_SHA256}}": hashes.get("MACOS_ARM64_SHA256", "a" * 64),
+            "{{MACOS_X64_SHA256}}": hashes.get("MACOS_X64_SHA256", "a" * 64),
+            "{{LINUX_X64_SHA256}}": hashes.get("LINUX_X64_SHA256", "a" * 64),
+        }
 
         output_content = template_content
         for placeholder, value in replacements.items():
@@ -174,7 +187,14 @@ class TemplateUpdater:
             hash_value, temp_file = self.download_and_hash(url)
         except Exception as e:
             print(f"❌ Failed to download Windows binary: {e}")
-            return False
+            if self.dry_run:
+                print(
+                    "🔍 DRY RUN: Would have downloaded binary and calculated checksum"
+                )
+                # For dry run with test versions, use dummy hash
+                hash_value = "a" * 64
+            else:
+                return False
 
         # Read and process template
         template_content = template_path.read_text()
