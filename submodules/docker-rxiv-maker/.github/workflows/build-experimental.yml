@@ -1,0 +1,168 @@
+name: Build Experimental Cairo Images
+
+on:
+  push:
+    branches: [ main, dev, experimental-cairo ]
+    paths:
+      - 'images/experimental-cairo/**'
+      - '.github/workflows/build-experimental.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'images/experimental-cairo/**'
+      - '.github/workflows/build-experimental.yml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for the built image'
+        required: false
+        default: 'latest-cairo'
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+
+env:
+  REGISTRY: docker.io
+  EXPERIMENTAL_IMAGE_NAME: henriqueslab/rxiv-maker-experimental
+
+jobs:
+  build-experimental:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        platforms: linux/amd64,linux/arm64
+
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PUSH }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.EXPERIMENTAL_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch,suffix=-cairo
+          type=ref,event=pr,suffix=-cairo
+          type=raw,value=latest-cairo,enable={{is_default_branch}}
+          type=raw,value=experimental-cairo,enable={{is_default_branch}}
+          type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
+
+    - name: Build and push experimental Cairo image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./images/experimental-cairo
+        platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+
+    - name: Test experimental Cairo functionality
+      if: github.event_name == 'pull_request'
+      run: |
+        # Load image for testing (only for PRs)
+        docker build -t test-cairo ./images/experimental-cairo
+
+        echo "Testing basic functionality..."
+        docker run --rm test-cairo python3 --version
+        docker run --rm test-cairo pdflatex --version
+        docker run --rm test-cairo node --version
+        docker run --rm test-cairo mmdc --version
+        docker run --rm test-cairo R --version
+
+        echo "Testing Cairo functionality..."
+        docker run --rm test-cairo /usr/local/bin/test-cairo.sh
+
+        echo "Testing enhanced font support..."
+        docker run --rm test-cairo fc-list | grep -i liberation | head -5
+
+        echo "All Cairo tests passed!"
+
+    - name: Performance benchmark
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "## Performance Benchmark" >> $GITHUB_STEP_SUMMARY
+
+        # Create test SVG
+        cat > test.svg << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg width="400" height="200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="200" fill="lightblue" stroke="navy" stroke-width="2"/>
+          <text x="200" y="100" text-anchor="middle" font-family="Liberation Sans" font-size="18">Performance Test</text>
+        </svg>
+        EOF
+
+        # Time SVG to PNG conversion
+        echo "- **SVG to PNG conversion**:" >> $GITHUB_STEP_SUMMARY
+        START_TIME=$(date +%s.%N)
+        docker run --rm -v $(pwd):/workspace ${{ env.EXPERIMENTAL_IMAGE_NAME }}:latest-cairo \
+          python3 -c "
+        import cairosvg
+        from pathlib import Path
+        svg_content = Path('/workspace/test.svg').read_text()
+        png_data = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
+        Path('/workspace/test.png').write_bytes(png_data)
+        print(f'Converted SVG to PNG ({len(png_data)} bytes)')
+        " || echo "  - ⚠️ Benchmark skipped (image not available yet)" >> $GITHUB_STEP_SUMMARY
+        END_TIME=$(date +%s.%N)
+        DURATION=$(python3 -c "print(f'{$END_TIME - $START_TIME:.2f}')" 2>/dev/null || echo "N/A")
+        echo "  - Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+
+    - name: Update repository description
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      run: |
+        # Update Docker Hub repository description
+        curl -X PATCH \
+          -H "Authorization: Bearer ${{ secrets.DOCKER_PUSH }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "full_description": "# Rxiv-Maker Experimental Cairo Docker Image\n\nExperimental Ubuntu-based image with enhanced Cairo/SVG processing capabilities for post-Puppeteer workflows.\n\n## Quick Start\n```bash\ndocker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-experimental:latest-cairo\n```\n\n## Enhanced Features\n- Complete LaTeX distribution\n- Python 3.11 with enhanced Cairo libraries\n- Advanced SVG processing (CairoSVG, pycairo)\n- Extended font collection\n- Node.js 18 with Mermaid CLI\n- R with Cairo graphics support\n- Multi-platform support (AMD64/ARM64)\n\n## Use Cases\n- Enhanced SVG to PNG conversion\n- Scientific document generation\n- Post-Puppeteer workflows\n- Cross-platform compatibility\n\n## Documentation\nSee [GitHub repository](https://github.com/HenriquesLab/docker-rxiv-maker) for full documentation."
+          }' \
+          "https://hub.docker.com/v2/repositories/${{ env.EXPERIMENTAL_IMAGE_NAME }}/" || true
+
+    - name: Notify main repository
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      run: |
+        # Trigger submodule update in main repository
+        curl -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"event_type":"docker-update","client_payload":{"variant":"experimental-cairo","tag":"${{ github.event.inputs.tag || 'latest-cairo' }}"}}' \
+          https://api.github.com/repos/HenriquesLab/rxiv-maker/dispatches || true
+
+    - name: Summary
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image**: ${{ env.EXPERIMENTAL_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platforms**: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Variant**: Experimental Cairo" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ Successfully built and pushed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Usage" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Use with rxiv CLI" >> $GITHUB_STEP_SUMMARY
+        echo "RXIV_DOCKER_VARIANT=experimental-cairo rxiv pdf --engine docker" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Use with make" >> $GITHUB_STEP_SUMMARY
+        echo "make pdf RXIV_ENGINE=DOCKER RXIV_DOCKER_VARIANT=experimental-cairo" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

@@ -159,8 +159,9 @@ def main(
     install_completion: str | None,
     no_update_check: bool,
 ) -> None:
-    """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs with
-    automated figure generation, professional LaTeX typesetting, and bibliography management.
+    """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs.
+    
+    Automated figure generation, professional LaTeX typesetting, and bibliography management.
 
     ## Examples
 

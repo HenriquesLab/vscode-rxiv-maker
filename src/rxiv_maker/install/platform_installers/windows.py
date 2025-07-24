@@ -29,6 +29,7 @@ class WindowsInstaller:
 
         # On Windows, most system libraries are handled by pip wheels
         # We mainly need to ensure Visual C++ redistributables are available
+        # Note: CairoSVG for Mermaid diagram conversion uses pre-built wheels on Windows
 
         try:
             # Check if we can import key packages

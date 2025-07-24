@@ -7,7 +7,6 @@ publication-ready output files. It supports:
 - .R files: R scripts (executes script and captures output figures)
 """
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -19,8 +18,6 @@ if __name__ == "__main__":
     )
 
 from rxiv_maker.utils.platform import platform_detector
-
-PUPPETEER_CONFIG_PATH = Path(__file__).parent / "puppeteer-config.json"
 
 
 class FigureGenerator:
@@ -109,7 +106,7 @@ class FigureGenerator:
         print("\nFigure generation completed!")
 
     def generate_mermaid_figure(self, mmd_file):
-        """Generate figure from Mermaid diagram file."""
+        """Generate figure from Mermaid diagram file using two-step SVG process."""
         try:
             # Check if mmdc (Mermaid CLI) is available
             if not self._check_mermaid_cli():
@@ -121,125 +118,110 @@ class FigureGenerator:
             figure_dir = self.output_dir / mmd_file.stem
             figure_dir.mkdir(parents=True, exist_ok=True)
 
-            # Always generate SVG, PNG, and PDF for Mermaid diagrams
-            formats_to_generate = ["svg", "png", "pdf"]
+            # --- Step 1: Generate SVG using Mermaid CLI ---
+            svg_output_file = figure_dir / f"{mmd_file.stem}.svg"
+            print(f"  🎨 Generating intermediate SVG: {figure_dir.name}/{svg_output_file.name}...")
 
-            # Add the requested format if it's not already included
-            if self.output_format not in formats_to_generate:
-                formats_to_generate.append(self.output_format)
+            cmd_parts = ["mmdc", "-i", str(mmd_file), "-o", str(svg_output_file), "--backgroundColor", "transparent"]
+            cmd = " ".join(cmd_parts)
+            result = self.platform.run_command(cmd, capture_output=True, text=True)
 
-            generated_files = []
+            if result.returncode != 0:
+                print(f"  ❌ Error generating SVG for {mmd_file.name}:")
+                print(f"     {result.stderr}")
+                return
+                
+            print(f"  ✅ Successfully generated {figure_dir.name}/{svg_output_file.name}")
+
+            # --- Step 2: Convert SVG to PNG and PDF using CairoSVG ---
+            # Check CairoSVG availability before attempting conversion
+            cairosvg_available, cairo_error = self._check_cairosvg_availability()
+            
+            if not cairosvg_available:
+                print(f"  ⚠️  CairoSVG not available for {mmd_file.name} - using SVG only")
+                print(f"     Reason: {cairo_error}")
+                self._print_cairo_installation_help()
+                print(f"     SVG file generated: {figure_dir.name}/{svg_output_file.name}")
+                print(f"     LaTeX can use SVG files directly for PDF compilation")
+                return
+
+            # Convert SVG to raster formats
+            formats_to_generate = ["png", "pdf"]
+            generated_files = [f"{figure_dir.name}/{svg_output_file.name}"]
+            import cairosvg
 
             for format_type in formats_to_generate:
                 output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
-
-                # Generate the figure using Mermaid CLI
-                cmd_parts = ["mmdc", "-i", str(mmd_file), "-o", str(output_file)]
-
-                # Add Puppeteer configuration with proper browser executable and
-                # emoji support
-                puppeteer_config = {
-                    "args": [
-                        "--no-sandbox",
-                        "--disable-dev-shm-usage",
-                        "--font-render-hinting=none",
-                        "--disable-font-subpixel-positioning",
-                        "--disable-features=VizDisplayCompositor",
-                    ]
-                }
-
-                # Detect if we're in Docker and set the appropriate browser path
-                import os
-
-                if os.path.exists("/.dockerenv"):  # Docker environment
-                    # Check architecture and set appropriate browser path
-                    import subprocess
-
-                    try:
-                        arch_result = subprocess.run(
-                            ["dpkg", "--print-architecture"],
-                            capture_output=True,
-                            text=True,
-                        )
-                        if arch_result.returncode == 0:
-                            arch = arch_result.stdout.strip()
-                            if arch == "amd64" and os.path.exists(
-                                "/usr/bin/google-chrome"
-                            ):
-                                puppeteer_config["executablePath"] = (
-                                    "/usr/bin/google-chrome"
-                                )
-                            elif arch == "arm64":
-                                # For ARM64, use Puppeteer's bundled Chrome
-                                chrome_paths = [
-                                    "/root/.cache/puppeteer/chrome/*/chrome-linux64/chrome",
-                                    "/home/*/.cache/puppeteer/chrome/*/chrome-linux64/chrome",
-                                ]
-                                import glob
-
-                                for pattern in chrome_paths:
-                                    matches = glob.glob(pattern)
-                                    if matches:
-                                        puppeteer_config["executablePath"] = matches[0]
-                                        break
-                                # If no Puppeteer Chrome found, try to download it
-                                if "executablePath" not in puppeteer_config:
-                                    try:
-                                        # Download Chrome using Puppeteer
-                                        puppeteer_cmd = (
-                                            "const puppeteer = require('puppeteer'); "
-                                            "(async () => { "
-                                            "await puppeteer.launch(); })()"
-                                        )
-                                        subprocess.run(
-                                            ["node", "-e", puppeteer_cmd],
-                                            capture_output=True,
-                                            text=True,
-                                            timeout=60,
-                                        )
-                                        # Try to find Chrome again
-                                        for pattern in chrome_paths:
-                                            matches = glob.glob(pattern)
-                                            if matches:
-                                                puppeteer_config["executablePath"] = (
-                                                    matches[0]
-                                                )
-                                                break
-                                    except Exception:
-                                        pass
-                    except Exception:
-                        pass
-
-                PUPPETEER_CONFIG_PATH.write_text(json.dumps(puppeteer_config))
-                cmd_parts.extend(["--puppeteerConfigFile", str(PUPPETEER_CONFIG_PATH)])
-
-                # Add format-specific options
-                if format_type == "pdf":
-                    cmd_parts.extend(["--backgroundColor", "transparent"])
-                elif format_type == "png":
-                    cmd_parts.extend(["--width", "1200", "--height", "800"])
-                # No extra options needed for svg
-
-                print(f"  🎨 Generating {figure_dir.name}/{output_file.name}...")
-
-                # Use platform-appropriate command execution
-                cmd = " ".join(cmd_parts)
-                result = self.platform.run_command(cmd, capture_output=True, text=True)
-
-                if result.returncode == 0:
-                    success_msg = f"Successfully generated {figure_dir.name}/"
-                    success_msg += f"{output_file.name}"
-                    print(f"  ✅ {success_msg}")
+                print(f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}...")
+                try:
+                    if format_type == 'png':
+                        cairosvg.svg2png(url=str(svg_output_file), write_to=str(output_file), dpi=300)
+                    elif format_type == 'pdf':
+                        cairosvg.svg2pdf(url=str(svg_output_file), write_to=str(output_file))
+                    
+                    print(f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}")
                     generated_files.append(f"{figure_dir.name}/{output_file.name}")
-                else:
-                    print(f"  ❌ Error generating {format_type} for {mmd_file.name}:")
-                    print(f"     {result.stderr}")
+                except Exception as e:
+                    print(f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:")
+                    print(f"     {e}")
+                    if "cairo" in str(e).lower():
+                        self._print_cairo_troubleshooting()
 
             if generated_files:
                 print(f"     Total files generated: {', '.join(generated_files)}")
 
         except Exception as e:
             print(f"  ❌ Error processing {mmd_file.name}: {e}")
+
+    def _check_cairosvg_availability(self):
+        """Check if CairoSVG is available and working."""
+        try:
+            import cairosvg
+            # Test basic functionality
+            cairosvg.svg2png(bytestring=b'<svg><rect width="10" height="10"/></svg>')
+            return True, None
+        except ImportError:
+            return False, "CairoSVG package not installed"
+        except Exception as e:
+            error_msg = str(e)
+            if "cairo" in error_msg.lower():
+                return False, f"Cairo system libraries not available: {error_msg}"
+            else:
+                return False, f"CairoSVG error: {error_msg}"
+
+    def _print_cairo_installation_help(self):
+        """Print platform-specific Cairo installation instructions."""
+        import platform
+        system = platform.system().lower()
+        
+        print("     💡 To enable PNG/PDF conversion, install Cairo libraries:")
+        if system == "darwin":  # macOS
+            print("     - macOS: brew install cairo pango pkg-config")
+            print("     - Then restart your terminal to update environment variables") 
+        elif system == "linux":
+            print("     - Ubuntu/Debian: sudo apt-get install libcairo2-dev libpango1.0-dev")
+            print("     - RHEL/CentOS: sudo yum install cairo-devel pango-devel")
+            print("     - Arch: sudo pacman -S cairo pango")
+        elif system == "windows":
+            print("     - Windows: Install GTK libraries via msys2 or winget install GTK")
+        else:
+            print("     - Install Cairo and Pango development libraries for your system")
+        print("     - Then reinstall: pip install --force-reinstall cairosvg")
+
+    def _print_cairo_troubleshooting(self):
+        """Print Cairo-specific troubleshooting tips."""
+        import platform
+        system = platform.system().lower()
+        
+        print("     🔧 Cairo troubleshooting:")
+        if system == "darwin":  # macOS
+            print("     - Try: export PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH")
+            print("     - Try: export DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH")
+            print("     - Run: rxiv setup --reinstall to reconfigure environment")
+        else:
+            print("     - Ensure Cairo libraries are in your system's library path")
+            print("     - Try reinstalling: pip install --force-reinstall cairosvg")
+        print("     - Alternative: Use SVG files directly (LaTeX supports SVG)")
 
     def generate_python_figure(self, py_file):
         """Generate figure from Python script."""

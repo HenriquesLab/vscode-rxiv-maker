@@ -23,7 +23,8 @@ def validate(
 ) -> None:
     """Validate manuscript structure and content before PDF generation.
 
-    **MANUSCRIPT_PATH**: Directory containing your manuscript files. Defaults to MANUSCRIPT/
+    **MANUSCRIPT_PATH**: Directory containing your manuscript files.
+    Defaults to MANUSCRIPT/
 
     This command checks manuscript structure, citations, cross-references,
     figures, mathematical expressions, and special Markdown syntax elements.

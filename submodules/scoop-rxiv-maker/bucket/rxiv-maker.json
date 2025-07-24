@@ -1,0 +1,76 @@
+{
+    "version": "1.4.5",
+    "description": "Automated LaTeX article generation with modern CLI and figure creation capabilities",
+    "homepage": "https://github.com/henriqueslab/rxiv-maker",
+    "license": "MIT",
+    "url": "https://files.pythonhosted.org/packages/f2/a7/07c8c68c8e44cda429c1aae3ef1520d46402590ea86a5c84800eaac87505/rxiv_maker-1.4.5.tar.gz",
+    "hash": "sha256:f1ccdce643de014ad17b78f9632b4ee72b725000d82315fe59c0f05cc9af2d00",
+    "depends": [
+        "python"
+    ],
+    "suggest": {
+        "LaTeX distribution": [
+            "extras/latex",
+            "extras/miktex"
+        ],
+        "Version control": "git",
+        "Build tools": "make"
+    },
+    "pre_install": [
+        "Write-Host 'Installing rxiv-maker...' -ForegroundColor Green",
+        "Write-Host 'This will install rxiv-maker Python package and its dependencies.' -ForegroundColor Yellow"
+    ],
+    "post_install": [
+        "Write-Host 'Installing Python package...' -ForegroundColor Green",
+        "python -m pip install --upgrade --force-reinstall \"rxiv-maker==$version\"",
+        "if ($LASTEXITCODE -ne 0) { Write-Error 'Failed to install Python package'; exit 1 }",
+        "Write-Host 'Verifying installation...' -ForegroundColor Yellow",
+        "python -c \"import rxiv_maker; print('[OK] rxiv-maker ' + rxiv_maker.__version__ + ' installed successfully')\" 2>&1 | Write-Host",
+        "if ($LASTEXITCODE -ne 0) { Write-Host '[WARN] Python module verification had issues, but CLI should work'; $LASTEXITCODE = 0 }",
+        "Write-Host '' ",
+        "Write-Host 'Quick start:' -ForegroundColor Cyan",
+        "Write-Host '  rxiv init          # Initialize a new manuscript' -ForegroundColor White",
+        "Write-Host '  rxiv pdf           # Generate PDF' -ForegroundColor White",
+        "Write-Host '  rxiv --help        # Show help' -ForegroundColor White",
+        "Write-Host '' ",
+        "Write-Host 'For full functionality, install LaTeX:' -ForegroundColor Yellow",
+        "Write-Host '  scoop install latex' -ForegroundColor White",
+        "Write-Host 'Or:' -ForegroundColor Yellow",
+        "Write-Host '  scoop install miktex' -ForegroundColor White"
+    ],
+    "pre_uninstall": [
+        "Write-Host 'Uninstalling rxiv-maker Python package...' -ForegroundColor Yellow",
+        "python -m pip uninstall -y rxiv-maker"
+    ],
+    "bin": [
+        [
+            "python",
+            "rxiv",
+            "-m rxiv_maker.cli"
+        ]
+    ],
+    "env_add_path": [],
+    "persist": [],
+    "checkver": {
+        "url": "https://pypi.org/pypi/rxiv-maker/json",
+        "jsonpath": "$.info.version"
+    },
+    "autoupdate": {
+        "url": "https://files.pythonhosted.org/packages/source/r/rxiv-maker/rxiv_maker-$version.tar.gz",
+        "hash": {
+            "url": "https://pypi.org/pypi/rxiv-maker/json",
+            "jsonpath": "$.releases['$version'][?(@.packagetype == 'sdist')].digests.sha256"
+        }
+    },
+    "notes": [
+        "rxiv-maker has been installed as a Python package.",
+        "The 'rxiv' command is now available in your PATH.",
+        "",
+        "For full functionality, install additional dependencies:",
+        "- LaTeX: scoop install latex (or miktex)",
+        "- Git: scoop install git",
+        "- Make: scoop install make",
+        "",
+        "Documentation: https://github.com/henriqueslab/rxiv-maker#readme"
+    ]
+}

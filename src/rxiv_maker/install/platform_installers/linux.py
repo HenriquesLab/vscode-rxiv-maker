@@ -69,6 +69,9 @@ class LinuxInstaller:
                 "libjpeg-dev",
                 "zlib1g-dev",
                 "pkg-config",
+                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
+                "libcairo2-dev",
+                "libpango1.0-dev",
             ],
             "apt-get": [
                 "build-essential",
@@ -78,6 +81,9 @@ class LinuxInstaller:
                 "libjpeg-dev",
                 "zlib1g-dev",
                 "pkg-config",
+                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
+                "libcairo2-dev",
+                "libpango1.0-dev",
             ],
             "dnf": [
                 "gcc",
@@ -88,6 +94,9 @@ class LinuxInstaller:
                 "libjpeg-turbo-devel",
                 "zlib-devel",
                 "pkgconfig",
+                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
+                "cairo-devel",
+                "pango-devel",
             ],
             "yum": [
                 "gcc",
@@ -98,6 +107,9 @@ class LinuxInstaller:
                 "libjpeg-turbo-devel",
                 "zlib-devel",
                 "pkgconfig",
+                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
+                "cairo-devel",
+                "pango-devel",
             ],
             "pacman": [
                 "base-devel",
@@ -107,6 +119,9 @@ class LinuxInstaller:
                 "libjpeg-turbo",
                 "zlib",
                 "pkg-config",
+                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
+                "cairo",
+                "pango",
             ],
             "apk": [
                 "build-base",
@@ -116,6 +131,9 @@ class LinuxInstaller:
                 "jpeg-dev",
                 "zlib-dev",
                 "pkgconfig",
+                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
+                "cairo-dev",
+                "pango-dev",
             ],
         }
 

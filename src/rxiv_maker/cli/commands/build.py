@@ -46,10 +46,12 @@ def build(
     skip_validation: bool,
     track_changes: str | None,
 ) -> None:
-    """Generate a publication-ready PDF from your Markdown manuscript with automated
-    figure generation, professional typesetting, and bibliography management.
+    """Generate a publication-ready PDF from your Markdown manuscript.
+    
+    Automated figure generation, professional typesetting, and bibliography management.
 
-    **MANUSCRIPT_PATH**: Directory containing your manuscript files. Defaults to MANUSCRIPT/
+    **MANUSCRIPT_PATH**: Directory containing your manuscript files.
+    Defaults to MANUSCRIPT/
 
     ## Examples
 
