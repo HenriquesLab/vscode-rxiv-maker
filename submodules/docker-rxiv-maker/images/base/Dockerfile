@@ -54,6 +54,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdk-pixbuf2.0-dev \
     libgirepository1.0-dev \
     git1.2-gobject-2.0 \
+    git1.2-glib-2.0 \
     gobject-introspection \
     libglib2.0-dev \
     # Advanced SVG processing libraries
@@ -276,33 +277,43 @@ ENV PATH="/root/.local/bin:$PATH"
 # Make uv available globally for all users
 RUN cp /root/.local/bin/uv /usr/local/bin/uv && chmod +x /usr/local/bin/uv
 
-# Pre-install ALL Python libraries with Cairo enhancements for better caching
+# Install Python packages in stages for better error handling and caching
+# Stage 1: Core scientific libraries
 RUN uv pip install --system --no-cache-dir \
-    # Core scientific libraries
+    "numpy>=1.24.0,<2.0.0" \
+    "scipy>=1.10.0,<2.0.0" \
     "matplotlib>=3.7.0,<3.9.0" \
     "seaborn>=0.12.0,<0.14.0" \
-    "numpy>=1.24.0,<2.0.0" \
     "pandas>=2.0.0,<3.0.0" \
-    "scipy>=1.10.0,<2.0.0" \
-    "Pillow>=9.0.0,<11.0.0" \
+    "Pillow>=9.0.0,<11.0.0"
+
+# Stage 2: Core utility libraries
+RUN uv pip install --system --no-cache-dir \
     "pypdf>=3.0.0,<5.0.0" \
     "PyYAML>=6.0.0,<7.0.0" \
     "python-dotenv>=1.0.0,<2.0.0" \
     "crossref-commons>=0.0.7,<1.0.0" \
     "lazydocs>=0.4.8,<1.0.0" \
-    "types-requests>=2.32.4.20250611" \
-    # Enhanced Cairo and SVG libraries for improved diagram processing
-    "cairosvg>=2.7.0,<3.0.0" \
+    "types-requests>=2.32.4.20250611"
+
+# Stage 3: Cairo and graphics libraries (most problematic ones)
+RUN uv pip install --system --no-cache-dir \
     "pycairo>=1.25.0,<2.0.0" \
     "cairocffi>=1.6.0,<2.0.0" \
-    "pygobject>=3.42.0,<4.0.0" \
+    "pygobject>=3.40.0,<3.50.0"
+
+# Stage 4: SVG and document processing libraries
+RUN uv pip install --system --no-cache-dir \
+    "cairosvg>=2.7.0,<3.0.0" \
     "svglib>=1.5.0,<2.0.0" \
     "reportlab>=4.0.0,<5.0.0" \
     "tinycss2>=1.2.0,<2.0.0" \
     "cssselect2>=0.7.0,<1.0.0" \
     "defusedxml>=0.7.0,<1.0.0" \
-    "lxml>=4.9.0,<6.0.0" \
-    # Development dependencies
+    "lxml>=4.9.0,<6.0.0"
+
+# Stage 5: Development and testing dependencies
+RUN uv pip install --system --no-cache-dir \
     "pytest>=7.4,<8.0" \
     "py>=1.11.0,<2.0.0" \
     "ruff>=0.8.0,<1.0.0" \

@@ -2,7 +2,7 @@ name: Sync Docker Version
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev-no-puppets ]
     paths:
       - 'src/rxiv_maker/__version__.py'
   workflow_dispatch:
@@ -20,6 +20,7 @@ permissions:
 jobs:
   check-version-change:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       version_changed: ${{ steps.check-change.outputs.changed }}
@@ -81,6 +82,7 @@ jobs:
   trigger-docker-builds:
     needs: check-version-change
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: needs.check-version-change.outputs.version_changed == 'true'
 
     steps:
@@ -164,6 +166,7 @@ jobs:
   skip-notification:
     needs: check-version-change
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: needs.check-version-change.outputs.version_changed == 'false'
 
     steps:

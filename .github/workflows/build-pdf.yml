@@ -32,6 +32,7 @@ jobs:
   # First job: Determine which manuscript directory to use and get version
   prepare:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       manuscript_path: ${{ steps.set-path.outputs.manuscript_path }}
       rxiv_version: ${{ steps.get-version.outputs.version }}
@@ -127,6 +128,7 @@ jobs:
   build-pdf:
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     container:
       image: ${{ needs.prepare.outputs.docker_image }}  # Version-specific pre-compiled image
       options: --platform linux/amd64 --user root

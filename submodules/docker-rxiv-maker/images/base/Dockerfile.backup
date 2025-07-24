@@ -49,9 +49,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6-dev \
     libharfbuzz-dev \
     libfribidi-dev \
-    # Additional graphics libraries
+    # Enhanced Cairo and graphics libraries
     libcairo2-dev \
     libpango1.0-dev \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-dev \
+    libgirepository1.0-dev \
+    gobject-introspection \
+    libglib2.0-dev \
     libjpeg-dev \
     libgif-dev \
     libpng-dev \
@@ -228,6 +233,11 @@ RUN uv pip install --system --no-cache-dir \
     "crossref-commons>=0.0.7,<1.0.0" \
     "lazydocs>=0.4.8,<1.0.0" \
     "types-requests>=2.32.4.20250611" \
+    # Cairo and SVG libraries for Mermaid diagram processing
+    "cairosvg>=2.7.0,<3.0.0" \
+    "pycairo>=1.25.0,<2.0.0" \
+    "cairocffi>=1.6.0,<2.0.0" \
+    "pygobject>=3.42.0,<4.0.0" \
     # Development dependencies
     "pytest>=7.4,<8.0" \
     "py>=1.11.0,<2.0.0" \
