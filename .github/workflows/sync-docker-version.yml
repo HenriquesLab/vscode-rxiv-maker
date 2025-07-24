@@ -90,9 +90,14 @@ jobs:
 
         # Try to trigger repository_dispatch in docker-rxiv-maker submodule
         # Use DOCKER_SYNC_TOKEN if available, otherwise fall back to GITHUB_TOKEN
-        AUTH_TOKEN="${{ secrets.DOCKER_SYNC_TOKEN || secrets.GITHUB_TOKEN }}"
-
-        echo "Using authentication token for Docker repository dispatch..."
+        if [ -n "${{ secrets.DOCKER_SYNC_TOKEN }}" ]; then
+          AUTH_TOKEN="${{ secrets.DOCKER_SYNC_TOKEN }}"
+          echo "Using dedicated DOCKER_SYNC_TOKEN for Docker repository dispatch..."
+        else
+          AUTH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          echo "Using fallback GITHUB_TOKEN for Docker repository dispatch..."
+          echo "⚠️ For better security, consider setting DOCKER_SYNC_TOKEN secret"
+        fi
 
         RESPONSE=$(curl -X POST \
           -H "Accept: application/vnd.github.v3+json" \

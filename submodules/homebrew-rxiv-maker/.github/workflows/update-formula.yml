@@ -59,16 +59,34 @@ jobs:
 
       - name: Download template update script
         run: |
-          # Get the script from the main repository
-          curl -sLO https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/update-package-templates.py
-          curl -sLO https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/validate-package-templates.py
+          # Get the script from the main repository with error handling
+          echo "📥 Downloading update scripts..."
+
+          if ! curl -sSfL -o update-package-templates.py https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/update-package-templates.py; then
+            echo "❌ Failed to download update-package-templates.py"
+            exit 1
+          fi
+
+          if ! curl -sSfL -o validate-package-templates.py https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/validate-package-templates.py; then
+            echo "❌ Failed to download validate-package-templates.py"
+            exit 1
+          fi
+
           chmod +x update-package-templates.py validate-package-templates.py
+          echo "✅ Scripts downloaded successfully"
 
       - name: Download formula template
         run: |
-          # Get the template from the main repository
-          curl -sLO https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template
+          # Get the template from the main repository with error handling
+          echo "📥 Downloading formula template..."
+
+          if ! curl -sSfL -o rxiv-maker.rb.template https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template; then
+            echo "❌ Failed to download formula template"
+            exit 1
+          fi
+
           mv rxiv-maker.rb.template Formula/rxiv-maker.rb.template
+          echo "✅ Template downloaded successfully"
 
       - name: Validate template
         run: |

@@ -62,17 +62,35 @@ jobs:
       - name: Download template update script
         shell: bash
         run: |
-          # Get the script from the main repository
-          curl -sLO https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/update-package-templates.py
-          curl -sLO https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/validate-package-templates.py
+          # Get the script from the main repository with error handling
+          echo "📥 Downloading update scripts..."
+
+          if ! curl -sSfL -o update-package-templates.py https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/update-package-templates.py; then
+            echo "❌ Failed to download update-package-templates.py"
+            exit 1
+          fi
+
+          if ! curl -sSfL -o validate-package-templates.py https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/scripts/validate-package-templates.py; then
+            echo "❌ Failed to download validate-package-templates.py"
+            exit 1
+          fi
+
           chmod +x update-package-templates.py validate-package-templates.py
+          echo "✅ Scripts downloaded successfully"
 
       - name: Download manifest template
         shell: bash
         run: |
-          # Get the template from the main repository
-          curl -sLO https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template
+          # Get the template from the main repository with error handling
+          echo "📥 Downloading manifest template..."
+
+          if ! curl -sSfL -o rxiv-maker.json.template https://raw.githubusercontent.com/henriqueslab/rxiv-maker/main/submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template; then
+            echo "❌ Failed to download manifest template"
+            exit 1
+          fi
+
           mv rxiv-maker.json.template bucket/rxiv-maker.json.template
+          echo "✅ Template downloaded successfully"
 
       - name: Validate template
         shell: bash
