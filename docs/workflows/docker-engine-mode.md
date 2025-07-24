@@ -446,11 +446,11 @@ python src/py/commands/validate.py MANUSCRIPT
 
 #### Building Custom Images
 ```bash
-# Navigate to Docker directory
-cd src/docker
+# Navigate to Docker submodule directory
+cd submodules/docker-rxiv-maker/images/base
 
 # Build custom image
-make image-build DOCKER_HUB_REPO=myuser/rxiv-custom
+./build.sh --repo myuser/rxiv-custom --tag latest
 
 # Use custom image
 DOCKER_IMAGE=myuser/rxiv-custom:latest RXIV_ENGINE=DOCKER make pdf
@@ -499,14 +499,14 @@ docker run --rm \
 
 #### Building for Multiple Architectures
 ```bash
-cd src/docker
+cd submodules/docker-rxiv-maker/images/base
 
 # Build for both amd64 and arm64
-make image-build-multiplatform
+./build.sh --platform linux/amd64,linux/arm64
 
 # Build platform-specific images
-make image-amd64  # Intel/AMD processors
-make image-arm64  # Apple Silicon
+./build.sh --platform linux/amd64  # Intel/AMD processors
+./build.sh --platform linux/arm64  # Apple Silicon
 ```
 
 #### Platform-Specific Optimization

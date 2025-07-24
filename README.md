@@ -413,11 +413,7 @@ Rxiv-Maker provides robust Docker support through a dedicated submodule architec
 - Maintain separation between core application and infrastructure
 - Support experimental variants without affecting main codebase
 
-**Symlink Integration**: Build scripts in `src/docker/` are symlinked to the submodule to prevent code drift:
-```bash
-src/docker/build.sh -> ../../submodules/docker-rxiv-maker/images/base/build.sh
-src/docker/build-safe.sh -> ../../submodules/docker-rxiv-maker/images/base/build-safe.sh
-```
+**Docker Infrastructure**: All Docker build scripts and configuration are now consolidated in the [`submodules/docker-rxiv-maker/`](submodules/docker-rxiv-maker/) repository for centralized management.
 
 ### 🐳 Available Images
 

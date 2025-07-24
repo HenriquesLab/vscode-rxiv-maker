@@ -1,1 +1,0 @@
-../../submodules/docker-rxiv-maker/images/base/build-safe.sh
