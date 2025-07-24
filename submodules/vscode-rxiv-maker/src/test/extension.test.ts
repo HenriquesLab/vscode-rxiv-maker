@@ -2,9 +2,48 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
+
+	/**
+	 * Helper function to find the EXAMPLE_MANUSCRIPT directory dynamically
+	 */
+	function findExampleManuscriptPath(): string | null {
+		// Try multiple potential locations relative to the test execution
+		const potentialPaths = [
+			// From VS Code extension development/test environment
+			path.join(__dirname, '..', '..', '..', '..', 'EXAMPLE_MANUSCRIPT'),
+			// From workspace root
+			path.join(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', 'EXAMPLE_MANUSCRIPT'),
+			// From common project structure patterns
+			path.join(process.cwd(), 'EXAMPLE_MANUSCRIPT'),
+			path.join(process.cwd(), '..', 'EXAMPLE_MANUSCRIPT'),
+			path.join(process.cwd(), '..', '..', 'EXAMPLE_MANUSCRIPT'),
+			// Environment variable override
+			process.env.RXIV_MAKER_EXAMPLE_PATH || '',
+		].filter(Boolean);
+
+		for (const potentialPath of potentialPaths) {
+			if (fs.existsSync(potentialPath) && fs.existsSync(path.join(potentialPath, '00_CONFIG.yml'))) {
+				return potentialPath;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get the example manuscript path or skip test if not available
+	 */
+	function getExampleManuscriptPath(): string {
+		const examplePath = findExampleManuscriptPath();
+		if (!examplePath) {
+			throw new Error('EXAMPLE_MANUSCRIPT directory not found. Please ensure the rxiv-maker repository is available or set RXIV_MAKER_EXAMPLE_PATH environment variable.');
+		}
+		return examplePath;
+	}
 
 	test('Sample test', () => {
 		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
@@ -13,7 +52,7 @@ suite('Extension Test Suite', () => {
 
 	test('Extension should load commands', async () => {
 		// First, ensure the extension is activated by opening a document that should trigger it
-		const exampleManuscriptPath = '/Users/paxcalpt/Documents/GitHub/rxiv-maker/EXAMPLE_MANUSCRIPT';
+		const exampleManuscriptPath = getExampleManuscriptPath();
 		const mainPath = path.join(exampleManuscriptPath, '01_MAIN.md');
 		const uri = vscode.Uri.file(mainPath);
 		const document = await vscode.workspace.openTextDocument(uri);
@@ -34,7 +73,11 @@ suite('Extension Test Suite', () => {
 	});
 
 	suite('EXAMPLE_MANUSCRIPT Tests', () => {
-		const exampleManuscriptPath = '/Users/paxcalpt/Documents/GitHub/rxiv-maker/EXAMPLE_MANUSCRIPT';
+		let exampleManuscriptPath: string;
+
+		suiteSetup(() => {
+			exampleManuscriptPath = getExampleManuscriptPath();
+		});
 
 		test('Should detect rxiv-maker project structure', async () => {
 			const requiredFiles = ['00_CONFIG.yml', '01_MAIN.md', '03_REFERENCES.bib'];

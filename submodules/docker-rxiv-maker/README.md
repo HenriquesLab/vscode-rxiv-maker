@@ -1,23 +1,24 @@
 # Docker Images for Rxiv-Maker
 
-Docker images and build infrastructure for rxiv-maker with experimental Cairo support.
+Docker images and build infrastructure for rxiv-maker with Cairo-only SVG processing.
 
 ## Overview
 
-This repository contains Docker image definitions and build infrastructure for [rxiv-maker](https://github.com/HenriquesLab/rxiv-maker), an automated LaTeX article generation system. It provides both production-ready base images and experimental Cairo-optimized variants.
+This repository contains Docker image definitions and build infrastructure for [rxiv-maker](https://github.com/HenriquesLab/rxiv-maker), an automated LaTeX article generation system. As of v1.8+, all images use Cairo-only SVG processing for improved performance and cross-platform compatibility.
 
 ## Image Variants
 
-### Base Images (`images/base/`)
+### Base Images (`images/base/`) - **Recommended**
 - **Repository**: `henriqueslab/rxiv-maker-base`
 - **Tags**: `latest`, `v1.x`
-- **Architecture**: AMD64, ARM64
-- **Purpose**: Production-ready images with complete LaTeX, Python, Node.js, and R environments
+- **Architecture**: AMD64, ARM64 (native performance)
+- **Purpose**: Production-ready Cairo-only images with complete LaTeX, Python, Node.js, and R environments
+- **Features**: Enhanced SVG processing, no browser dependencies, smaller image size
 
-### Experimental Cairo Images (`images/experimental-cairo/`)
+### ~~Experimental Cairo Images~~ (`images/experimental-cairo/`) - **DEPRECATED**
 - **Repository**: `henriqueslab/rxiv-maker-experimental`
-- **Tags**: `latest-cairo`, `experimental-cairo`
-- **Architecture**: AMD64, ARM64
+- **Status**: ⚠️ **Deprecated** - Features merged into base image
+- **Migration**: Use `henriqueslab/rxiv-maker-base:latest` instead
 - **Purpose**: Enhanced Cairo/SVG processing capabilities for post-Puppeteer workflows
 
 ## Quick Start

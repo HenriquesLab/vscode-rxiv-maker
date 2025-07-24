@@ -76,6 +76,7 @@ def build(
         $ rxiv pdf --track-changes v1.0.0
     """
     verbose = ctx.obj.get("verbose", False)
+    engine = ctx.obj.get("engine", "local")
 
     # Default to MANUSCRIPT if not specified
     if manuscript_path is None:
@@ -109,6 +110,7 @@ def build(
                 skip_validation=skip_validation,
                 track_changes_tag=track_changes,
                 verbose=verbose,
+                engine=engine,
             )
 
             # Build the PDF

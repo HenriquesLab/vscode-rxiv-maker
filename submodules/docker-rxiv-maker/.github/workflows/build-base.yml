@@ -17,10 +17,16 @@ on:
         description: 'Tag for the built image'
         required: false
         default: 'latest'
+      rxiv_version:
+        description: 'rxiv-maker version to tag the image with (e.g., 1.4.8)'
+        required: false
+        default: ''
       platforms:
         description: 'Platforms to build for'
         required: false
         default: 'linux/amd64,linux/arm64'
+  repository_dispatch:
+    types: [build-docker-image]
 
 env:
   REGISTRY: docker.io
@@ -52,6 +58,31 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PUSH }}
 
+    - name: Determine version and tags
+      id: version
+      run: |
+        # Determine version from multiple sources
+        if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+          # Repository dispatch from main repo
+          VERSION="${{ github.event.client_payload.version }}"
+          echo "Using version from repository_dispatch: $VERSION"
+        elif [ -n "${{ github.event.inputs.rxiv_version }}" ]; then
+          # Manual workflow dispatch with version
+          VERSION="${{ github.event.inputs.rxiv_version }}"
+          echo "Using version from manual input: $VERSION"
+        elif [ "${{ github.event.inputs.tag }}" != "latest" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+          # Manual workflow dispatch with custom tag
+          VERSION="${{ github.event.inputs.tag }}"
+          echo "Using custom tag as version: $VERSION"
+        else
+          # Default to latest for development builds
+          VERSION="latest"
+          echo "Using default version: $VERSION"
+        fi
+
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Final version: $VERSION"
+
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -61,7 +92,14 @@ jobs:
           type=ref,event=branch
           type=ref,event=pr
           type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
+          type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' && github.event.inputs.tag != 'latest' }}
+          type=raw,value=v${{ steps.version.outputs.version }},enable=${{ steps.version.outputs.version != 'latest' }}
+        labels: |
+          org.opencontainers.image.title=rxiv-maker-base
+          org.opencontainers.image.description=Ubuntu-based image with LaTeX, Python, Node.js, R, and enhanced Cairo SVG processing (no browser dependencies)
+          org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          rxiv-maker.version=${{ steps.version.outputs.version }}
+          rxiv-maker.variant=cairo-only
 
     - name: Build and push base image
       uses: docker/build-push-action@v6
@@ -98,6 +136,12 @@ jobs:
         echo "Testing R..."
         docker run --rm test-base R --version
 
+        echo "Testing Cairo functionality..."
+        docker run --rm test-base /usr/local/bin/test-cairo.sh
+
+        echo "Testing enhanced font support..."
+        docker run --rm test-base fc-list | grep -i liberation | head -5
+
         echo "All tests passed!"
 
     - name: Update repository description
@@ -113,7 +157,7 @@ jobs:
             --retry 2 \
             --retry-delay 5 \
             -d '{
-              "full_description": "# Rxiv-Maker Base Docker Image\n\nUbuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed for scientific document generation.\n\n## Quick Start\n```bash\ndocker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest\n```\n\n## Features\n- Complete LaTeX distribution\n- Python 3.11 with scientific libraries\n- Node.js 18 with Mermaid CLI\n- R with common packages\n- Multi-platform support (AMD64/ARM64)\n\n## Documentation\nSee [GitHub repository](https://github.com/HenriquesLab/docker-rxiv-maker) for full documentation."
+              "full_description": "# Rxiv-Maker Base Docker Image (Cairo-Only)\n\nUbuntu-based image with LaTeX, Python, Node.js, R, and enhanced Cairo SVG processing for scientific document generation.\n\n## Quick Start\n```bash\ndocker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest\n```\n\n## Features\n- Complete LaTeX distribution\n- Python 3.11 with enhanced Cairo libraries (CairoSVG, pycairo)\n- Advanced SVG processing capabilities\n- Extended font collection for better rendering\n- Node.js 18 with Mermaid CLI (SVG-only output)\n- R with Cairo graphics support\n- Multi-platform support (AMD64/ARM64)\n- No browser dependencies (Chrome/Chromium removed)\n\n## Migration Note\nThis image has transitioned from Puppeteer to Cairo-only SVG processing for better performance and smaller image size.\n\n## Documentation\nSee [GitHub repository](https://github.com/HenriquesLab/docker-rxiv-maker) for full documentation."
             }' \
             "https://hub.docker.com/v2/repositories/${{ env.BASE_IMAGE_NAME }}/"; then
             echo "✅ Docker Hub description updated successfully"
@@ -133,6 +177,11 @@ jobs:
       run: |
         echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "- **Image**: ${{ env.BASE_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Platforms**: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Status**: ✅ Successfully built and pushed" >> $GITHUB_STEP_SUMMARY
+
+        # Output information for debugging
+        echo "Built image: ${{ env.BASE_IMAGE_NAME }}:v${{ steps.version.outputs.version }}"

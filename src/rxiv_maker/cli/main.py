@@ -42,7 +42,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Workflow Commands",
-            "commands": ["arxiv", "track-changes", "setup"],
+            "commands": ["arxiv", "track-changes", "setup", "install-deps"],
         },
         {
             "name": "Configuration",
@@ -190,6 +190,12 @@ def main(
     **Prepare arXiv submission:**
 
         $ rxiv arxiv                    # Prepare arXiv package
+
+    **Install system dependencies:**
+
+        $ rxiv install-deps             # Install LaTeX, Node.js, R, etc.
+
+        $ rxiv install-deps --mode=minimal  # Install only essential dependencies
     """
     # Handle completion installation
     if install_completion:
@@ -262,6 +268,7 @@ main.add_command(commands.init)
 main.add_command(commands.bibliography)
 main.add_command(commands.track_changes)
 main.add_command(commands.setup)
+main.add_command(commands.install_deps, name="install-deps")
 main.add_command(commands.version)
 main.add_command(config_cmd, name="config")
 main.add_command(check_installation, name="check-installation")

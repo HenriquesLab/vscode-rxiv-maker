@@ -26,7 +26,36 @@ except ImportError:
 
 def get_template_path():
     """Get the path to the template file."""
-    return Path(__file__).parent.parent.parent / "tex" / "template.tex"
+    # Try pkg_resources first for installed packages (most reliable)
+    try:
+        import pkg_resources
+
+        template_path = Path(
+            pkg_resources.resource_filename("rxiv_maker", "tex/template.tex")
+        )
+        if template_path.exists():
+            return template_path
+    except Exception:
+        # Catch all exceptions from pkg_resources
+        pass
+
+    # Fallback to relative path for development/source installations
+    template_path = Path(__file__).parent.parent / "tex" / "template.tex"
+    if template_path.exists():
+        return template_path
+
+    # Final fallback - try parent.parent.parent for old structure
+    fallback_path = Path(__file__).parent.parent.parent / "tex" / "template.tex"
+    if fallback_path.exists():
+        return fallback_path
+
+    # If all else fails, raise a descriptive error
+    raise FileNotFoundError(
+        f"Could not find template.tex file. Searched locations:\n"
+        f"  - Package resource: rxiv_maker/tex/template.tex\n"
+        f"  - Relative path: {Path(__file__).parent.parent / 'tex' / 'template.tex'}\n"
+        f"  - Fallback path: {Path(__file__).parent.parent.parent / 'tex' / 'template.tex'}"
+    )
 
 
 def find_supplementary_md():

@@ -21,6 +21,8 @@ from rich.console import Console
 
 from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 
+from .cache_utils import get_cache_dir, migrate_cache_file
+
 console = Console()
 
 
@@ -37,12 +39,36 @@ class UpdateChecker:
         self.package_name = package_name
         self.current_version = current_version or self._get_current_version()
         self.pypi_url = f"https://pypi.org/pypi/{package_name}/json"
-        self.cache_dir = Path.home() / ".rxiv"
+
+        # Use standardized cache directory
+        self.cache_dir = get_cache_dir("updates")
         self.cache_file = self.cache_dir / "update_cache.json"
+
+        # Handle migration from legacy location
+        self._migrate_legacy_cache()
+
         self.check_interval = timedelta(hours=24)  # Check once per day
 
         # Ensure cache directory exists
-        self.cache_dir.mkdir(exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def _migrate_legacy_cache(self) -> None:
+        """Migrate cache file from legacy location if it exists."""
+        legacy_cache_dir = Path.home() / ".rxiv"
+        legacy_cache_file = legacy_cache_dir / "update_cache.json"
+
+        if legacy_cache_file.exists():
+            try:
+                migrate_cache_file(legacy_cache_file, self.cache_file)
+                # Try to remove empty legacy directory
+                try:
+                    legacy_cache_dir.rmdir()
+                except OSError:
+                    # Directory not empty, leave it alone
+                    pass
+            except Exception:
+                # Migration failed, continue with new location
+                pass
 
     def _get_current_version(self) -> str:
         """Get the current version of the package."""

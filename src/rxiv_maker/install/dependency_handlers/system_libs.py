@@ -5,6 +5,13 @@ import sys
 
 from ..utils.logging import InstallLogger
 
+try:
+    from packaging import version
+
+    HAS_PACKAGING = True
+except ImportError:
+    HAS_PACKAGING = False
+
 
 class SystemLibsHandler:
     """Handler for system libraries verification."""
@@ -77,6 +84,48 @@ class SystemLibsHandler:
         return f"{version.major}.{version.minor}.{version.micro}"
 
     def check_python_compatibility(self) -> bool:
-        """Check if Python version is compatible."""
-        version = sys.version_info
-        return version.major == 3 and version.minor >= 11
+        """Check if Python version is compatible with rxiv-maker requirements.
+
+        Requires Python >= 3.11 as specified in pyproject.toml.
+        Uses packaging library for robust version comparison if available.
+
+        Returns:
+            bool: True if Python version is compatible, False otherwise.
+        """
+        if HAS_PACKAGING:
+            # Use packaging library for robust version comparison
+            current_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+            required_version = "3.11.0"
+
+            try:
+                return version.parse(current_version) >= version.parse(required_version)
+            except Exception as e:
+                self.logger.debug(f"Error parsing version with packaging library: {e}")
+                # Fall back to simple comparison
+                pass
+
+        # Fallback to simple version comparison
+        version_info = sys.version_info
+        return version_info.major == 3 and version_info.minor >= 11
+
+    def get_python_version_details(self) -> dict[str, str]:
+        """Get detailed Python version information for debugging.
+
+        Returns:
+            dict: Dictionary containing version details including compatibility status.
+        """
+        version_info = sys.version_info
+        current_version = self.get_python_version()
+        is_compatible = self.check_python_compatibility()
+
+        details = {
+            "version": current_version,
+            "major": str(version_info.major),
+            "minor": str(version_info.minor),
+            "micro": str(version_info.micro),
+            "is_compatible": str(is_compatible),
+            "required_version": ">=3.11.0",
+            "version_parser": "packaging" if HAS_PACKAGING else "builtin",
+        }
+
+        return details

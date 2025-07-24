@@ -29,17 +29,75 @@ on:
         value: ${{ jobs.build-pdf.outputs.success }}
 
 jobs:
-  # First job: Determine which manuscript directory to use
+  # First job: Determine which manuscript directory to use and get version
   prepare:
     runs-on: ubuntu-latest
     outputs:
       manuscript_path: ${{ steps.set-path.outputs.manuscript_path }}
+      rxiv_version: ${{ steps.get-version.outputs.version }}
+      docker_image: ${{ steps.get-version.outputs.docker_image }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Get rxiv-maker version and determine Docker image
+        id: get-version
+        run: |
+          # Extract version from Python package
+          VERSION=$(python3 -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from rxiv_maker.__version__ import __version__
+          print(__version__)
+          ")
+
+          echo "Detected rxiv-maker version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if version-specific Docker image exists (Cairo-only images)
+          VERSIONED_IMAGE="henriqueslab/rxiv-maker-base:v$VERSION"
+          FALLBACK_IMAGE="henriqueslab/rxiv-maker-base:latest"
+
+          echo "Checking availability of versioned image: $VERSIONED_IMAGE"
+
+          # Check for version-specific image availability with timeout and retry
+          echo "🔍 Checking Docker image availability..."
+
+          # Use Docker Hub API with proper error handling
+          check_image_exists() {
+            local image_path="$1"
+            local timeout=10
+
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$timeout" \
+              "https://hub.docker.com/v2/repositories/$image_path/" 2>/dev/null || echo "000")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              return 0
+            else
+              return 1
+            fi
+          }
+
+          # Priority order: versioned -> latest (both are Cairo-only)
+          if check_image_exists "henriqueslab/rxiv-maker-base/tags/v$VERSION"; then
+            echo "✅ Version-specific Cairo-only image available: $VERSIONED_IMAGE"
+            DOCKER_IMAGE="$VERSIONED_IMAGE"
+          elif check_image_exists "henriqueslab/rxiv-maker-base/tags/latest"; then
+            echo "✅ Using latest Cairo-only base image: $FALLBACK_IMAGE"
+            echo "ℹ️ Version-specific image not available, using latest"
+            DOCKER_IMAGE="$FALLBACK_IMAGE"
+          else
+            echo "❌ No suitable Docker images available"
+            echo "📋 Will attempt to use fallback anyway: $FALLBACK_IMAGE"
+            echo "⚠️ Build may fail if image is unavailable"
+            DOCKER_IMAGE="$FALLBACK_IMAGE"
+          fi
+
+          echo "docker_image=$DOCKER_IMAGE" >> $GITHUB_OUTPUT
+          echo "Final Docker image: $DOCKER_IMAGE"
 
       - name: Set manuscript path
         id: set-path
@@ -70,7 +128,7 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     container:
-      image: henriqueslab/rxiv-maker-base:latest  # Pre-compiled image with all dependencies
+      image: ${{ needs.prepare.outputs.docker_image }}  # Version-specific pre-compiled image
       options: --platform linux/amd64 --user root
     outputs:
       pdf-path: ${{ steps.build-result.outputs.pdf-path }}
@@ -78,6 +136,117 @@ jobs:
       success: ${{ steps.build-result.outputs.success }}
 
     steps:
+    - name: Verify Docker image availability
+      run: |
+        echo "=================================================="
+        echo "🐳 Docker Image Verification"
+        echo "=================================================="
+        echo "Expected image: ${{ needs.prepare.outputs.docker_image }}"
+        echo "rxiv-maker version: ${{ needs.prepare.outputs.rxiv_version }}"
+        echo "Current container image: $(hostname || echo 'unknown')"
+
+        # Verify we're running in the expected container
+        if command -v pdflatex >/dev/null 2>&1; then
+          echo "✅ LaTeX installation detected"
+          pdflatex --version | head -1
+        else
+          echo "❌ LaTeX not found in container"
+          echo "This suggests Docker image version mismatch"
+        fi
+
+        if command -v python3 >/dev/null 2>&1; then
+          echo "✅ Python installation detected"
+          python3 --version
+        else
+          echo "❌ Python not found in container"
+        fi
+
+        if command -v mmdc >/dev/null 2>&1; then
+          echo "✅ Mermaid CLI detected"
+          mmdc --version || echo "Mermaid version check failed"
+
+          # Test Mermaid diagram generation capability
+          echo "🧪 Testing Mermaid diagram generation..."
+          cat > /tmp/test_diagram.mmd << 'EOF'
+        graph TD
+            A[Start] --> B{Is it working?}
+            B -->|Yes| C[Great!]
+            B -->|No| D[Fix it]
+            D --> B
+        EOF
+
+          if mmdc -i /tmp/test_diagram.mmd -o /tmp/test_diagram.svg >/dev/null 2>&1; then
+            echo "✅ Mermaid SVG generation successful"
+            if mmdc -i /tmp/test_diagram.mmd -o /tmp/test_diagram.png >/dev/null 2>&1; then
+              echo "✅ Mermaid PNG generation successful"
+            else
+              echo "⚠️ Mermaid PNG generation failed (Cairo-only mode)"
+            fi
+          else
+            echo "❌ Mermaid diagram generation failed"
+          fi
+        else
+          echo "⚠️ Mermaid CLI not found in container"
+        fi
+
+    - name: Test Cairo functionality
+      run: |
+        echo "🎨 Testing Cairo SVG processing capabilities..."
+
+        # Test Cairo Python libraries
+        if python3 -c "import cairosvg, pycairo; print('✅ Cairo libraries available')" 2>/dev/null; then
+          echo "✅ Cairo Python libraries detected"
+
+          # Test Cairo SVG to PNG conversion
+          echo "🧪 Testing Cairo SVG to PNG conversion..."
+          cat > /tmp/test_cairo.py << 'EOF'
+import cairosvg
+
+# Create test SVG
+svg_content = '''<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="100" fill="lightblue" stroke="navy" stroke-width="2"/>
+  <text x="100" y="50" text-anchor="middle" font-family="Liberation Sans" font-size="16">Cairo Test</text>
+</svg>'''
+
+# Convert to PNG
+png_data = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
+if len(png_data) > 0:
+    print('✅ Cairo SVG to PNG conversion successful ({} bytes)'.format(len(png_data)))
+else:
+    print('❌ Cairo SVG to PNG conversion failed')
+    exit(1)
+EOF
+          python3 /tmp/test_cairo.py
+        else
+          echo "❌ Cairo libraries not available"
+          exit 1
+        fi
+
+        # Test enhanced font availability
+        echo "🔤 Testing enhanced font collection..."
+        if fc-list | grep -i "liberation\|dejavu\|roboto\|noto" | head -3; then
+          echo "✅ Enhanced fonts available"
+        else
+          echo "⚠️ Limited font collection detected"
+        fi
+
+        # Test Cairo test script if available
+        if [ -f "/usr/local/bin/test-cairo.sh" ]; then
+          echo "🔧 Running Cairo test script..."
+          /usr/local/bin/test-cairo.sh
+        else
+          echo "ℹ️ Cairo test script not found (expected in Cairo-only images)"
+        fi
+
+        # Verify no browser dependencies
+        echo "🚫 Verifying no browser dependencies..."
+        if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1 && ! command -v chrome >/dev/null 2>&1; then
+          echo "✅ No browser dependencies found (Cairo-only confirmed)"
+        else
+          echo "⚠️ Browser dependencies detected (transition may be incomplete)"
+        fi
+
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
@@ -88,6 +257,7 @@ jobs:
       run: |
         echo "MANUSCRIPT_PATH=${{ needs.prepare.outputs.manuscript_path }}" >> $GITHUB_ENV
         echo "Using manuscript path: ${{ needs.prepare.outputs.manuscript_path }}"
+        echo "Using rxiv-maker version: ${{ needs.prepare.outputs.rxiv_version }}"
 
     - name: Configure Git
       run: |
@@ -122,9 +292,11 @@ jobs:
         mkdir -p ~/.cache ~/.R/library
         chown -R root:root ~/.cache ~/.R/library || true
 
-        # Install only Python dependencies (system dependencies already in Docker image)
+        # Install Python dependencies using uv (system dependencies already in Docker image)
         # This is the key performance optimization - no lengthy apt installs or LaTeX setup
-        make setup
+        python3 -m pip install uv
+        uv sync
+        uv pip install -e .
 
         # Set up a writable R library directory (core R packages already in Docker image)
         echo 'R_LIBS_USER="~/.R/library"' >> ~/.Renviron
@@ -219,29 +391,29 @@ jobs:
 
         # Run the build with step-by-step logging
         echo "🧹 Step 1: Cleaning figures..."
-        make clean-figures 2>&1 | sed 's/^/  /'
+        uv run rxiv clean "$MANUSCRIPT_PATH" --figures-only 2>&1 | sed 's/^/  /'
         echo "  ✅ Figures cleaned"
 
         echo "📄 Step 2: Generating PDF..."
-        echo "  Command: make pdf MANUSCRIPT_PATH=\"$MANUSCRIPT_PATH\""
+        echo "  Command: uv run rxiv pdf \"$MANUSCRIPT_PATH\" --output-dir output --force-figures"
         echo "  Working directory: $(pwd)"
         echo "  Start time: $(date)"
 
-        # Run make pdf with detailed output
+        # Run rxiv pdf with detailed output
         set -o pipefail
-        make pdf MANUSCRIPT_PATH="$MANUSCRIPT_PATH" 2>&1 | tee /tmp/make_pdf_output.log | sed 's/^/  /'
-        MAKE_EXIT_CODE=$?
+        uv run rxiv pdf "$MANUSCRIPT_PATH" --output-dir output --force-figures --verbose 2>&1 | tee /tmp/rxiv_pdf_output.log | sed 's/^/  /'
+        RXIV_EXIT_CODE=$?
 
         echo "  End time: $(date)"
-        echo "  Exit code: $MAKE_EXIT_CODE"
+        echo "  Exit code: $RXIV_EXIT_CODE"
 
-        if [ $MAKE_EXIT_CODE -ne 0 ]; then
-          echo "  ❌ make pdf failed with exit code $MAKE_EXIT_CODE"
+        if [ $RXIV_EXIT_CODE -ne 0 ]; then
+          echo "  ❌ rxiv pdf failed with exit code $RXIV_EXIT_CODE"
           echo "  📋 Last 50 lines of output:"
-          tail -50 /tmp/make_pdf_output.log | sed 's/^/    /'
-          exit $MAKE_EXIT_CODE
+          tail -50 /tmp/rxiv_pdf_output.log | sed 's/^/    /'
+          exit $RXIV_EXIT_CODE
         else
-          echo "  ✅ make pdf completed successfully"
+          echo "  ✅ rxiv pdf completed successfully"
         fi
 
     - name: Check PDF generation
@@ -265,44 +437,77 @@ jobs:
           ls -la . | sed 's/^/    /'
         fi
 
-        # Check for expected PDF - try both possible names for robustness
-        PRIMARY_PDF_PATH="output/${MANUSCRIPT_PATH}.pdf"
-        FALLBACK_PDF_PATH="output/MANUSCRIPT.pdf"
+        # Enhanced PDF detection with multiple naming patterns
+        MANUSCRIPT_BASENAME=$(basename "$MANUSCRIPT_PATH")
 
-        echo "🔍 Looking for PDF at: $PRIMARY_PDF_PATH"
+        # Try multiple possible PDF names in order of preference
+        PDF_CANDIDATES=(
+          "output/${MANUSCRIPT_BASENAME}.pdf"
+          "output/MANUSCRIPT.pdf"
+          "output/${MANUSCRIPT_PATH}.pdf"
+          "$MANUSCRIPT_PATH/${MANUSCRIPT_BASENAME}.pdf"
+          "$MANUSCRIPT_PATH.pdf"
+        )
 
-        if [ -f "$PRIMARY_PDF_PATH" ]; then
-          PDF_PATH="$PRIMARY_PDF_PATH"
-          echo "  ✅ PDF generated successfully!"
+        echo "🔍 Looking for generated PDF files..."
+        echo "  📂 Manuscript path: $MANUSCRIPT_PATH"
+        echo "  📂 Manuscript basename: $MANUSCRIPT_BASENAME"
+
+        PDF_PATH=""
+        for candidate in "${PDF_CANDIDATES[@]}"; do
+          echo "  🔍 Checking: $candidate"
+          if [ -f "$candidate" ]; then
+            PDF_PATH="$candidate"
+            echo "  ✅ PDF found at: $PDF_PATH"
+            break
+          fi
+        done
+
+        if [ -n "$PDF_PATH" ]; then
           echo "  📊 PDF Details:"
           ls -la "$PDF_PATH" | sed 's/^/    /'
           file "$PDF_PATH" | sed 's/^/    /'
           echo "  📏 PDF size: $(du -h "$PDF_PATH" | cut -f1)"
-        elif [ -f "$FALLBACK_PDF_PATH" ]; then
-          PDF_PATH="$FALLBACK_PDF_PATH"
-          echo "  ⚠️  PDF found at fallback location: $FALLBACK_PDF_PATH"
-          echo "  📊 PDF Details:"
-          ls -la "$PDF_PATH" | sed 's/^/    /'
-          file "$PDF_PATH" | sed 's/^/    /'
-          echo "  📏 PDF size: $(du -h "$PDF_PATH" | cut -f1)"
+
+          # Verify PDF is not corrupted
+          if file "$PDF_PATH" | grep -q "PDF document"; then
+            echo "  ✅ PDF file format verified"
+          else
+            echo "  ⚠️ PDF file may be corrupted"
+          fi
         else
-          echo "  ❌ ERROR: PDF not found at expected locations"
-          echo "  🔍 Tried: $PRIMARY_PDF_PATH"
-          echo "  🔍 Tried: $FALLBACK_PDF_PATH"
-          echo "  🔍 Searching for any PDF files..."
+          echo "  ❌ ERROR: PDF not found at any expected locations"
+          echo "  🔍 Searched locations:"
+          for candidate in "${PDF_CANDIDATES[@]}"; do
+            echo "    - $candidate"
+          done
+
+          echo "  🔍 Searching for any PDF files in workspace..."
           find . -name "*.pdf" -type f 2>/dev/null | sed 's/^/    /' || echo "    No PDF files found anywhere"
 
-          echo "  📋 All output files:"
-          find output/ -type f 2>/dev/null | sed 's/^/    /' || echo "    No files found in output/"
+          echo "  📋 Contents of output directory:"
+          if [ -d "output" ]; then
+            ls -la output/ | sed 's/^/    /'
+          else
+            echo "    Output directory does not exist"
+          fi
+
+          echo "  📋 Contents of manuscript directory:"
+          if [ -d "$MANUSCRIPT_PATH" ]; then
+            ls -la "$MANUSCRIPT_PATH" | sed 's/^/    /'
+          else
+            echo "    Manuscript directory does not exist: $MANUSCRIPT_PATH"
+          fi
 
           echo "  📋 LaTeX log files analysis:"
-          find output/ -name "*.log" -exec echo "    === {} ===" \; -exec tail -50 {} \; 2>/dev/null || echo "    No log files found"
+          find . -name "*.log" -exec echo "    === {} ===" \; -exec tail -30 {} \; 2>/dev/null || echo "    No log files found"
 
-          echo "  📋 Make PDF output log (last 100 lines):"
-          if [ -f "/tmp/make_pdf_output.log" ]; then
-            tail -100 /tmp/make_pdf_output.log | sed 's/^/    /'
+          echo "  📋 Rxiv PDF output log:"
+          if [ -f "/tmp/rxiv_pdf_output.log" ]; then
+            echo "    Last 50 lines of rxiv PDF output:"
+            tail -50 /tmp/rxiv_pdf_output.log | sed 's/^/      /'
           else
-            echo "    No make PDF output log found"
+            echo "    No rxiv PDF output log found"
           fi
 
           exit 1
@@ -315,7 +520,7 @@ jobs:
       with:
         name: debug-files
         path: |
-          /tmp/make_pdf_output.log
+          /tmp/rxiv_pdf_output.log
           output/*.log
           output/*.aux
           output/*.bbl
@@ -363,6 +568,11 @@ jobs:
 
         echo "📋 Environment Variables:"
         env | grep -E "^(PATH|MANUSCRIPT_PATH|TEXMF|R_LIBS)" | sed 's/^/    /'
+
+        echo "🐳 Docker Image Information:"
+        echo "  Expected image: ${{ needs.prepare.outputs.docker_image }}"
+        echo "  rxiv-maker version: ${{ needs.prepare.outputs.rxiv_version }}"
+        echo "  Container hostname: $(hostname || echo 'unknown')"
 
         echo "🔍 Build Files Search:"
         find . -name "*.pdf" -o -name "*.log" -o -name "*.aux" | sed 's/^/    /'

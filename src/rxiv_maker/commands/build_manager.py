@@ -38,6 +38,7 @@ class BuildManager:
         skip_pdf_validation: bool = False,
         verbose: bool = False,
         track_changes_tag: str | None = None,
+        engine: str = "local",
     ):
         """Initialize build manager.
 
@@ -49,6 +50,7 @@ class BuildManager:
             skip_pdf_validation: Skip PDF validation
             verbose: Enable verbose output
             track_changes_tag: Git tag to track changes against
+            engine: Execution engine ("local" or "docker")
         """
         self.manuscript_path: str = manuscript_path or os.getenv(
             "MANUSCRIPT_PATH", "MANUSCRIPT"
@@ -64,6 +66,7 @@ class BuildManager:
         self.skip_pdf_validation = skip_pdf_validation
         self.verbose = verbose
         self.track_changes_tag = track_changes_tag
+        self.engine = engine
         self.platform = platform_detector
 
         # Set up paths
@@ -274,6 +277,7 @@ class BuildManager:
                 figures_dir=str(self.figures_dir),
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
+                engine=self.engine,
             )
             figure_gen.generate_all_figures()
 
@@ -283,6 +287,7 @@ class BuildManager:
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
                 r_only=True,
+                engine=self.engine,
             )
             r_figure_gen.generate_all_figures()
 

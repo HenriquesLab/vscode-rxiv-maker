@@ -29,6 +29,7 @@ class FigureGenerator:
         output_dir="FIGURES",
         output_format="png",
         r_only=False,
+        engine="local",
     ):
         """Initialize the figure generator.
 
@@ -37,11 +38,13 @@ class FigureGenerator:
             output_dir: Directory for generated output files
             output_format: Default output format for figures
             r_only: Only process R files if True
+            engine: Execution engine ("local" or "docker")
         """
         self.figures_dir = Path(figures_dir)
         self.output_dir = Path(output_dir)
         self.output_format = output_format.lower()
         self.r_only = r_only
+        self.engine = engine
         self.supported_formats = ["png", "svg", "pdf", "eps"]
         self.platform = platform_detector
 
@@ -271,30 +274,54 @@ class FigureGenerator:
 
             print(f"  🐍 Executing {py_file.name}...")
 
-            # Execute the Python script in the figure-specific subdirectory
-            # Use platform-appropriate Python command
+            # Execute the Python script - use Docker if engine="docker"
             import shlex
 
-            python_cmd = self.platform.python_cmd
-            if "uv run" in python_cmd:
-                # For uv run, we need to run from the project root but change to the
-                # figure directory within the script execution
-                exec_code = (
-                    f"import os; "
-                    f"__file__ = '{py_file.absolute()}'; "
-                    f"os.chdir('{figure_dir.absolute()}'); "
-                    f"exec(open('{py_file.absolute()}').read())"
-                )
-                cmd_parts = ["uv", "run", "python", "-c", exec_code]
-                # Use manual shell escaping for compatibility
+            if self.engine == "docker":
+                # Use Docker execution (Cairo-only image, no browser dependencies)
+                docker_image = "henriqueslab/rxiv-maker-base:latest"
+                # Ensure absolute paths for Docker volume mapping
+                cwd_abs = Path.cwd().resolve()
+                figure_dir_abs = figure_dir.resolve()
+                py_file_abs = py_file.resolve()
+
+                cmd_parts = [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{cwd_abs}:/workspace",
+                    "-w",
+                    f"/workspace/{figure_dir_abs.relative_to(cwd_abs)}",
+                    docker_image,
+                    "python",
+                    f"/workspace/{py_file_abs.relative_to(cwd_abs)}",
+                ]
                 cmd = " ".join(shlex.quote(part) for part in cmd_parts)
-                # Run from current working directory (project root) not figure_dir
-                cwd = None
+                cwd = None  # Docker handles working directory
+                print(f"     Using Docker: {docker_image}")
             else:
-                cmd_parts = [python_cmd, str(py_file.absolute())]
-                cmd = " ".join(shlex.quote(part) for part in cmd_parts)
-                # For other Python commands, run from figure directory
-                cwd = str(figure_dir.absolute())
+                # Use local Python execution
+                python_cmd = self.platform.python_cmd
+                if "uv run" in python_cmd:
+                    # For uv run, we need to run from the project root but change to the
+                    # figure directory within the script execution
+                    exec_code = (
+                        f"import os; "
+                        f"__file__ = '{py_file.absolute()}'; "
+                        f"os.chdir('{figure_dir.absolute()}'); "
+                        f"exec(open('{py_file.absolute()}').read())"
+                    )
+                    cmd_parts = ["uv", "run", "python", "-c", exec_code]
+                    # Use manual shell escaping for compatibility
+                    cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                    # Run from current working directory (project root) not figure_dir
+                    cwd = None
+                else:
+                    cmd_parts = [python_cmd, str(py_file.absolute())]
+                    cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                    # For other Python commands, run from figure directory
+                    cwd = str(figure_dir.absolute())
 
             # Set environment variable to ensure script saves to correct location
             import os
@@ -396,9 +423,34 @@ class FigureGenerator:
 
             print(f"  📊 Executing {r_file.name}...")
 
-            # Execute the R script in the figure-specific subdirectory
-            # Use platform-appropriate command execution
-            cmd = f"Rscript {str(r_file.absolute())}"
+            # Execute the R script - use Docker if engine="docker"
+            import shlex
+
+            if self.engine == "docker":
+                # Use Docker execution for R (Cairo-only image, no browser dependencies)
+                docker_image = "henriqueslab/rxiv-maker-base:latest"
+                # Ensure absolute paths for Docker volume mapping
+                cwd_abs = Path.cwd().resolve()
+                figure_dir_abs = figure_dir.resolve()
+                r_file_abs = r_file.resolve()
+
+                cmd_parts = [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{cwd_abs}:/workspace",
+                    "-w",
+                    f"/workspace/{figure_dir_abs.relative_to(cwd_abs)}",
+                    docker_image,
+                    "Rscript",
+                    f"/workspace/{r_file_abs.relative_to(cwd_abs)}",
+                ]
+                cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                print(f"     Using Docker: {docker_image}")
+            else:
+                # Use local R execution
+                cmd = f"Rscript {str(r_file.absolute())}"
 
             # Set environment variable to ensure script saves to correct location
             import os

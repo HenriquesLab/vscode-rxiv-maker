@@ -2,14 +2,18 @@
 
 This directory contains the Docker configuration for the Rxiv-Maker base image, which is designed to accelerate GitHub Actions workflows by pre-installing all system dependencies.
 
+**📋 Note**: Build scripts in this directory are symbolic links to the canonical versions in `submodules/docker-rxiv-maker/images/base/` to avoid duplication and ensure consistency.
+
 ## Overview
 
 The Docker base image includes:
 - **Ubuntu 22.04** as the base operating system
 - **Complete LaTeX distribution** (texlive-full with all packages)
-- **Python 3.11** with essential tools
+- **Python 3.11** with scientific libraries and Cairo support
 - **Node.js 18 LTS** with Mermaid CLI
+- **Chrome/Chromium** for Mermaid diagram generation
 - **R base** with system libraries
+- **Cairo and SVG processing libraries** for enhanced diagram support
 - **System dependencies** for graphics, fonts, and development
 
 **What's NOT included:**

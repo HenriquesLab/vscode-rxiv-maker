@@ -5,9 +5,9 @@
 # but NO Python code or rxiv-maker specific logic.
 #
 # ARCHITECTURE SUPPORT: AMD64 and ARM64
-# - Uses CairoSVG for Mermaid diagram raster conversion (replacing Puppeteer)
+# - Uses CairoSVG for Mermaid diagram raster conversion (Cairo-only)
 # - Full cross-platform compatibility with no browser dependencies
-# - Mermaid CLI generates SVG, CairoSVG converts to PNG/PDF
+# - Enhanced Cairo libraries for optimal SVG processing
 # - Significantly smaller image size without Chrome/Chromium
 #
 # This base image is designed to accelerate GitHub Actions workflows
@@ -40,29 +40,48 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     gnupg \
     lsb-release \
-    # Build tools
+    # Build tools (enhanced for Cairo compilation)
     build-essential \
     make \
     pkg-config \
-    # Font and graphics libraries (for matplotlib, seaborn, etc.)
+    cmake \
+    meson \
+    ninja-build \
+    # Enhanced Cairo and graphics libraries
+    libcairo2-dev \
+    libpango1.0-dev \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-dev \
+    libgirepository1.0-dev \
+    # Advanced SVG processing libraries
+    librsvg2-dev \
+    librsvg2-bin \
+    libxml2-dev \
+    libxslt1-dev \
+    # Font rendering enhancements
     libfontconfig1-dev \
     libfreetype6-dev \
     libharfbuzz-dev \
     libfribidi-dev \
-    # Additional graphics libraries
-    libcairo2-dev \
-    libpango1.0-dev \
+    # Additional graphics libraries for scientific plots
     libjpeg-dev \
     libgif-dev \
     libpng-dev \
+    libtiff-dev \
+    libwebp-dev \
+    # Python development headers for Cairo compilation
+    python3-dev \
+    libffi-dev \
     # Git for version control
     git \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Configure Cairo/CairoSVG environment variables
+# Enhanced Cairo/CairoSVG environment variables for optimal performance
 ENV PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig"
 ENV LD_LIBRARY_PATH="/usr/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/aarch64-linux-gnu"
+ENV CAIRO_FC_CONFIG_DIR="/etc/fonts"
+ENV XDG_CACHE_HOME="/tmp/.cache"
 
 # Install GitHub CLI
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
@@ -78,33 +97,36 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 
 FROM systemdeps AS rdeps
 
-# Install R and required system libraries
+# Install R with enhanced graphics support
 RUN apt-get update && apt-get install -y --no-install-recommends \
     r-base \
     r-base-dev \
-    # Additional R system dependencies
+    # Enhanced R system dependencies for graphics
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
-    # Graphics and font libraries for R plots
-    libfontconfig1-dev \
-    libharfbuzz-dev \
-    libfribidi-dev \
-    # R binary packages for faster installation
+    libudunits2-dev \
+    libgdal-dev \
+    libproj-dev \
+    libgeos-dev \
+    # Additional R graphics packages (system versions)
     r-cran-ggplot2 \
     r-cran-dplyr \
     r-cran-scales \
     r-cran-readr \
     r-cran-tidyr \
+    r-cran-cairo \
+    r-cran-svglite \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Configure R for faster package installation
+# Configure R for optimal performance
 RUN echo 'options(repos = c(CRAN = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"))' >> /usr/lib/R/etc/Rprofile.site \
-    && echo 'options(Ncpus = parallel::detectCores())' >> /usr/lib/R/etc/Rprofile.site
+    && echo 'options(Ncpus = parallel::detectCores())' >> /usr/lib/R/etc/Rprofile.site \
+    && echo 'options(bitmapType = "cairo")' >> /usr/lib/R/etc/Rprofile.site
 
-# Pre-install additional R packages not available as Ubuntu packages
-RUN R -e "install.packages(c('optparse', 'svglite'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+# Pre-install additional R graphics packages
+RUN R -e "install.packages(c('optparse', 'svglite', 'Cairo', 'magick', 'rsvg'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
 
 # ======================================================================
 # Node.js and Mermaid CLI Installation Stage (Minimal for SVG Generation)
@@ -117,20 +139,57 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y --no-install-recommends nodejs=18.* \
     && rm -rf /var/lib/apt/lists/*
 
-# Install fonts for diagram rendering including emoji support
+# Install comprehensive font collection for better SVG rendering
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core font packages
     fonts-liberation \
+    fonts-liberation2 \
     fonts-dejavu-core \
+    fonts-dejavu-extra \
+    # Scientific and mathematical fonts
+    fonts-lmodern \
+    fonts-texgyre \
+    fonts-stix \
+    # Unicode and emoji support
+    fonts-noto-core \
+    fonts-noto-ui-core \
     fonts-noto-color-emoji \
     fonts-emojione \
+    # Additional font families
+    fonts-roboto \
+    fonts-open-sans \
+    fonts-firacode \
+    # Font configuration
     fontconfig \
     && rm -rf /var/lib/apt/lists/* \
-    # Update font cache for emoji fonts
-    && fc-cache -fv
+    # Update font cache with verbose output
+    && fc-cache -fv \
+    # Create font configuration for Cairo
+    && mkdir -p /etc/fonts/conf.d
 
-# Install Mermaid CLI globally with specific version for better caching
-# NOTE: Uses native SVG generation, no browser/Puppeteer required
+# Install Mermaid CLI with enhanced configuration for SVG output
 RUN npm install -g @mermaid-js/mermaid-cli@10.6.1
+
+# Create optimized Mermaid configuration for SVG output
+RUN mkdir -p /opt/mermaid && cat > /opt/mermaid/config.json << 'EOF'
+{
+  "theme": "default",
+  "themeVariables": {
+    "fontFamily": "Liberation Sans, DejaVu Sans, Arial, sans-serif",
+    "fontSize": "16px"
+  },
+  "flowchart": {
+    "useMaxWidth": false,
+    "htmlLabels": true
+  },
+  "sequence": {
+    "useMaxWidth": false
+  },
+  "gantt": {
+    "useMaxWidth": false
+  }
+}
+EOF
 
 # ======================================================================
 # LaTeX Installation Stage
@@ -192,7 +251,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-setuptools \
     python3-wheel \
-    # Add file command for PDF validation
+    # Additional tools for Cairo Python bindings
+    cython3 \
     file \
     # Clean up
     && rm -rf /var/lib/apt/lists/* \
@@ -213,7 +273,7 @@ ENV PATH="/root/.local/bin:$PATH"
 # Make uv available globally for all users
 RUN cp /root/.local/bin/uv /usr/local/bin/uv && chmod +x /usr/local/bin/uv
 
-# Pre-install ALL Python libraries in a single command for better caching
+# Pre-install ALL Python libraries with Cairo enhancements for better caching
 RUN uv pip install --system --no-cache-dir \
     # Core scientific libraries
     "matplotlib>=3.7.0,<3.9.0" \
@@ -228,6 +288,17 @@ RUN uv pip install --system --no-cache-dir \
     "crossref-commons>=0.0.7,<1.0.0" \
     "lazydocs>=0.4.8,<1.0.0" \
     "types-requests>=2.32.4.20250611" \
+    # Enhanced Cairo and SVG libraries for improved diagram processing
+    "cairosvg>=2.7.0,<3.0.0" \
+    "pycairo>=1.25.0,<2.0.0" \
+    "cairocffi>=1.6.0,<2.0.0" \
+    "pygobject>=3.42.0,<4.0.0" \
+    "svglib>=1.5.0,<2.0.0" \
+    "reportlab>=4.0.0,<5.0.0" \
+    "tinycss2>=1.2.0,<2.0.0" \
+    "cssselect2>=0.7.0,<1.0.0" \
+    "defusedxml>=0.7.0,<1.0.0" \
+    "lxml>=4.9.0,<6.0.0" \
     # Development dependencies
     "pytest>=7.4,<8.0" \
     "py>=1.11.0,<2.0.0" \
@@ -253,31 +324,58 @@ RUN groupadd -r rxivmaker && useradd -r -g rxivmaker -d /home/rxivmaker -s /bin/
 WORKDIR /workspace
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /workspace/output /workspace/cache /tmp/texmf-var \
-    && chown -R rxivmaker:rxivmaker /workspace /tmp/texmf-var \
-    && chmod -R 777 /workspace /tmp/texmf-var
+RUN mkdir -p /workspace/output /workspace/cache /tmp/texmf-var /tmp/cairo-cache \
+    && chown -R rxivmaker:rxivmaker /workspace /tmp/texmf-var /tmp/cairo-cache \
+    && chmod -R 777 /workspace /tmp/texmf-var /tmp/cairo-cache
 
 # Set environment variables for LaTeX
 ENV TEXMFVAR=/tmp/texmf-var
 ENV TEXMFHOME=/tmp/texmf-home
 ENV TEXMFCACHE=/tmp/texmf-cache
 
+# Cairo-specific environment variables for optimal performance
+ENV CAIRO_CACHE_DIR=/tmp/cairo-cache
+ENV FONTCONFIG_FILE=/etc/fonts/fonts.conf
+ENV FC_CACHE_DIR=/tmp/fontconfig-cache
+
 # Set environment variables for R
 ENV R_LIBS_USER=/home/rxivmaker/.R/library
 
-# Create R library directory and cache directories
-RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache \
-    && chown -R rxivmaker:rxivmaker /home/rxivmaker/.R /home/rxivmaker/.cache
+# Create additional directories for Cairo and font caching
+RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache /tmp/fontconfig-cache \
+    && chown -R rxivmaker:rxivmaker /home/rxivmaker/.R /home/rxivmaker/.cache /tmp/fontconfig-cache \
+    && chmod -R 777 /tmp/fontconfig-cache
 
-# Verification skipped for faster builds
-# All dependencies are installed and working
+# Create Cairo test script for validation
+RUN cat > /usr/local/bin/test-cairo.sh << 'EOF'
+#!/bin/bash
+echo "Testing Cairo SVG to PNG conversion..."
+python3 -c "
+import cairosvg
+import io
+from pathlib import Path
+
+# Create test SVG
+svg_content = '''<?xml version='1.0' encoding='UTF-8'?>
+<svg width='200' height='100' xmlns='http://www.w3.org/2000/svg'>
+  <rect width='200' height='100' fill='lightblue' stroke='navy' stroke-width='2'/>
+  <text x='100' y='50' text-anchor='middle' font-family='Liberation Sans' font-size='16'>Cairo Test</text>
+</svg>'''
+
+# Convert to PNG
+png_data = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
+print(f'Successfully converted SVG to PNG ({len(png_data)} bytes)')
+print('Cairo functionality verified!')
+"
+EOF
+RUN chmod +x /usr/local/bin/test-cairo.sh
 
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
-LABEL description="Base image for Rxiv-Maker with system dependencies"
-LABEL version="1.6"
+LABEL description="Base image for Rxiv-Maker with Cairo-only SVG processing (no browser dependencies)"
+LABEL version="1.8-cairo-only"
 LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
-LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, and Mermaid CLI pre-installed"
+LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, Mermaid CLI, and enhanced Cairo SVG processing (no browser dependencies)"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # For GitHub Actions, we need to stay as root to allow workspace access

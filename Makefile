@@ -62,7 +62,9 @@ endif
 RXIV_ENGINE ?= LOCAL
 
 # Docker configuration
-DOCKER_IMAGE ?= henriqueslab/rxiv-maker-base:latest
+# Get rxiv-maker version for Docker image tagging
+RXIV_VERSION := $(shell python3 -c "import sys; sys.path.insert(0, 'src'); from rxiv_maker.__version__ import __version__; print(__version__)" 2>/dev/null || echo "latest")
+DOCKER_IMAGE ?= henriqueslab/rxiv-maker-base:v$(RXIV_VERSION)
 DOCKER_HUB_REPO ?= henriqueslab/rxiv-maker-base
 
 # Platform detection for Docker
@@ -121,7 +123,7 @@ all: pdf
 # ======================================================================
 # Main user-facing commands with simple names
 
-# Install Python dependencies (cross-platform)
+# Install Python dependencies only (cross-platform)
 .PHONY: setup
 setup:
 	@$(PYTHON_CMD) -m pip install -e . || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment
@@ -130,6 +132,18 @@ setup:
 .PHONY: setup-reinstall
 setup-reinstall:
 	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --reinstall
+
+# Install system dependencies (LaTeX, Node.js, R, etc.)
+.PHONY: install-deps
+install-deps:
+	@echo "🔧 Installing system dependencies..."
+	@$(PYTHON_CMD) -m rxiv_maker.cli install-deps
+
+# Install system dependencies in minimal mode
+.PHONY: install-deps-minimal
+install-deps-minimal:
+	@echo "🔧 Installing system dependencies (minimal mode)..."
+	@$(PYTHON_CMD) -m rxiv_maker.cli install-deps --mode=minimal
 
 # Check system dependencies
 .PHONY: check-deps
@@ -370,7 +384,8 @@ help:
 	echo "Rxiv-Maker v$$VERSION ($(DETECTED_OS))"; \
 	echo ""; \
 	echo "Essential Commands:"; \
-	echo "  make setup      - Install Python dependencies"; \
+	echo "  make setup      - Install Python dependencies only"; \
+	echo "  make install-deps - Install system dependencies (LaTeX, etc.)"; \
 	echo "  make pdf        - Generate PDF with validation"; \
 	echo "  make validate   - Check manuscript for issues"; \
 	echo "  make clean      - Remove output files"; \

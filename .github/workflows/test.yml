@@ -186,11 +186,9 @@ jobs:
         run: echo "Using pip wheels for Windows dependencies"
 
       - name: Install dependencies
-        run: uv sync
-
-      - name: Install package in development mode
         run: |
-          # Install package in editable mode so rxiv command is available
+          # Install Python dependencies and package in development mode
+          uv sync
           uv pip install -e .
 
       - name: Verify CLI installation
@@ -201,17 +199,42 @@ jobs:
 
       - name: Run unit tests
         run: |
-          uv run pytest tests/ --cov=rxiv_maker --cov-report=xml --cov-report=term-missing -n auto --maxfail=10 --tb=short -v
+          echo "Running unit tests with enhanced error reporting..."
+          # Run tests with detailed output and continue on failure for better debugging
+          uv run pytest tests/ \
+            --cov=rxiv_maker \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-report=html:htmlcov \
+            -n auto \
+            --maxfail=20 \
+            --tb=line \
+            -v \
+            --durations=10 \
+            --strict-markers \
+            --junit-xml=pytest-results.xml || TEST_EXIT_CODE=$?
+
+          # Report test results even if some failed
+          if [ -f "pytest-results.xml" ]; then
+            echo "📊 Test results summary:"
+            grep -o 'tests="[0-9]*"' pytest-results.xml | head -1
+            grep -o 'failures="[0-9]*"' pytest-results.xml | head -1
+            grep -o 'errors="[0-9]*"' pytest-results.xml | head -1
+          fi
+
+          # Exit with original test exit code if tests failed
+          exit ${TEST_EXIT_CODE:-0}
         env:
           PYTHONIOENCODING: utf-8
+          PYTEST_TIMEOUT: 300
 
       - name: Test CLI functionality
         shell: bash
         run: |
           echo "Testing CLI installation and basic functionality..."
-          uv run python -m rxiv_maker.cli --version
-          uv run python -m rxiv_maker.cli --help
-          uv run python -m rxiv_maker.cli config show || echo "Config command not available"
+          uv run rxiv --version
+          uv run rxiv --help
+          uv run rxiv config show || echo "Config command not available"
 
       - name: Test package installation
         run: |
@@ -221,6 +244,17 @@ jobs:
           python -m pip install dist/*.whl
           python -c "import rxiv_maker; print('✅ Package imports successfully')"
           python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: |
+            pytest-results.xml
+            htmlcov/
+            coverage.xml
+          retention-days: 30
 
       - name: Upload coverage
         if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'
@@ -254,7 +288,11 @@ jobs:
 
       - name: Install dependencies and LaTeX
         run: |
+          # Install Python dependencies and package
           uv sync
+          uv pip install -e .
+
+          # Install LaTeX directly
           sudo apt-get update
           sudo apt-get install -y \
             texlive-latex-base \
@@ -269,12 +307,12 @@ jobs:
           echo "Testing manuscript generation..."
           mkdir -p test-workspace && cd test-workspace
 
-          uv run python -m rxiv_maker.cli init test-manuscript --no-interactive || echo "Init command failed"
+          uv run rxiv init test-manuscript --no-interrupt || echo "Init command failed"
 
           if [ -d "test-manuscript" ]; then
             echo "✅ Manuscript initialized successfully"
             cd test-manuscript
-            uv run python -m rxiv_maker.cli validate --no-doi || echo "Validation failed"
+            uv run rxiv validate --no-doi || echo "Validation failed"
             cd ..
           fi
           cd ..
