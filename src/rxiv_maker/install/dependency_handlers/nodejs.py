@@ -105,7 +105,7 @@ class NodeJSHandler:
 
     def verify_mermaid(self) -> bool:
         """Verify Mermaid CLI installation.
-        
+
         Note: Mermaid CLI is still needed for SVG generation, but it's no longer
         a Node.js essential package since we use CairoSVG for raster conversion.
         """

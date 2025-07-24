@@ -275,7 +275,9 @@ class MacOSInstaller:
 
     def _install_cairo_libraries(self) -> bool:
         """Install Cairo and Pango libraries for CairoSVG."""
-        self.logger.info("Installing Cairo and Pango libraries for Mermaid diagram conversion...")
+        self.logger.info(
+            "Installing Cairo and Pango libraries for Mermaid diagram conversion..."
+        )
 
         # Install Homebrew if not available
         if not self._is_homebrew_installed() and not self._install_homebrew():
@@ -292,7 +294,7 @@ class MacOSInstaller:
                     text=True,
                     timeout=300,
                 )
-                
+
                 if result.returncode != 0:
                     self.logger.debug(f"Failed to install {package}: {result.stderr}")
                     # Continue with other packages even if one fails
@@ -302,12 +304,14 @@ class MacOSInstaller:
 
             # Configure environment variables for CairoSVG
             self._configure_cairo_environment()
-            
+
             self.logger.success("Cairo and Pango libraries installed using Homebrew")
             return True
         except Exception as e:
             self.logger.debug(f"Cairo installation failed: {e}")
-            self.logger.warning("Failed to install Cairo libraries. CairoSVG may not work properly.")
+            self.logger.warning(
+                "Failed to install Cairo libraries. CairoSVG may not work properly."
+            )
             return False
 
     def _configure_cairo_environment(self):
@@ -316,25 +320,25 @@ class MacOSInstaller:
             homebrew_prefix = "/opt/homebrew"
         else:
             homebrew_prefix = "/usr/local"
-        
+
         # Set up environment variables for CairoSVG
         env_vars = {
             "PKG_CONFIG_PATH": f"{homebrew_prefix}/lib/pkgconfig:{homebrew_prefix}/share/pkgconfig",
             "DYLD_LIBRARY_PATH": f"{homebrew_prefix}/lib",
             "CAIRO_LIBRARY_PATH": f"{homebrew_prefix}/lib",
         }
-        
+
         # Add to shell profiles
         shell_profiles = [
             Path.home() / ".zshrc",
-            Path.home() / ".bash_profile", 
+            Path.home() / ".bash_profile",
             Path.home() / ".bashrc",
         ]
-        
+
         env_lines = []
         for var, value in env_vars.items():
             env_lines.append(f'export {var}="{value}:${var}"')
-        
+
         for profile in shell_profiles:
             if profile.exists():
                 try:
@@ -342,18 +346,21 @@ class MacOSInstaller:
                     # Check if Cairo environment is already configured
                     if "PKG_CONFIG_PATH" in content and homebrew_prefix in content:
                         continue
-                        
+
                     with profile.open("a") as f:
-                        f.write("\n# Cairo/CairoSVG environment variables for Rxiv-Maker\n")
+                        f.write(
+                            "\n# Cairo/CairoSVG environment variables for Rxiv-Maker\n"
+                        )
                         for line in env_lines:
                             f.write(f"{line}\n")
                         f.write("\n")
                     self.logger.debug(f"Added Cairo environment variables to {profile}")
                 except Exception as e:
                     self.logger.debug(f"Error updating {profile}: {e}")
-        
+
         # Set environment variables for current session
         import os
+
         for var, value in env_vars.items():
             current_value = os.environ.get(var, "")
             if current_value:
@@ -361,7 +368,7 @@ class MacOSInstaller:
             else:
                 os.environ[var] = value
             self.logger.debug(f"Set {var}={os.environ[var]}")
-        
+
         self.logger.debug("Configured Cairo environment variables for CairoSVG")
 
     def _install_latex_homebrew(self) -> bool:

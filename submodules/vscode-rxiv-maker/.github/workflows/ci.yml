@@ -8,6 +8,9 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      checks: write
 
     strategy:
       matrix:

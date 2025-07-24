@@ -120,9 +120,19 @@ class FigureGenerator:
 
             # --- Step 1: Generate SVG using Mermaid CLI ---
             svg_output_file = figure_dir / f"{mmd_file.stem}.svg"
-            print(f"  🎨 Generating intermediate SVG: {figure_dir.name}/{svg_output_file.name}...")
+            print(
+                f"  🎨 Generating intermediate SVG: {figure_dir.name}/{svg_output_file.name}..."
+            )
 
-            cmd_parts = ["mmdc", "-i", str(mmd_file), "-o", str(svg_output_file), "--backgroundColor", "transparent"]
+            cmd_parts = [
+                "mmdc",
+                "-i",
+                str(mmd_file),
+                "-o",
+                str(svg_output_file),
+                "--backgroundColor",
+                "transparent",
+            ]
             cmd = " ".join(cmd_parts)
             result = self.platform.run_command(cmd, capture_output=True, text=True)
 
@@ -130,19 +140,25 @@ class FigureGenerator:
                 print(f"  ❌ Error generating SVG for {mmd_file.name}:")
                 print(f"     {result.stderr}")
                 return
-                
-            print(f"  ✅ Successfully generated {figure_dir.name}/{svg_output_file.name}")
+
+            print(
+                f"  ✅ Successfully generated {figure_dir.name}/{svg_output_file.name}"
+            )
 
             # --- Step 2: Convert SVG to PNG and PDF using CairoSVG ---
             # Check CairoSVG availability before attempting conversion
             cairosvg_available, cairo_error = self._check_cairosvg_availability()
-            
+
             if not cairosvg_available:
-                print(f"  ⚠️  CairoSVG not available for {mmd_file.name} - using SVG only")
+                print(
+                    f"  ⚠️  CairoSVG not available for {mmd_file.name} - using SVG only"
+                )
                 print(f"     Reason: {cairo_error}")
                 self._print_cairo_installation_help()
-                print(f"     SVG file generated: {figure_dir.name}/{svg_output_file.name}")
-                print(f"     LaTeX can use SVG files directly for PDF compilation")
+                print(
+                    f"     SVG file generated: {figure_dir.name}/{svg_output_file.name}"
+                )
+                print("     LaTeX can use SVG files directly for PDF compilation")
                 return
 
             # Convert SVG to raster formats
@@ -152,17 +168,27 @@ class FigureGenerator:
 
             for format_type in formats_to_generate:
                 output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
-                print(f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}...")
+                print(
+                    f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}..."
+                )
                 try:
-                    if format_type == 'png':
-                        cairosvg.svg2png(url=str(svg_output_file), write_to=str(output_file), dpi=300)
-                    elif format_type == 'pdf':
-                        cairosvg.svg2pdf(url=str(svg_output_file), write_to=str(output_file))
-                    
-                    print(f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}")
+                    if format_type == "png":
+                        cairosvg.svg2png(
+                            url=str(svg_output_file), write_to=str(output_file), dpi=300
+                        )
+                    elif format_type == "pdf":
+                        cairosvg.svg2pdf(
+                            url=str(svg_output_file), write_to=str(output_file)
+                        )
+
+                    print(
+                        f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}"
+                    )
                     generated_files.append(f"{figure_dir.name}/{output_file.name}")
                 except Exception as e:
-                    print(f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:")
+                    print(
+                        f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
+                    )
                     print(f"     {e}")
                     if "cairo" in str(e).lower():
                         self._print_cairo_troubleshooting()
@@ -177,6 +203,7 @@ class FigureGenerator:
         """Check if CairoSVG is available and working."""
         try:
             import cairosvg
+
             # Test basic functionality
             cairosvg.svg2png(bytestring=b'<svg><rect width="10" height="10"/></svg>')
             return True, None
@@ -192,31 +219,43 @@ class FigureGenerator:
     def _print_cairo_installation_help(self):
         """Print platform-specific Cairo installation instructions."""
         import platform
+
         system = platform.system().lower()
-        
+
         print("     💡 To enable PNG/PDF conversion, install Cairo libraries:")
         if system == "darwin":  # macOS
             print("     - macOS: brew install cairo pango pkg-config")
-            print("     - Then restart your terminal to update environment variables") 
+            print("     - Then restart your terminal to update environment variables")
         elif system == "linux":
-            print("     - Ubuntu/Debian: sudo apt-get install libcairo2-dev libpango1.0-dev")
+            print(
+                "     - Ubuntu/Debian: sudo apt-get install libcairo2-dev libpango1.0-dev"
+            )
             print("     - RHEL/CentOS: sudo yum install cairo-devel pango-devel")
             print("     - Arch: sudo pacman -S cairo pango")
         elif system == "windows":
-            print("     - Windows: Install GTK libraries via msys2 or winget install GTK")
+            print(
+                "     - Windows: Install GTK libraries via msys2 or winget install GTK"
+            )
         else:
-            print("     - Install Cairo and Pango development libraries for your system")
+            print(
+                "     - Install Cairo and Pango development libraries for your system"
+            )
         print("     - Then reinstall: pip install --force-reinstall cairosvg")
 
     def _print_cairo_troubleshooting(self):
         """Print Cairo-specific troubleshooting tips."""
         import platform
+
         system = platform.system().lower()
-        
+
         print("     🔧 Cairo troubleshooting:")
         if system == "darwin":  # macOS
-            print("     - Try: export PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH")
-            print("     - Try: export DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH")
+            print(
+                "     - Try: export PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
+            )
+            print(
+                "     - Try: export DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH"
+            )
             print("     - Run: rxiv setup --reinstall to reconfigure environment")
         else:
             print("     - Ensure Cairo libraries are in your system's library path")

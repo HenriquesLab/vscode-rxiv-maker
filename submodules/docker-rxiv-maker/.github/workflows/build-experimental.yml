@@ -26,12 +26,14 @@ env:
   REGISTRY: docker.io
   EXPERIMENTAL_IMAGE_NAME: henriqueslab/rxiv-maker-experimental
 
+permissions:
+  contents: read
+  packages: write
+  actions: read
+
 jobs:
   build-experimental:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
     - name: Checkout repository
@@ -63,7 +65,7 @@ jobs:
           type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
 
     - name: Build and push experimental Cairo image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ./images/experimental-cairo
         platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
@@ -129,24 +131,56 @@ jobs:
     - name: Update repository description
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |
-        # Update Docker Hub repository description
-        curl -X PATCH \
-          -H "Authorization: Bearer ${{ secrets.DOCKER_PUSH }}" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "full_description": "# Rxiv-Maker Experimental Cairo Docker Image\n\nExperimental Ubuntu-based image with enhanced Cairo/SVG processing capabilities for post-Puppeteer workflows.\n\n## Quick Start\n```bash\ndocker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-experimental:latest-cairo\n```\n\n## Enhanced Features\n- Complete LaTeX distribution\n- Python 3.11 with enhanced Cairo libraries\n- Advanced SVG processing (CairoSVG, pycairo)\n- Extended font collection\n- Node.js 18 with Mermaid CLI\n- R with Cairo graphics support\n- Multi-platform support (AMD64/ARM64)\n\n## Use Cases\n- Enhanced SVG to PNG conversion\n- Scientific document generation\n- Post-Puppeteer workflows\n- Cross-platform compatibility\n\n## Documentation\nSee [GitHub repository](https://github.com/HenriquesLab/docker-rxiv-maker) for full documentation."
-          }' \
-          "https://hub.docker.com/v2/repositories/${{ env.EXPERIMENTAL_IMAGE_NAME }}/" || true
+        # Update Docker Hub repository description with retry logic
+        for i in {1..3}; do
+          echo "Updating Docker Hub description, attempt $i/3..."
+          if curl -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.DOCKER_PUSH }}" \
+            -H "Content-Type: application/json" \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 5 \
+            -d '{
+              "full_description": "# Rxiv-Maker Experimental Cairo Docker Image\n\nExperimental Ubuntu-based image with enhanced Cairo/SVG processing capabilities for post-Puppeteer workflows.\n\n## Quick Start\n```bash\ndocker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-experimental:latest-cairo\n```\n\n## Enhanced Features\n- Complete LaTeX distribution\n- Python 3.11 with enhanced Cairo libraries\n- Advanced SVG processing (CairoSVG, pycairo)\n- Extended font collection\n- Node.js 18 with Mermaid CLI\n- R with Cairo graphics support\n- Multi-platform support (AMD64/ARM64)\n\n## Use Cases\n- Enhanced SVG to PNG conversion\n- Scientific document generation\n- Post-Puppeteer workflows\n- Cross-platform compatibility\n\n## Documentation\nSee [GitHub repository](https://github.com/HenriquesLab/docker-rxiv-maker) for full documentation."
+            }' \
+            "https://hub.docker.com/v2/repositories/${{ env.EXPERIMENTAL_IMAGE_NAME }}/"; then
+            echo "✅ Docker Hub description updated successfully"
+            break
+          else
+            if [ $i -eq 3 ]; then
+              echo "⚠️ Failed to update Docker Hub description after 3 attempts"
+            else
+              echo "⚠️ Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            fi
+          fi
+        done
 
     - name: Notify main repository
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |
-        # Trigger submodule update in main repository
-        curl -X POST \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -d '{"event_type":"docker-update","client_payload":{"variant":"experimental-cairo","tag":"${{ github.event.inputs.tag || 'latest-cairo' }}"}}' \
-          https://api.github.com/repos/HenriquesLab/rxiv-maker/dispatches || true
+        # Trigger submodule update in main repository with retry logic
+        for i in {1..3}; do
+          echo "Notifying main repository, attempt $i/3..."
+          if curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 5 \
+            -d '{"event_type":"docker-update","client_payload":{"variant":"experimental-cairo","tag":"${{ github.event.inputs.tag || 'latest-cairo' }}"}}' \
+            https://api.github.com/repos/HenriquesLab/rxiv-maker/dispatches; then
+            echo "✅ Main repository notified successfully"
+            break
+          else
+            if [ $i -eq 3 ]; then
+              echo "⚠️ Failed to notify main repository after 3 attempts"
+            else
+              echo "⚠️ Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            fi
+          fi
+        done
 
     - name: Summary
       if: github.event_name != 'pull_request'

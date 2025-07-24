@@ -378,7 +378,6 @@ graph TD
             self.assertTrue(output_file.exists())
 
 
-
 class TestDockerFallbackBehavior(unittest.TestCase):
     """Test Docker fallback behavior for figure generation."""
 
