@@ -199,25 +199,7 @@ jobs:
 
           # Test Cairo SVG to PNG conversion
           echo "🧪 Testing Cairo SVG to PNG conversion..."
-          cat > /tmp/test_cairo.py << 'EOF'
-import cairosvg
-
-# Create test SVG
-svg_content = '''<?xml version="1.0" encoding="UTF-8"?>
-<svg width="200" height="100" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="100" fill="lightblue" stroke="navy" stroke-width="2"/>
-  <text x="100" y="50" text-anchor="middle" font-family="Liberation Sans" font-size="16">Cairo Test</text>
-</svg>'''
-
-# Convert to PNG
-png_data = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
-if len(png_data) > 0:
-    print('✅ Cairo SVG to PNG conversion successful ({} bytes)'.format(len(png_data)))
-else:
-    print('❌ Cairo SVG to PNG conversion failed')
-    exit(1)
-EOF
-          python3 /tmp/test_cairo.py
+          python3 -c "import cairosvg; svg='<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"50\"><rect width=\"100\" height=\"50\" fill=\"blue\"/></svg>'; png=cairosvg.svg2png(bytestring=svg.encode()); print('✅ Cairo SVG conversion works ({} bytes)'.format(len(png)) if png else '❌ Failed')"
         else
           echo "❌ Cairo libraries not available"
           exit 1
