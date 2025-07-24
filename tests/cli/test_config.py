@@ -83,7 +83,14 @@ class TestConfigCommand:
                     config_cmd, ["set", "general.verbose", "true"]
                 )
                 assert result.exit_code == 0
-                assert "✅ Set general.verbose = True" in result.output
+                # Check for success indicator (either emoji or ASCII fallback)
+                assert any(
+                    indicator in result.output
+                    for indicator in [
+                        "✅ Set general.verbose = True",
+                        "[OK] Set general.verbose = True",
+                    ]
+                )
 
                 # Verify the value was set
                 result = self.runner.invoke(config_cmd, ["get", "general.verbose"])
@@ -97,7 +104,14 @@ class TestConfigCommand:
                     config_cmd, ["set", "figures.default_dpi", "600"]
                 )
                 assert result.exit_code == 0
-                assert "✅ Set figures.default_dpi = 600" in result.output
+                # Check for success indicator (either emoji or ASCII fallback)
+                assert any(
+                    indicator in result.output
+                    for indicator in [
+                        "✅ Set figures.default_dpi = 600",
+                        "[OK] Set figures.default_dpi = 600",
+                    ]
+                )
 
                 # Verify the value was set
                 result = self.runner.invoke(config_cmd, ["get", "figures.default_dpi"])
