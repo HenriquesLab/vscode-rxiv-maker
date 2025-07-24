@@ -38,8 +38,27 @@ name: Build Experimental Cairo Images (DEPRECATED)
 #   repository_dispatch:
 #     types: [build-experimental-image]
 
-# Disabled workflow - no triggers will activate this workflow
-on: []
+# Temporarily re-enabled for fixing girepository-2.0 dependency issue
+on:
+  push:
+    branches: [ main, dev, experimental-cairo ]
+    paths:
+      - 'images/experimental-cairo/**'
+      - '.github/workflows/build-experimental.yml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for the built image'
+        required: false
+        default: 'latest-cairo'
+      rxiv_version:
+        description: 'rxiv-maker version to tag the image with (e.g., 1.4.8)'
+        required: false
+        default: ''
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64,linux/arm64'
 
 env:
   REGISTRY: docker.io
