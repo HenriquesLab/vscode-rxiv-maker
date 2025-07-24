@@ -113,6 +113,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     libproj-dev \
     libgeos-dev \
+    # Additional dependencies for R packages
+    libavfilter-dev \
+    libmagick++-dev \
     # Additional R graphics packages (system versions)
     r-cran-ggplot2 \
     r-cran-dplyr \
@@ -300,7 +303,7 @@ RUN uv pip install --system --no-cache-dir \
 RUN uv pip install --system --no-cache-dir \
     "pycairo>=1.25.0,<2.0.0" \
     "cairocffi>=1.6.0,<2.0.0" \
-    "pygobject>=3.40.0,<3.50.0"
+    "pygobject>=3.42.0,<4.0.0"
 
 # Stage 4: SVG and document processing libraries
 RUN uv pip install --system --no-cache-dir \
@@ -386,11 +389,12 @@ RUN chmod +x /usr/local/bin/test-cairo.sh
 
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
-LABEL description="Base image for Rxiv-Maker with Cairo-only SVG processing (no browser dependencies)"
-LABEL version="1.8-cairo-only"
-LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
-LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, Mermaid CLI, and enhanced Cairo SVG processing (no browser dependencies)"
+LABEL description="Consolidated base image for Rxiv-Maker with enhanced Cairo capabilities (formerly experimental)"
+LABEL version="1.9-cairo-consolidated"
+LABEL org.opencontainers.image.source="https://github.com/henriqueslab/docker-rxiv-maker"
+LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, Mermaid CLI, and consolidated Cairo SVG processing capabilities"
 LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.variant="cairo-consolidated"
 
 # For GitHub Actions, we need to stay as root to allow workspace access
 # USER rxivmaker

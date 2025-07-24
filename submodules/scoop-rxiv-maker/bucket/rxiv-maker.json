@@ -4,7 +4,7 @@
     "homepage": "https://github.com/henriqueslab/rxiv-maker",
     "license": "MIT",
     "url": "https://github.com/henriqueslab/rxiv-maker/releases/download/v1.4.8/rxiv-maker-windows-x64.zip",
-    "hash": "TO_BE_UPDATED_AFTER_RELEASE",
+    "hash": "sha256:placeholder",
     "suggest": {
         "LaTeX distribution": [
             "extras/latex",
@@ -47,8 +47,7 @@
     "autoupdate": {
         "url": "https://github.com/henriqueslab/rxiv-maker/releases/download/v$version/rxiv-maker-windows-x64.zip",
         "hash": {
-            "url": "https://api.github.com/repos/henriqueslab/rxiv-maker/releases/latest",
-            "jsonpath": "$.assets[?(@.name == 'rxiv-maker-windows-x64.zip')].browser_download_url",
+            "url": "https://github.com/henriqueslab/rxiv-maker/releases/download/v$version/rxiv-maker-windows-x64.zip",
             "mode": "download"
         }
     },

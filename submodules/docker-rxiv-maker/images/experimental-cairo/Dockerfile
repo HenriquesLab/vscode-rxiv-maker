@@ -55,8 +55,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpangocairo-1.0-0 \
     libgdk-pixbuf2.0-dev \
     libgirepository1.0-dev \
-    gir1.2-gobject-2.0 \
-    gir1.2-glib-2.0 \
+    git1.2-gobject-2.0 \
+    git1.2-glib-2.0 \
     gobject-introspection \
     libglib2.0-dev \
     # Advanced SVG processing libraries
@@ -149,6 +149,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     libproj-dev \
     libgeos-dev \
+    # Additional dependencies for R packages
+    libavfilter-dev \
+    libmagick++-dev \
     # Additional R graphics packages (system versions)
     r-cran-ggplot2 \
     r-cran-dplyr \
@@ -292,7 +295,7 @@ RUN uv pip install --system --no-cache-dir \
     "cairosvg>=2.7.0,<3.0.0" \
     "pycairo>=1.25.0,<2.0.0" \
     "cairocffi>=1.6.0,<2.0.0" \
-    "pygobject>=3.40.0,<3.50.0" \
+    "pygobject>=3.42.0,<4.0.0" \
     "svglib>=1.5.0,<2.0.0" \
     "reportlab>=4.0.0,<5.0.0" \
     "tinycss2>=1.2.0,<2.0.0" \

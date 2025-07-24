@@ -397,7 +397,7 @@ jobs:
 
         # Run rxiv pdf with detailed output
         set -o pipefail
-        uv run rxiv pdf "$MANUSCRIPT_PATH" --output-dir output --force-figures --verbose 2>&1 | tee /tmp/rxiv_pdf_output.log | sed 's/^/  /'
+        uv run rxiv pdf "$MANUSCRIPT_PATH" --output-dir output --force-figures 2>&1 | tee /tmp/rxiv_pdf_output.log | sed 's/^/  /'
         RXIV_EXIT_CODE=$?
 
         echo "  End time: $(date)"

@@ -7,17 +7,17 @@ class RxivMaker < Formula
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/henriqueslab/rxiv-maker/releases/download/v1.4.8/rxiv-maker-macos-arm64.tar.gz"
-      sha256 "TO_BE_UPDATED_AFTER_RELEASE"  # Will be updated by automated workflow
+      sha256 "placeholder"
     else
       url "https://github.com/henriqueslab/rxiv-maker/releases/download/v1.4.8/rxiv-maker-macos-x64-intel.tar.gz"
-      sha256 "TO_BE_UPDATED_AFTER_RELEASE"  # Will be updated by automated workflow
+      sha256 "placeholder"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel?
       url "https://github.com/henriqueslab/rxiv-maker/releases/download/v1.4.8/rxiv-maker-linux-x64.tar.gz"
-      sha256 "TO_BE_UPDATED_AFTER_RELEASE"  # Will be updated by automated workflow
+      sha256 "placeholder"
     else
       odie "Linux ARM64 is not currently supported. Please use 'pip install rxiv-maker' instead."
     end
