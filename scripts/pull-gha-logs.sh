@@ -89,14 +89,27 @@ get_repo_logs() {
 
     print_status "INFO" "Processing $repo_key: $repo_name"
 
+    # Get current branch name
+    local current_branch
+    if [[ "$repo_key" == "main" ]]; then
+        # For the main repository, get the actual current branch
+        current_branch=$(git branch --show-current 2>/dev/null || echo "$branch")
+    else
+        # For submodules, use the default branch since we're not in their directory
+        current_branch="$branch"
+    fi
+
+    print_status "INFO" "Filtering logs for branch: $current_branch"
+
     # Create repo-specific log directory
     local repo_log_dir="$LOG_DIR/$repo_key"
     mkdir -p "$repo_log_dir"
 
-    # Build gh run list command
+    # Build gh run list command - filter by current branch
     local gh_args=()
     gh_args+=("--repo" "$repo_name")
     gh_args+=("--limit" "$limit")
+    gh_args+=("--branch" "$current_branch")
 
     if [[ "$status_filter" != "all" ]]; then
         gh_args+=("--status" "$status_filter")
@@ -116,7 +129,7 @@ get_repo_logs() {
     fi
 
     if [[ "$workflow_runs" == "[]" || -z "$workflow_runs" ]]; then
-        print_status "INFO" "No workflow runs found for $repo_name"
+        print_status "INFO" "No workflow runs found for $repo_name on branch $current_branch"
         return 0
     fi
 
@@ -132,7 +145,7 @@ try:
         print('No workflow runs found')
         sys.exit(0)
 
-    print(f'Found {len(runs)} workflow runs', file=sys.stderr)
+    print(f'Found {len(runs)} workflow runs for current branch', file=sys.stderr)
 
     for run in runs:
         run_id = run['databaseId']
@@ -170,44 +183,12 @@ except Exception as e:
             print_status "DEBUG" "    Downloading logs to: $output_path"
         fi
 
-        # Download logs using gh CLI
-        if gh run download "$run_id" --repo "$repo_name" --name "logs" --dir "$repo_log_dir" 2>/dev/null; then
-            # gh run download creates a directory, let's find and organize the logs
-            local download_dir="$repo_log_dir"
-            if [[ -d "$download_dir" ]]; then
-                # Find log files and consolidate them
-                find "$download_dir" -name "*.txt" -type f -exec cat {} \; > "$output_path" 2>/dev/null || true
-                # Clean up any temporary download directories
-                find "$download_dir" -type d -name "*logs*" -exec rm -rf {} \; 2>/dev/null || true
-
-                if [[ -s "$output_path" ]]; then
-                    print_status "SUCCESS" "    Downloaded: $log_filename"
-                else
-                    # Try alternative method: download logs directly
-                    if gh run view "$run_id" --repo "$repo_name" --log > "$output_path" 2>/dev/null; then
-                        print_status "SUCCESS" "    Downloaded: $log_filename"
-                    else
-                        print_status "FAIL" "    Failed to download logs for run #$run_number"
-                        rm -f "$output_path"
-                    fi
-                fi
-            else
-                # Fallback: use gh run view --log
-                if gh run view "$run_id" --repo "$repo_name" --log > "$output_path" 2>/dev/null; then
-                    print_status "SUCCESS" "    Downloaded: $log_filename"
-                else
-                    print_status "FAIL" "    Failed to download logs for run #$run_number"
-                    rm -f "$output_path"
-                fi
-            fi
+        # Use gh run view --log for direct log download (simplified approach)
+        if gh run view "$run_id" --repo "$repo_name" --log > "$output_path" 2>/dev/null && [[ -s "$output_path" ]]; then
+            print_status "SUCCESS" "    Downloaded: $log_filename"
         else
-            # Fallback: use gh run view --log
-            if gh run view "$run_id" --repo "$repo_name" --log > "$output_path" 2>/dev/null; then
-                print_status "SUCCESS" "    Downloaded: $log_filename"
-            else
-                print_status "FAIL" "    Failed to download logs for run #$run_number"
-                rm -f "$output_path"
-            fi
+            print_status "FAIL" "    Failed to download logs for run #$run_number"
+            rm -f "$output_path"
         fi
 
         # Download artifacts if requested
@@ -259,8 +240,9 @@ Usage: $0 [OPTIONS]
 
 Pull GitHub Actions logs for rxiv-maker and its submodules.
 
-NOTE: This script automatically clears all previous logs before downloading new ones
-to avoid accumulating outdated log files.
+NOTE: This script automatically:
+- Clears all previous logs before downloading new ones to avoid accumulating outdated log files
+- Filters logs to only include runs from the current branch (dev-no-puppets for main repo)
 
 OPTIONS:
     -h, --help              Show this help message
