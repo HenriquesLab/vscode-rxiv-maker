@@ -1,0 +1,104 @@
+name: 'Setup Development Environment'
+description: 'Unified setup for Python, UV, and system dependencies across workflows'
+inputs:
+  python-version:
+    description: 'Python version to install'
+    required: false
+    default: '3.11'
+  enable-cache:
+    description: 'Enable UV cache'
+    required: false
+    default: 'true'
+  cache-suffix:
+    description: 'Additional cache key suffix'
+    required: false
+    default: ''
+  install-system-deps:
+    description: 'Install system dependencies'
+    required: false
+    default: 'true'
+  install-python-deps:
+    description: 'Install Python dependencies with UV'
+    required: false
+    default: 'true'
+
+outputs:
+  python-version:
+    description: 'Installed Python version'
+    value: ${{ steps.setup-python.outputs.python-version }}
+  cache-hit:
+    description: 'Whether cache was hit'
+    value: ${{ steps.setup-uv.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install UV
+      id: setup-uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+        enable-cache: ${{ inputs.enable-cache }}
+        cache-suffix: ${{ inputs.cache-suffix }}
+
+    - name: Install system dependencies (Linux)
+      if: inputs.install-system-deps == 'true' && runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libfreetype6-dev \
+          libjpeg-dev \
+          libpng-dev \
+          libtiff-dev \
+          libwebp-dev \
+          libopenjp2-7-dev \
+          zlib1g-dev \
+          liblcms2-dev \
+          libffi-dev \
+          pkg-config \
+          git
+
+    - name: Install system dependencies (macOS)
+      if: inputs.install-system-deps == 'true' && runner.os == 'macOS'
+      shell: bash
+      run: |
+        brew install \
+          freetype \
+          jpeg \
+          libpng \
+          libtiff \
+          webp \
+          openjpeg \
+          zlib \
+          lcms2 \
+          libffi \
+          pkg-config
+
+    - name: Install system dependencies (Windows)
+      if: inputs.install-system-deps == 'true' && runner.os == 'Windows'
+      shell: bash
+      run: echo "Using pip wheels for Windows dependencies"
+
+    - name: Install Python dependencies
+      if: inputs.install-python-deps == 'true'
+      shell: bash
+      run: |
+        # Install Python dependencies and package in development mode
+        uv sync
+        uv pip install -e .
+
+    - name: Verify CLI installation
+      if: inputs.install-python-deps == 'true'
+      shell: bash
+      run: |
+        # Test that rxiv command is available
+        which rxiv || echo "rxiv not in PATH"
+        uv run rxiv --version || echo "rxiv command failed"

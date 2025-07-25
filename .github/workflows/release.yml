@@ -39,53 +39,17 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install UV
-        uses: astral-sh/setup-uv@v4
+      - name: Run unit tests
+        uses: ./.github/actions/test-execution
         with:
-          version: "latest"
-          enable-cache: true
-
-      - name: Install system dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libfreetype6-dev \
-            libjpeg-dev \
-            libpng-dev \
-            libtiff-dev \
-            libwebp-dev \
-            libopenjp2-7-dev \
-            zlib1g-dev \
-            liblcms2-dev \
-            libffi-dev \
-            pkg-config
-
-      - name: Install system dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install \
-            freetype \
-            jpeg \
-            libpng \
-            libtiff \
-            webp \
-            openjpeg \
-            zlib \
-            lcms2 \
-            libffi \
-            pkg-config
-
-      - name: Install dependencies and run tests
-        run: |
-          uv sync
-          uv run pytest tests/ --maxfail=5 -v
+          test-type: unit
+          python-version: ${{ matrix.python-version }}
+          os: ${{ matrix.os }}
 
   # Second job: Build Python packages
   build-python:
@@ -100,20 +64,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
 
-      - name: Install UV and build tools
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-          enable-cache: true
-
       - name: Build Python packages
-        run: |
-          uv build
+        run: uv build
 
       - name: Verify packages
         run: |
@@ -121,11 +78,11 @@ jobs:
           python -m twine check dist/*
 
       - name: Upload Python packages
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/artifact-management
         with:
+          action: upload
           name: python-packages
           path: dist/
-          retention-days: 30
 
   # Third job: Build binaries for each platform
   build-binaries:
@@ -169,55 +126,21 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
 
-      - name: Install UV
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-          enable-cache: true
-
-      - name: Install system dependencies (Linux)
+      - name: Install additional build dependencies (Linux)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libfreetype6-dev \
-            libjpeg-dev \
-            libpng-dev \
-            libtiff-dev \
-            libwebp-dev \
-            libopenjp2-7-dev \
-            zlib1g-dev \
-            liblcms2-dev \
-            libffi-dev \
-            pkg-config \
-            upx-ucl
+        run: sudo apt-get install -y upx-ucl
 
-      - name: Install system dependencies (macOS)
+      - name: Install additional build dependencies (macOS)
         if: runner.os == 'macOS'
-        run: |
-          brew install \
-            freetype \
-            jpeg \
-            libpng \
-            libtiff \
-            webp \
-            openjpeg \
-            zlib \
-            lcms2 \
-            libffi \
-            pkg-config \
-            upx
+        run: brew install upx
 
-      - name: Install dependencies and PyInstaller
-        run: |
-          uv sync
-          uv add pyinstaller
+      - name: Install PyInstaller
+        run: uv add pyinstaller
 
       - name: Get version
         id: get_version
@@ -377,13 +300,13 @@ jobs:
           Write-Host "Created: ${{ matrix.artifact_name }}.zip"
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/artifact-management
         with:
+          action: upload
           name: ${{ matrix.artifact_name }}
           path: |
             dist/${{ matrix.artifact_name }}.tar.gz
             dist/${{ matrix.artifact_name }}.zip
-          retention-days: 30
 
   # Fourth job: Create GitHub release
   create-release:
@@ -414,15 +337,11 @@ jobs:
           echo "tag=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: ./.github/actions/artifact-management
         with:
-          merge-multiple: true
+          action: download-all
           path: artifacts/
-
-      - name: List artifacts
-        run: |
-          echo "Downloaded artifacts:"
-          find artifacts/ -type f -exec ls -la {} \;
+          merge-multiple: true
 
       - name: Generate release notes
         id: release_notes
@@ -497,8 +416,9 @@ jobs:
 
     steps:
       - name: Download Python packages
-        uses: actions/download-artifact@v4
+        uses: ./.github/actions/artifact-management
         with:
+          action: download
           name: python-packages
           path: dist/
 
@@ -507,11 +427,11 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-  # Sixth job: Orchestrate package manager updates
-  update-package-managers:
-    name: Update Package Managers
+  # Sixth job: Trigger Docker image sync for new releases
+  sync-docker-version:
+    name: Sync Docker Version
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     needs: [create-release]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
 
@@ -521,12 +441,93 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Trigger Docker image build
+        run: |
+          echo "Triggering Docker image build for release ${{ steps.get_version.outputs.tag }}"
+
+          # Use DOCKER_SYNC_TOKEN if available, otherwise fall back to GITHUB_TOKEN
+          if [ -n "${{ secrets.DOCKER_SYNC_TOKEN }}" ]; then
+            AUTH_TOKEN="${{ secrets.DOCKER_SYNC_TOKEN }}"
+            echo "Using dedicated DOCKER_SYNC_TOKEN for Docker repository dispatch..."
+          else
+            AUTH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            echo "Using fallback GITHUB_TOKEN for Docker repository dispatch..."
+            echo "⚠️ For better security, consider setting DOCKER_SYNC_TOKEN secret"
+          fi
+
+          RESPONSE=$(curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $AUTH_TOKEN" \
+            -H "User-Agent: rxiv-maker-sync" \
+            -w "HTTP_CODE:%{http_code}" \
+            -s \
+            https://api.github.com/repos/HenriquesLab/docker-rxiv-maker/dispatches \
+            -d '{
+              "event_type": "build-docker-image",
+              "client_payload": {
+                "version": "${{ steps.get_version.outputs.version }}",
+                "source_repo": "${{ github.repository }}",
+                "source_commit": "${{ github.sha }}",
+                "trigger_type": "release_sync"
+              }
+            }' 2>&1)
+
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+
+          if [ "$HTTP_CODE" = "204" ]; then
+            echo "✅ Successfully triggered Docker image build"
+          elif [ "$HTTP_CODE" = "401" ]; then
+            echo "❌ Authentication failed - check DOCKER_SYNC_TOKEN or GITHUB_TOKEN permissions"
+            echo "Response: $RESPONSE"
+            # Don't fail the release for Docker sync issues
+            echo "⚠️ Docker sync failed but continuing with release"
+          elif [ "$HTTP_CODE" = "404" ]; then
+            echo "❌ Repository not found or no dispatch permission"
+            echo "Response: $RESPONSE"
+            echo "⚠️ Docker sync failed but continuing with release"
+          else
+            echo "⚠️ Unexpected response from GitHub API (HTTP $HTTP_CODE)"
+            echo "Response: $RESPONSE"
+            echo "Continuing with release..."
+          fi
+
+      - name: Docker sync summary
+        run: |
+          echo "## 🐳 Docker Version Sync" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.get_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: Triggered Docker image build for release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Expected Image**: henriqueslab/rxiv-maker-base:v${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Monitor Docker build at [docker-rxiv-maker actions](https://github.com/HenriquesLab/docker-rxiv-maker/actions)" >> $GITHUB_STEP_SUMMARY
+
+  # Seventh job: Orchestrate package manager updates
+  update-package-managers:
+    name: Update Package Managers
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [create-release, sync-docker-version]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          install-python-deps: false
 
-      - name: Install dependencies
+      - name: Install orchestration dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install requests pyyaml
