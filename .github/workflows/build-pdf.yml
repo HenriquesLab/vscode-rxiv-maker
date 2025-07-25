@@ -28,6 +28,9 @@ on:
         description: 'Whether the build was successful'
         value: ${{ jobs.build-pdf.outputs.success }}
 
+env:
+  PYTHONIOENCODING: utf-8
+
 jobs:
   # First job: Determine which manuscript directory to use and get version
   prepare:

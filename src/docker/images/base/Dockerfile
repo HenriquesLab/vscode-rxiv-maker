@@ -127,10 +127,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Configure R for optimal performance
-RUN echo 'options(repos = c(CRAN = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"))' >> /usr/lib/R/etc/Rprofile.site \
+# Configure R for optimal performance with multiple repository fallbacks
+RUN echo 'options(repos = c(CRAN = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", RSPM = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", RStudio = "https://cran.rstudio.com/", CRAN_Mirror = "https://cloud.r-project.org/"))' >> /usr/lib/R/etc/Rprofile.site \
     && echo 'options(Ncpus = parallel::detectCores())' >> /usr/lib/R/etc/Rprofile.site \
-    && echo 'options(bitmapType = "cairo")' >> /usr/lib/R/etc/Rprofile.site
+    && echo 'options(bitmapType = "cairo")' >> /usr/lib/R/etc/Rprofile.site \
+    && echo 'options(download.file.method = "auto")' >> /usr/lib/R/etc/Rprofile.site \
+    && echo 'options(timeout = 300)' >> /usr/lib/R/etc/Rprofile.site
 
 # Pre-install comprehensive R packages to eliminate runtime compilation
 # Optimized for Docker layer caching - stable packages first

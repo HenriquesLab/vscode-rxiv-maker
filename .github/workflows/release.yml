@@ -19,6 +19,7 @@ permissions:
 env:
   FORCE_COLOR: 1
   PIP_DISABLE_PIP_VERSION_CHECK: 1
+  PYTHONIOENCODING: utf-8
 
 jobs:
   # First job: Run comprehensive tests
