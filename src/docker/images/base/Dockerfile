@@ -53,7 +53,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpangocairo-1.0-0 \
     libgdk-pixbuf2.0-dev \
     libgirepository1.0-dev \
-    libgirepository-2.0-dev \
     gir1.2-gobject-2.0 \
     gir1.2-glib-2.0 \
     gobject-introspection \
@@ -325,8 +324,7 @@ RUN uv pip install --system --no-cache-dir \
     "matplotlib>=3.7.0,<3.9.0" \
     "seaborn>=0.12.0,<0.14.0" \
     "pycairo>=1.25.0,<2.0.0" \
-    "cairocffi>=1.6.0,<2.0.0" \
-    "pygobject>=3.42.0,<4.0.0"
+    "cairocffi>=1.6.0,<2.0.0"
 
 # Document processing libraries (moderate change frequency)
 RUN uv pip install --system --no-cache-dir \
