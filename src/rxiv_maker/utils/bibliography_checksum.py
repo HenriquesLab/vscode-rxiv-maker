@@ -11,22 +11,30 @@ import logging
 import time
 from pathlib import Path
 
+from .cache_utils import get_cache_dir, get_legacy_cache_dir, migrate_cache_file
+
 logger = logging.getLogger(__name__)
 
 
 class BibliographyChecksumManager:
     """Manages checksums for bibliography files to enable efficient DOI validation."""
 
-    def __init__(self, manuscript_path: str, cache_dir: str = ".cache"):
+    def __init__(self, manuscript_path: str, cache_dir: str | None = None):
         """Initialize the bibliography checksum manager.
 
         Args:
             manuscript_path: Path to the manuscript directory
-            cache_dir: Directory for cache files (relative to project root)
+            cache_dir: Directory for cache files (if None, uses platform-standard location)
         """
         self.manuscript_path = Path(manuscript_path)
         self.manuscript_name = self.manuscript_path.name
-        self.cache_dir = Path(cache_dir)
+
+        # Use standardized cache directory if not specified
+        if cache_dir is None:
+            self.cache_dir = get_cache_dir("bibliography")
+        else:
+            self.cache_dir = Path(cache_dir)
+
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Cache file specific to this manuscript
@@ -35,8 +43,29 @@ class BibliographyChecksumManager:
         )
         self.bibliography_file = self.manuscript_path / "03_REFERENCES.bib"
 
+        # Handle migration from legacy cache location
+        self._migrate_legacy_cache()
+
         # Load existing checksum
         self._checksum_data: dict[str, any] = self._load_checksum()
+
+    def _migrate_legacy_cache(self) -> None:
+        """Migrate cache file from legacy location if it exists."""
+        if self.cache_dir == get_cache_dir("bibliography"):
+            # Only migrate if using new standardized location
+            legacy_dir = get_legacy_cache_dir()
+            legacy_file = (
+                legacy_dir / f"bibliography_checksum_{self.manuscript_name}.json"
+            )
+
+            if legacy_file.exists():
+                try:
+                    migrate_cache_file(legacy_file, self.checksum_file)
+                    logger.info(
+                        f"Migrated bibliography checksum from {legacy_file} to {self.checksum_file}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to migrate bibliography checksum: {e}")
 
     def _load_checksum(self) -> dict[str, any]:
         """Load existing checksum from cache file."""
@@ -47,7 +76,7 @@ class BibliographyChecksumManager:
             return {}
 
         try:
-            with open(self.checksum_file) as f:
+            with open(self.checksum_file, encoding="utf-8") as f:
                 checksum_data = json.load(f)
             logger.debug(f"Loaded bibliography checksum from {self.checksum_file}")
             return checksum_data
@@ -60,7 +89,7 @@ class BibliographyChecksumManager:
     def _save_checksum(self) -> None:
         """Save checksum to cache file."""
         try:
-            with open(self.checksum_file, "w") as f:
+            with open(self.checksum_file, "w", encoding="utf-8") as f:
                 json.dump(self._checksum_data, f, indent=2, sort_keys=True)
             logger.debug(f"Saved bibliography checksum to {self.checksum_file}")
         except OSError as e:

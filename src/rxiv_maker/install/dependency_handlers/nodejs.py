@@ -21,12 +21,20 @@ class NodeJSHandler:
         try:
             # Check node
             node_result = subprocess.run(
-                ["node", "--version"], capture_output=True, timeout=10
+                ["node", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
 
             # Check npm
             npm_result = subprocess.run(
-                ["npm", "--version"], capture_output=True, timeout=10
+                ["npm", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
 
             return node_result.returncode == 0 and npm_result.returncode == 0
@@ -93,13 +101,21 @@ class NodeJSHandler:
 
     def get_essential_packages(self) -> list[str]:
         """Get list of essential npm packages."""
-        return ["@mermaid-js/mermaid-cli"]
+        return []
 
     def verify_mermaid(self) -> bool:
-        """Verify Mermaid CLI installation."""
+        """Verify Mermaid CLI installation.
+
+        Note: Mermaid CLI is still needed for SVG generation, but it's no longer
+        a Node.js essential package since we use CairoSVG for raster conversion.
+        """
         try:
             result = subprocess.run(
-                ["mmdc", "--version"], capture_output=True, timeout=10
+                ["mmdc", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
             )
             return result.returncode == 0
         except:

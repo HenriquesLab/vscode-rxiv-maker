@@ -115,7 +115,7 @@ class InstallManager:
         return (
             os.path.exists("/.dockerenv")
             or os.path.exists("/proc/1/cgroup")
-            and "docker" in open("/proc/1/cgroup").read()
+            and "docker" in open("/proc/1/cgroup", encoding="utf-8").read()
         )
 
     def _pre_install_checks(self) -> bool:

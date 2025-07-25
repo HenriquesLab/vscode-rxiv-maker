@@ -60,7 +60,7 @@ rich>=13.0.0         # Beautiful terminal output
 
 ### Optional Dependencies (Local Development Only Without Docker)
 - **LaTeX**: For PDF generation (TeX Live, MacTeX, or MikTeX)
-- **Node.js**: For Mermaid diagram generation
+- **Node.js**: For Mermaid diagram generation (specifically `mmdc` CLI tool for SVG generation)
 - **R**: For R-based figure scripts
 
 ### Platform-Specific Setup
@@ -264,7 +264,7 @@ rxiv check-installation
 **What gets installed:**
 - Python packages (matplotlib, numpy, etc.)
 - LaTeX distribution (for PDF generation)
-- Node.js + Mermaid CLI (for diagrams)
+- Node.js + Mermaid CLI (`mmdc` command for diagram SVG generation)
 - R language (optional, for statistical figures)
 - System libraries (automatically detected)
 
@@ -362,6 +362,7 @@ Existing users can continue using Make commands or migrate to the CLI:
 ### Advanced Features
 - **[Change Tracking](docs/workflows/change-tracking.md)** - Version diff PDFs
 - **[Troubleshooting](docs/troubleshooting/troubleshooting-missing-figures.md)** - Common issues and fixes
+- **[Cache Migration Guide](docs/troubleshooting/cache-migration.md)** - Platform-standard cache directories
 
 ### Development
 - **[VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)** - Enhanced editing experience
@@ -399,6 +400,61 @@ rxiv-maker/
 ├── src/                    # Rxiv-Maker source code
 └── docs/                   # Documentation
 ```
+
+## Docker Strategy
+
+Rxiv-Maker provides robust Docker support through a dedicated submodule architecture that ensures consistency across environments while maintaining code organization.
+
+### 🏗️ Architecture Overview
+
+**Submodule Design**: Docker infrastructure is maintained in [`submodules/docker-rxiv-maker/`](submodules/docker-rxiv-maker/) as a separate repository to:
+- Enable independent versioning of Docker images
+- Allow specialized CI/CD workflows for container builds
+- Maintain separation between core application and infrastructure
+- Support experimental variants without affecting main codebase
+
+**Docker Infrastructure**: All Docker build scripts and configuration are now consolidated in the [`submodules/docker-rxiv-maker/`](submodules/docker-rxiv-maker/) repository for centralized management.
+
+### 🐳 Available Images
+
+| Image | Purpose | Use Case |
+|-------|---------|----------|
+| `henriqueslab/rxiv-maker-base:latest` | Cairo-only production image | PDF generation with enhanced SVG processing |
+
+**Note**: As of v1.8+, we've transitioned to a single Cairo-only Docker image for better performance and smaller size. The experimental Cairo variant has been merged into the base image.
+
+### 🚀 Usage Patterns
+
+**Modern CLI**:
+```bash
+# Use Docker engine for builds
+rxiv pdf --engine docker
+
+# Set Docker as default
+rxiv config set general.default_engine docker
+
+# Use experimental Cairo variant
+RXIV_DOCKER_VARIANT=experimental-cairo rxiv pdf --engine docker
+```
+
+**Legacy Make Commands**:
+```bash
+# Standard Docker builds
+make pdf RXIV_ENGINE=DOCKER
+
+# Experimental variant
+make pdf RXIV_ENGINE=DOCKER RXIV_DOCKER_VARIANT=experimental-cairo
+```
+
+### ⚙️ Benefits
+
+- **Zero Dependencies**: Only Docker and Make required locally
+- **Consistency**: Identical environment across development, CI/CD, and production
+- **Performance**: Pre-built images with all dependencies (~5x faster than dependency installation)
+- **Isolation**: No conflicts with existing system packages
+- **Multi-platform**: AMD64 support with ARM64 compatibility via Rosetta
+
+For detailed Docker documentation, see the [Docker submodule repository](submodules/docker-rxiv-maker/) and [Docker Engine Mode Guide](docs/workflows/docker-engine-mode.md).
 
 ## Contributing
 

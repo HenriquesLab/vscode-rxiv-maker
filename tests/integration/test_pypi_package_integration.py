@@ -21,7 +21,7 @@ class TestPyPIPackageIntegration:
 
         package_path = Path(rxiv_maker.__file__).parent
 
-        # Check for tex files in the package (in development mode, these might not exist)
+        # Check for tex files in the package (may not exist in dev mode)
         tex_files = list(package_path.rglob("*.tex"))
         cls_files = list(package_path.rglob("*.cls"))
 
@@ -96,21 +96,43 @@ class TestPyPIPackageIntegration:
 
             try:
                 # Test 1: Initialize manuscript
-                init_result = subprocess.run(
-                    [
-                        "python",
-                        "-m",
-                        "rxiv_maker.cli",
-                        "init",
-                        str(manuscript_dir),
-                        "--template",
-                        "basic",
-                        "--no-interactive",
-                    ],
-                    text=True,
-                    capture_output=True,
-                    timeout=30,
-                )
+                try:
+                    init_result = subprocess.run(
+                        [
+                            "uv",
+                            "run",
+                            "python",
+                            "-m",
+                            "rxiv_maker.cli",
+                            "init",
+                            str(manuscript_dir),
+                            "--template",
+                            "basic",
+                            "--no-interactive",
+                        ],
+                        text=True,
+                        capture_output=True,
+                        timeout=30,
+                        cwd=original_cwd,  # Run from original directory
+                    )
+                except FileNotFoundError:
+                    # Fall back to direct python call
+                    init_result = subprocess.run(
+                        [
+                            "python",
+                            "-m",
+                            "rxiv_maker.cli",
+                            "init",
+                            str(manuscript_dir),
+                            "--template",
+                            "basic",
+                            "--no-interactive",
+                        ],
+                        text=True,
+                        capture_output=True,
+                        timeout=30,
+                        cwd=original_cwd,
+                    )
 
                 print("Init STDOUT:", init_result.stdout)
                 print("Init STDERR:", init_result.stderr)
@@ -130,18 +152,36 @@ class TestPyPIPackageIntegration:
                     )
 
                 # Test 2: Validate manuscript
-                validate_result = subprocess.run(
-                    [
-                        "python",
-                        "-m",
-                        "rxiv_maker.cli",
-                        "validate",
-                        str(manuscript_dir),
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                )
+                try:
+                    validate_result = subprocess.run(
+                        [
+                            "uv",
+                            "run",
+                            "python",
+                            "-m",
+                            "rxiv_maker.cli",
+                            "validate",
+                            str(manuscript_dir),
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                        cwd=original_cwd,
+                    )
+                except FileNotFoundError:
+                    validate_result = subprocess.run(
+                        [
+                            "python",
+                            "-m",
+                            "rxiv_maker.cli",
+                            "validate",
+                            str(manuscript_dir),
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                        cwd=original_cwd,
+                    )
 
                 print("Validate STDOUT:", validate_result.stdout)
                 print("Validate STDERR:", validate_result.stderr)
@@ -153,27 +193,46 @@ class TestPyPIPackageIntegration:
 
                 # Test 3: Attempt PDF build (this is the critical test)
                 # Use --skip-validation to avoid validation failures stopping the build
-                pdf_result = subprocess.run(
-                    [
-                        "python",
-                        "-m",
-                        "rxiv_maker.cli.main",
-                        "pdf",
-                        str(manuscript_dir),
-                        "--skip-validation",
-                        "--verbose",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=120,  # PDF building can take time
-                )
+                try:
+                    pdf_result = subprocess.run(
+                        [
+                            "uv",
+                            "run",
+                            "python",
+                            "-m",
+                            "rxiv_maker.cli",
+                            "pdf",
+                            str(manuscript_dir),
+                            "--skip-validation",
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=120,  # PDF building can take time
+                        cwd=original_cwd,
+                    )
+                except FileNotFoundError:
+                    pdf_result = subprocess.run(
+                        [
+                            "python",
+                            "-m",
+                            "rxiv_maker.cli",
+                            "pdf",
+                            str(manuscript_dir),
+                            "--skip-validation",
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=120,  # PDF building can take time
+                        cwd=original_cwd,
+                    )
 
                 print("PDF STDOUT:", pdf_result.stdout)
                 print("PDF STDERR:", pdf_result.stderr)
 
                 # The critical check: did the command at least try to build?
                 # We're mainly testing that LaTeX files are accessible
-                # Even if LaTeX isn't installed, it should get past the template loading phase
+                # Even if LaTeX isn't installed,
+                # it should get past the template loading phase
                 assert (
                     "template.tex" in pdf_result.stdout
                     or "template.tex" in pdf_result.stderr
@@ -182,7 +241,7 @@ class TestPyPIPackageIntegration:
                     or pdf_result.returncode == 0
                 ), f"PDF build failed to access LaTeX templates: {pdf_result.stderr}"
 
-                # If the build got to the LaTeX compilation step, templates are accessible
+                # If build got to LaTeX compilation step, templates are accessible
                 if "pdflatex" in pdf_result.stderr or "latexmk" in pdf_result.stderr:
                     # This means LaTeX templates were successfully loaded
                     pass  # Success - we got to LaTeX compilation
@@ -232,7 +291,9 @@ class TestPyPIPackageIntegration:
                         "init",
                         str(manuscript_dir),
                     ],
-                    input="CI Test Paper\\n\\nCI Test Author\\nci@test.com\\nCI University\\n",
+                    input=(
+                        "CI Test Paper\n\nCI Test Author\nci@test.com\nCI University\n"
+                    ),
                     text=True,
                     capture_output=True,
                     timeout=30,

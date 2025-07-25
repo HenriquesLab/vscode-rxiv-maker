@@ -167,3 +167,50 @@ def install_tests_fast(session):
         "--tb=short",
         "--timeout=90",  # 1.5 minute timeout for fast tests
     )
+
+
+@nox.session(python="3.11")
+def docker_tests(session):
+    """Run Docker engine mode tests (requires Docker)."""
+    session.install(".")
+    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
+    session.install("pytest-timeout>=2.4.0", "pytest-xdist>=3.8.0")
+
+    # Set Docker engine mode
+    session.env["RXIV_ENGINE"] = "DOCKER"
+
+    # Run Docker-specific unit tests first
+    session.run(
+        "pytest",
+        "tests/unit/test_figure_generator.py",
+        "tests/cli/test_build.py",
+        "tests/cli/test_config.py",
+        "-v",
+        "-s",
+        "--tb=short",
+        "--timeout=300",  # 5 minute timeout for Docker tests
+        "-k",
+        "docker or engine",  # Only run Docker-related tests
+    )
+
+    # Run real Docker integration test with EXAMPLE_MANUSCRIPT
+    session.log("Running Docker integration test with EXAMPLE_MANUSCRIPT")
+
+    # Check if EXAMPLE_MANUSCRIPT exists
+    import os
+
+    if not os.path.exists("EXAMPLE_MANUSCRIPT"):
+        session.log("EXAMPLE_MANUSCRIPT not found, skipping integration test")
+        return
+
+    # Set environment and run rxiv pdf command with Docker engine
+    session.run(
+        "python",
+        "-m",
+        "rxiv_maker.cli.main",
+        "--engine",
+        "docker",
+        "pdf",
+        "EXAMPLE_MANUSCRIPT/",
+        external=False,
+    )

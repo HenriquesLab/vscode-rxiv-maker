@@ -2,7 +2,7 @@ name: Test Pipeline
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, dev-no-puppets]
     paths:
       - 'src/**'
       - 'tests/**'
@@ -10,7 +10,7 @@ on:
       - 'uv.lock'
       - '.github/workflows/test.yml'
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev, dev-no-puppets]
     paths:
       - 'src/**'
       - 'tests/**'
@@ -56,6 +56,7 @@ jobs:
   setup:
     name: Setup Configuration
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       test-scope: ${{ steps.config.outputs.test-scope }}
       python-versions: ${{ steps.config.outputs.python-versions }}
@@ -120,7 +121,6 @@ jobs:
           echo "- **Operating Systems**: $os_matrix" >> $GITHUB_STEP_SUMMARY
           echo "- **Ecosystem Testing**: $run_ecosystem" >> $GITHUB_STEP_SUMMARY
 
-
   test:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
@@ -137,101 +137,33 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install UV
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-          enable-cache: true
-
-      - name: Install system dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libfreetype6-dev \
-            libjpeg-dev \
-            libpng-dev \
-            libtiff-dev \
-            libwebp-dev \
-            libopenjp2-7-dev \
-            zlib1g-dev \
-            liblcms2-dev \
-            libffi-dev \
-            pkg-config \
-            git
-
-      - name: Install system dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install \
-            freetype \
-            jpeg \
-            libpng \
-            libtiff \
-            webp \
-            openjpeg \
-            zlib \
-            lcms2 \
-            libffi \
-            pkg-config
-
-      - name: Install system dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: echo "Using pip wheels for Windows dependencies"
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Install package in development mode
-        run: |
-          # Install package in editable mode so rxiv command is available
-          uv pip install -e .
-
-      - name: Verify CLI installation
-        run: |
-          # Test that rxiv command is available
-          which rxiv || echo "rxiv not in PATH"
-          uv run rxiv --version || echo "rxiv command failed"
+          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
 
       - name: Run unit tests
-        run: |
-          uv run pytest tests/ --cov=rxiv_maker --cov-report=xml --cov-report=term-missing -n auto --maxfail=10 --tb=short -v
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: Test CLI functionality
-        shell: bash
-        run: |
-          echo "Testing CLI installation and basic functionality..."
-          uv run python -m rxiv_maker.cli --version
-          uv run python -m rxiv_maker.cli --help
-          uv run python -m rxiv_maker.cli config show || echo "Config command not available"
-
-      - name: Test package installation
-        run: |
-          # Build and test wheel installation
-          uv build
-          python -m pip install --upgrade pip
-          python -m pip install dist/*.whl
-          python -c "import rxiv_maker; print('✅ Package imports successfully')"
-          python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
-
-      - name: Upload coverage
-        if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v4
+        uses: ./.github/actions/test-execution
         with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+          test-type: unit
+          python-version: ${{ matrix.python-version }}
+          os: ${{ matrix.os }}
+          upload-coverage: ${{ matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest' }}
+
+      - name: Upload test artifacts
+        if: always()
+        uses: ./.github/actions/artifact-management
+        with:
+          action: upload-test-results
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          matrix-os: ${{ matrix.os }}
+          matrix-python: ${{ matrix.python-version }}
 
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [setup, test]
     if: needs.setup.outputs.test-scope != 'quick'
 
@@ -241,20 +173,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
 
-      - name: Install UV
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-          enable-cache: true
-
-      - name: Install dependencies and LaTeX
+      - name: Install LaTeX
         run: |
-          uv sync
           sudo apt-get update
           sudo apt-get install -y \
             texlive-latex-base \
@@ -269,23 +194,25 @@ jobs:
           echo "Testing manuscript generation..."
           mkdir -p test-workspace && cd test-workspace
 
-          uv run python -m rxiv_maker.cli init test-manuscript --no-interactive || echo "Init command failed"
+          uv run rxiv init test-manuscript --no-interrupt || echo "Init command failed"
 
           if [ -d "test-manuscript" ]; then
             echo "✅ Manuscript initialized successfully"
             cd test-manuscript
-            uv run python -m rxiv_maker.cli validate --no-doi || echo "Validation failed"
+            uv run rxiv validate --no-doi || echo "Validation failed"
             cd ..
           fi
           cd ..
 
       - name: Run integration tests
-        run: |
-          uv run pytest tests/integration/ -v --tb=short || echo "Integration tests not available"
+        uses: ./.github/actions/test-execution
+        with:
+          test-type: integration
 
   build:
     name: Build & Test Distribution
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [setup, test]
     if: needs.setup.outputs.test-scope != 'quick'
 
@@ -295,16 +222,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
-
-      - name: Install UV
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-          enable-cache: true
 
       - name: Build package
         run: uv build
@@ -317,8 +238,9 @@ jobs:
           python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/artifact-management
         with:
+          action: upload
           name: dist-${{ github.sha }}
           path: dist/
 
@@ -335,40 +257,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
 
-      - name: Install dependencies and build
+      - name: Build package
         run: |
           python -m pip install --upgrade pip build
           python -m build --wheel --outdir dist/
           python -m pip install dist/*.whl
 
       - name: Run performance benchmarks
-        run: |
-          echo "📊 Running performance benchmarks..."
-
-          # Import time
-          start_time=$(date +%s%N)
-          python -c "import rxiv_maker"
-          end_time=$(date +%s%N)
-          import_time=$((($end_time - $start_time) / 1000000))
-
-          # CLI startup time
-          start_time=$(date +%s%N)
-          rxiv --version > /dev/null
-          end_time=$(date +%s%N)
-          cli_time=$((($end_time - $start_time) / 1000000))
-
-          # Package size
-          wheel_size=$(du -h dist/*.whl | cut -f1)
-
-          echo "📊 Performance Metrics:" >> $GITHUB_STEP_SUMMARY
-          echo "- Import time: ${import_time}ms" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI startup time: ${cli_time}ms" >> $GITHUB_STEP_SUMMARY
-          echo "- Package size: ${wheel_size}" >> $GITHUB_STEP_SUMMARY
+        uses: ./.github/actions/test-execution
+        with:
+          test-type: performance
 
   security:
     name: Security Scan
@@ -383,34 +286,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
 
-      - name: Install security tools and build package
+      - name: Build package
         run: |
-          python -m pip install --upgrade pip build bandit safety
           python -m build --wheel --outdir dist/
           python -m pip install dist/*.whl
 
       - name: Run security scans
-        run: |
-          echo "🔒 Running security scans..."
-
-          # Bandit scan
-          if [ -d "src" ]; then
-            bandit -r src/ -f json -o bandit-report.json || echo "Bandit completed with issues"
-          fi
-
-          # Safety check
-          safety check --json --output safety-report.json || echo "Safety completed with issues"
-
-          echo "✅ Security scans completed"
+        uses: ./.github/actions/test-execution
+        with:
+          test-type: security
 
       - name: Upload security reports
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: ./.github/actions/artifact-management
         with:
+          action: upload
           name: security-reports-${{ github.sha }}
           path: |
             bandit-report.json
@@ -440,8 +335,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
 
@@ -491,10 +386,109 @@ jobs:
           }
         shell: powershell
 
+  # Check for version changes and trigger Docker sync
+  docker-version-sync:
+    name: Docker Version Sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test]
+    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'dev-no-puppets')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need at least 2 commits to compare
+
+      - name: Check for version file changes
+        id: check-version
+        run: |
+          # Check if version file changed in this push
+          if git diff --name-only HEAD~1 HEAD | grep -q "src/rxiv_maker/__version__.py"; then
+            echo "Version file changed"
+
+            # Get current version
+            VERSION=$(python3 -c "
+            import sys
+            sys.path.insert(0, 'src')
+            from rxiv_maker.__version__ import __version__
+            print(__version__)
+            ")
+
+            # Get previous version if possible
+            PREV_VERSION=$(git show HEAD~1:src/rxiv_maker/__version__.py | python3 -c "
+            import sys
+            exec(sys.stdin.read())
+            print(__version__)
+            " 2>/dev/null || echo "unknown")
+
+            echo "Previous version: $PREV_VERSION"
+            echo "Current version: $VERSION"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+            if [ "$PREV_VERSION" != "$VERSION" ]; then
+              echo "Version changed from $PREV_VERSION to $VERSION"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "Version file changed but version is the same"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Version file not changed"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Docker image build
+        if: steps.check-version.outputs.changed == 'true'
+        run: |
+          echo "Triggering Docker image build for version ${{ steps.check-version.outputs.version }}"
+
+          # Use DOCKER_SYNC_TOKEN if available, otherwise fall back to GITHUB_TOKEN
+          if [ -n "${{ secrets.DOCKER_SYNC_TOKEN }}" ]; then
+            AUTH_TOKEN="${{ secrets.DOCKER_SYNC_TOKEN }}"
+          else
+            AUTH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          fi
+
+          RESPONSE=$(curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $AUTH_TOKEN" \
+            -H "User-Agent: rxiv-maker-sync" \
+            -w "HTTP_CODE:%{http_code}" \
+            -s \
+            https://api.github.com/repos/HenriquesLab/docker-rxiv-maker/dispatches \
+            -d '{
+              "event_type": "build-docker-image",
+              "client_payload": {
+                "version": "${{ steps.check-version.outputs.version }}",
+                "source_repo": "${{ github.repository }}",
+                "source_commit": "${{ github.sha }}",
+                "trigger_type": "version_sync"
+              }
+            }' 2>&1)
+
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+
+          if [ "$HTTP_CODE" = "204" ]; then
+            echo "✅ Successfully triggered Docker image build"
+          else
+            echo "⚠️ Docker sync response: HTTP $HTTP_CODE - $RESPONSE"
+            echo "Continuing with CI pipeline..."
+          fi
+
+      - name: Docker sync notification
+        if: steps.check-version.outputs.changed == 'true'
+        run: |
+          echo "## 🐳 Docker Version Sync Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.check-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: Triggered Docker image build" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [setup, test, integration, build, performance, security, ecosystem]
+    timeout-minutes: 10
+    needs: [setup, test, integration, build, performance, security, ecosystem, docker-version-sync]
     if: always()
 
     steps:
@@ -514,6 +508,7 @@ jobs:
             "performance:Performance Benchmarks"
             "security:Security Scan"
             "ecosystem:Ecosystem Testing"
+            "docker-version-sync:Docker Version Sync"
           )
 
           for job_info in "${jobs[@]}"; do
@@ -528,6 +523,7 @@ jobs:
               "performance") result="${{ needs.performance.result }}" ;;
               "security") result="${{ needs.security.result }}" ;;
               "ecosystem") result="${{ needs.ecosystem.result }}" ;;
+              "docker-version-sync") result="${{ needs.docker-version-sync.result }}" ;;
             esac
 
             case $result in

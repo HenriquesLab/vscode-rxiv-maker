@@ -7,6 +7,13 @@ from typing import Any
 import click
 from rich.console import Console
 
+from rxiv_maker.utils.unicode_safe import (
+    console_error,
+    console_success,
+    console_warning,
+    safe_console_print,
+)
+
 console = Console()
 
 
@@ -34,27 +41,15 @@ class Config:
         except ImportError:
             # Fallback for Python < 3.11
             try:
-                import tomli as tomllib
+                import tomli
 
                 with open(self.config_file, "rb") as f:
-                    self.config_data = tomllib.load(f)
+                    self.config_data = tomli.load(f)
             except ImportError:
-                try:
-                    console.print(
-                        "⚠️  Warning: TOML library not available. Using defaults.",
-                        style="yellow",
-                    )
-                except UnicodeEncodeError:
-                    print("Warning: TOML library not available. Using defaults.")
+                console_warning(console, "TOML library not available. Using defaults.")
                 self.config_data = self.get_default_config()
         except Exception as e:
-            try:
-                console.print(
-                    f"⚠️  Warning: Error loading config: {e}. Using defaults.",
-                    style="yellow",
-                )
-            except UnicodeEncodeError:
-                print(f"Warning: Error loading config: {e}. Using defaults.")
+            console_warning(console, f"Error loading config: {e}. Using defaults.")
             self.config_data = self.get_default_config()
 
     def get_default_config(self) -> dict[str, Any]:
@@ -205,27 +200,8 @@ class Config:
             if isinstance(section_data, dict):
                 add_section(section_name, section_data)
 
-        try:
-            console.print(table)
-            console.print(f"\n📁 Config file: {self.config_file}", style="blue")
-        except UnicodeEncodeError:
-            # Fallback for Windows environments with limited encoding
-            try:
-                console.print(table)
-                console.print(
-                    f"\n[CONFIG] Config file: {self.config_file}", style="blue"
-                )
-            except UnicodeEncodeError:
-                # Final fallback - use plain print
-                print("\nRxiv-Maker Configuration")
-                print("=" * 50)
-                for section_name, section_data in self.config_data.items():
-                    if isinstance(section_data, dict):
-                        for key, value in section_data.items():
-                            full_key = f"{section_name}.{key}"
-                            description = descriptions.get(full_key, "")
-                            print(f"{full_key}: {value} - {description}")
-                print(f"\nConfig file: {self.config_file}")
+        safe_console_print(console, table)
+        safe_console_print(console, f"\nConfig file: {self.config_file}", style="blue")
 
 
 # Global configuration instance
@@ -250,6 +226,7 @@ def show():
 def set(key: str, value: str):
     """Set configuration value."""
     # Try to parse value as appropriate type
+    parsed_value: Any
     if value.lower() in ("true", "false"):
         parsed_value = value.lower() == "true"
     elif value.isdigit():
@@ -258,10 +235,7 @@ def set(key: str, value: str):
         parsed_value = value
 
     config.set(key, parsed_value)
-    try:
-        console.print(f"✅ Set {key} = {parsed_value}", style="green")
-    except UnicodeEncodeError:
-        print(f"[OK] Set {key} = {parsed_value}")
+    console_success(console, f"Set {key} = {parsed_value}")
 
 
 @config_cmd.command()
@@ -270,15 +244,9 @@ def get(key: str):
     """Get configuration value."""
     value = config.get(key)
     if value is not None:
-        try:
-            console.print(f"{key} = {value}", style="green")
-        except UnicodeEncodeError:
-            print(f"{key} = {value}")
+        safe_console_print(console, f"{key} = {value}", style="green")
     else:
-        try:
-            console.print(f"❌ Key '{key}' not found", style="red")
-        except UnicodeEncodeError:
-            print(f"[ERROR] Key '{key}' not found")
+        console_error(console, f"Key '{key}' not found")
 
 
 @config_cmd.command()
@@ -287,10 +255,7 @@ def reset():
     if click.confirm("Are you sure you want to reset all configuration to defaults?"):
         config.config_data = config.get_default_config()
         config.save_config()
-        try:
-            console.print("✅ Configuration reset to defaults", style="green")
-        except UnicodeEncodeError:
-            print("[OK] Configuration reset to defaults")
+        console_success(console, "Configuration reset to defaults")
 
 
 @config_cmd.command()
@@ -299,12 +264,6 @@ def edit():
     editor = os.environ.get("EDITOR", "nano")
     try:
         click.edit(filename=str(config.config_file), editor=editor)
-        try:
-            console.print("✅ Configuration file edited", style="green")
-        except UnicodeEncodeError:
-            print("[OK] Configuration file edited")
+        console_success(console, "Configuration file edited")
     except Exception as e:
-        try:
-            console.print(f"❌ Error editing config: {e}", style="red")
-        except UnicodeEncodeError:
-            print(f"[ERROR] Error editing config: {e}")
+        console_error(console, f"Error editing config: {e}")

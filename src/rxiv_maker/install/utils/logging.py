@@ -5,6 +5,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from rxiv_maker.utils.unicode_safe import get_safe_icon
+
 
 class InstallLogger:
     """Logger for installation process with file and console output."""
@@ -52,11 +54,13 @@ class InstallLogger:
 
     def warning(self, message: str):
         """Log warning message."""
-        self.logger.warning(f"⚠️  {message}")
+        warning_icon = get_safe_icon("⚠️", "[WARNING]")
+        self.logger.warning(f"{warning_icon}  {message}")
 
     def error(self, message: str):
         """Log error message."""
-        self.logger.error(f"❌ {message}")
+        error_icon = get_safe_icon("❌", "[ERROR]")
+        self.logger.error(f"{error_icon} {message}")
 
     def debug(self, message: str):
         """Log debug message."""
@@ -64,7 +68,8 @@ class InstallLogger:
 
     def success(self, message: str):
         """Log success message."""
-        self.logger.info(f"✅ {message}")
+        success_icon = get_safe_icon("✅", "[SUCCESS]")
+        self.logger.info(f"{success_icon} {message}")
 
     def get_log_file(self) -> Path:
         """Get the log file path."""

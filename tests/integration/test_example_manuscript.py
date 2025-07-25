@@ -1,6 +1,5 @@
 """End-to-end test for EXAMPLE_MANUSCRIPT using real rxiv commands."""
 
-import os
 import shutil
 import subprocess
 import tempfile
@@ -33,10 +32,10 @@ class TestExampleManuscript:
 
     def test_rxiv_pdf_example_manuscript_cli(self, example_manuscript_copy):
         """Test full PDF generation using rxiv CLI command."""
-        # Try rxiv command, fall back to python module if not available
+        # Try uv run rxiv first, then fall back to python module if not available
         try:
             result = subprocess.run(
-                ["rxiv", "pdf", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "pdf", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
                 cwd=Path.cwd(),
@@ -54,7 +53,7 @@ class TestExampleManuscript:
         assert result.returncode == 0, f"rxiv pdf failed: {result.stderr}"
 
         # Check output PDF was created
-        output_pdf = example_manuscript_copy / "output" / "manuscript.pdf"
+        output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
         assert output_pdf.exists(), "Output PDF was not created"
         assert output_pdf.stat().st_size > 1000, "Output PDF is too small"
 
@@ -81,16 +80,38 @@ class TestExampleManuscript:
         assert success, "Build failed"
 
         # Check output
-        output_pdf = example_manuscript_copy / "output" / "manuscript.pdf"
+        output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
         assert output_pdf.exists(), "Output PDF was not created"
         assert output_pdf.stat().st_size > 1000, "Output PDF is too small"
 
     def test_rxiv_validate_example_manuscript(self, example_manuscript_copy):
         """Test validation of EXAMPLE_MANUSCRIPT."""
+        # Run figure generation first to ensure all figure files exist
+        try:
+            subprocess.run(
+                ["uv", "run", "rxiv", "figures", str(example_manuscript_copy)],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            subprocess.run(
+                [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "figures",
+                    str(example_manuscript_copy),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
         # Run validation
         try:
             result = subprocess.run(
-                ["rxiv", "validate", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "validate", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
             )
@@ -123,7 +144,7 @@ class TestExampleManuscript:
         # Run figure generation
         try:
             result = subprocess.run(
-                ["rxiv", "figures", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "figures", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
             )
@@ -152,7 +173,7 @@ class TestExampleManuscript:
     @pytest.mark.parametrize("force_figures", [True, False])
     def test_rxiv_pdf_force_figures(self, example_manuscript_copy, force_figures):
         """Test PDF generation with and without force_figures option."""
-        args = ["rxiv", "pdf", str(example_manuscript_copy)]
+        args = ["uv", "run", "rxiv", "pdf", str(example_manuscript_copy)]
         if force_figures:
             args.append("--force-figures")
 
@@ -172,27 +193,22 @@ class TestExampleManuscript:
         assert result.returncode == 0, f"Command failed: {result.stderr}"
 
         # PDF should exist
-        output_pdf = example_manuscript_copy / "output" / "manuscript.pdf"
+        output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
         assert output_pdf.exists()
 
     def test_make_pdf_compatibility(self, example_manuscript_copy):
         """Test that make pdf still works (backwards compatibility)."""
-        # Set MANUSCRIPT_PATH environment variable
-        env = os.environ.copy()
-        env["MANUSCRIPT_PATH"] = str(example_manuscript_copy)
-
-        # Run make pdf
+        # Run make pdf with command-line variable override
         result = subprocess.run(
-            ["make", "pdf"],
+            ["make", "pdf", f"MANUSCRIPT_PATH={example_manuscript_copy}"],
             capture_output=True,
             text=True,
-            env=env,
             cwd=Path.cwd(),
         )
 
         # Should succeed (or gracefully fail if Make not available)
         if result.returncode == 0:
-            output_pdf = example_manuscript_copy / "output" / "manuscript.pdf"
+            output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
             assert output_pdf.exists(), "Make pdf did not create output"
 
     def test_rxiv_clean(self, example_manuscript_copy):
@@ -200,7 +216,7 @@ class TestExampleManuscript:
         # First generate some output
         try:
             subprocess.run(
-                ["rxiv", "figures", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "figures", str(example_manuscript_copy)],
                 capture_output=True,
             )
         except FileNotFoundError:
@@ -218,7 +234,7 @@ class TestExampleManuscript:
         # Run clean
         try:
             result = subprocess.run(
-                ["rxiv", "clean", str(example_manuscript_copy)],
+                ["uv", "run", "rxiv", "clean", str(example_manuscript_copy)],
                 capture_output=True,
                 text=True,
             )

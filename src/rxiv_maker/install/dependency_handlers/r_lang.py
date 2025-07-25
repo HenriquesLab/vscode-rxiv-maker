@@ -19,7 +19,13 @@ class RLanguageHandler:
     def verify_installation(self) -> bool:
         """Verify R installation."""
         try:
-            result = subprocess.run(["R", "--version"], capture_output=True, timeout=10)
+            result = subprocess.run(
+                ["R", "--version"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+            )
             return result.returncode == 0
         except:
             return False

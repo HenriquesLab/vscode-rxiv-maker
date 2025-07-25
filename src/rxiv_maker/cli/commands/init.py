@@ -34,7 +34,8 @@ def init(
 ) -> None:
     """Initialize a new manuscript directory with template files and structure.
 
-    **MANUSCRIPT_PATH**: Directory to create for your manuscript. Defaults to MANUSCRIPT/
+    **MANUSCRIPT_PATH**: Directory to create for your manuscript.
+    Defaults to MANUSCRIPT/
 
     Creates all required files including configuration, main content, supplementary
     information, bibliography, and figure directory with example scripts.
@@ -42,24 +43,20 @@ def init(
     ## Examples
 
     **Initialize default manuscript:**
-    ```
-    $ rxiv init
-    ```
+
+        $ rxiv init
 
     **Initialize custom manuscript directory:**
-    ```
-    $ rxiv init MY_PAPER/
-    ```
+
+        $ rxiv init MY_PAPER/
 
     **Use research template:**
-    ```
-    $ rxiv init --template research
-    ```
+
+        $ rxiv init --template research
 
     **Force overwrite existing directory:**
-    ```
-    $ rxiv init --force
-    ```
+
+        $ rxiv init --force
     """
     verbose = ctx.obj.get("verbose", False)
 
@@ -145,7 +142,7 @@ figure_dpi: 300
 latex_engine: "pdflatex"  # or "xelatex", "lualatex"
 '''
 
-        with open(manuscript_dir / "00_CONFIG.yml", "w") as f:
+        with open(manuscript_dir / "00_CONFIG.yml", "w", encoding="utf-8") as f:
             f.write(config_content)
 
         # Create 01_MAIN.md
@@ -185,7 +182,7 @@ Conclude your manuscript here.
 Acknowledge contributions here.
 """
 
-        with open(manuscript_dir / "01_MAIN.md", "w") as f:
+        with open(manuscript_dir / "01_MAIN.md", "w", encoding="utf-8") as f:
             f.write(main_content)
 
         # Create 02_SUPPLEMENTARY_INFO.md
@@ -208,7 +205,9 @@ Additional tables.
 Additional references if needed.
 """
 
-        with open(manuscript_dir / "02_SUPPLEMENTARY_INFO.md", "w") as f:
+        with open(
+            manuscript_dir / "02_SUPPLEMENTARY_INFO.md", "w", encoding="utf-8"
+        ) as f:
             f.write(supp_content)
 
         # Create 03_REFERENCES.bib
@@ -225,7 +224,7 @@ Additional references if needed.
 }
 """
 
-        with open(manuscript_dir / "03_REFERENCES.bib", "w") as f:
+        with open(manuscript_dir / "03_REFERENCES.bib", "w", encoding="utf-8") as f:
             f.write(bib_content)
 
         # Create example figure script
@@ -256,7 +255,7 @@ plt.close()
 print("✅ Example figure generated successfully!")
 '''
 
-        with open(figures_dir / "Figure_example.py", "w") as f:
+        with open(figures_dir / "Figure_example.py", "w", encoding="utf-8") as f:
             f.write(figure_script)
 
         # Create .gitignore
@@ -288,7 +287,7 @@ __pycache__/
 Thumbs.db
 """
 
-        with open(manuscript_dir / ".gitignore", "w") as f:
+        with open(manuscript_dir / ".gitignore", "w", encoding="utf-8") as f:
             f.write(gitignore_content)
 
         console.print("✅ Manuscript initialized successfully!", style="green")

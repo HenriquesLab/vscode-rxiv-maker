@@ -52,7 +52,7 @@ def extract_yaml_metadata(md_file):
     config_file = find_config_file(md_file)
     if config_file:
         print(f"Loading metadata from separate config file: {config_file}")
-        with open(config_file) as file:
+        with open(config_file, encoding="utf-8") as file:
             yaml_content = file.read()
 
         if yaml:
@@ -74,7 +74,7 @@ def extract_yaml_metadata(md_file):
 
     # Fall back to extracting from markdown file
     print(f"Looking for YAML metadata in markdown file: {md_file}")
-    with open(md_file) as file:
+    with open(md_file, encoding="utf-8") as file:
         content = file.read()
 
     # Use regex to find YAML metadata block

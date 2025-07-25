@@ -7,6 +7,7 @@ from .check_installation import check_installation
 from .clean import clean
 from .figures import figures
 from .init import init
+from .install_deps import install_deps
 from .setup import setup
 from .track_changes import track_changes
 from .validate import validate
@@ -20,6 +21,7 @@ __all__ = [
     "clean",
     "figures",
     "init",
+    "install_deps",
     "setup",
     "track_changes",
     "validate",

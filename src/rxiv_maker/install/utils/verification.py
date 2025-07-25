@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import sys
 
+from rxiv_maker.utils.unicode_safe import get_safe_icon
+
 # Import existing dependency checker
 try:
     from ...utils.dependency_checker import DependencyChecker
@@ -144,7 +146,12 @@ def _print_verification_results(results: dict[str, bool]):
     print("=" * 50)
 
     for component, installed in results.items():
-        status = "✅ INSTALLED" if installed else "❌ MISSING"
+        if installed:
+            status_icon = get_safe_icon("✅", "[INSTALLED]")
+            status = f"{status_icon} INSTALLED"
+        else:
+            status_icon = get_safe_icon("❌", "[MISSING]")
+            status = f"{status_icon} MISSING"
         component_name = component.replace("_", " ").title()
         print(f"{component_name:20} {status}")
 
@@ -158,10 +165,12 @@ def _print_verification_results(results: dict[str, bool]):
     print(f"Summary: {installed}/{total} components installed")
 
     if missing > 0:
-        print(f"⚠️  {missing} components missing")
+        warning_icon = get_safe_icon("⚠️", "[WARNING]")
+        print(f"{warning_icon}  {missing} components missing")
         print("Run 'python -m rxiv_maker.install.manager --repair' to fix issues")
     else:
-        print("✅ All components are installed and working!")
+        success_icon = get_safe_icon("✅", "[SUCCESS]")
+        print(f"{success_icon} All components are installed and working!")
 
     print("=" * 50)
 

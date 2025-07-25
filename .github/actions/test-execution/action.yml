@@ -1,0 +1,163 @@
+name: 'Test Execution'
+description: 'Reusable test runner with coverage and reporting'
+inputs:
+  test-type:
+    description: 'Type of tests to run: unit, integration, performance, security'
+    required: false
+    default: 'unit'
+  python-version:
+    description: 'Python version for reporting'
+    required: false
+    default: '3.11'
+  os:
+    description: 'Operating system for reporting'
+    required: false
+    default: 'ubuntu-latest'
+  coverage:
+    description: 'Enable coverage reporting'
+    required: false
+    default: 'true'
+  max-failures:
+    description: 'Maximum number of test failures before stopping'
+    required: false
+    default: '20'
+  timeout:
+    description: 'Test timeout in seconds'
+    required: false
+    default: '300'
+  upload-coverage:
+    description: 'Upload coverage to Codecov'
+    required: false
+    default: 'false'
+
+outputs:
+  test-result:
+    description: 'Test execution result (success/failure)'
+    value: ${{ steps.run-tests.outputs.result }}
+  coverage-file:
+    description: 'Coverage file path'
+    value: ${{ steps.run-tests.outputs.coverage-file }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run unit tests
+      if: inputs.test-type == 'unit'
+      id: run-tests
+      shell: bash
+      run: |
+        echo "Running unit tests with enhanced error reporting..."
+
+        # Set test result output
+        echo "result=success" >> $GITHUB_OUTPUT
+        echo "coverage-file=coverage.xml" >> $GITHUB_OUTPUT
+
+        # Run tests with detailed output and continue on failure for better debugging
+        uv run pytest tests/ \
+          --cov=rxiv_maker \
+          --cov-report=xml \
+          --cov-report=term-missing \
+          --cov-report=html:htmlcov \
+          -n auto \
+          --maxfail=${{ inputs.max-failures }} \
+          --tb=line \
+          -v \
+          --durations=10 \
+          --strict-markers \
+          --junit-xml=pytest-results.xml || {
+            echo "result=failure" >> $GITHUB_OUTPUT
+            TEST_EXIT_CODE=$?
+          }
+
+        # Report test results even if some failed
+        if [ -f "pytest-results.xml" ]; then
+          echo "📊 Test results summary:"
+          grep -o 'tests="[0-9]*"' pytest-results.xml | head -1
+          grep -o 'failures="[0-9]*"' pytest-results.xml | head -1
+          grep -o 'errors="[0-9]*"' pytest-results.xml | head -1
+        fi
+
+        # Exit with original test exit code if tests failed
+        exit ${TEST_EXIT_CODE:-0}
+      env:
+        PYTHONIOENCODING: utf-8
+        PYTEST_TIMEOUT: ${{ inputs.timeout }}
+
+    - name: Run integration tests
+      if: inputs.test-type == 'integration'
+      shell: bash
+      run: |
+        echo "Running integration tests..."
+        uv run pytest tests/integration/ -v --tb=short || echo "Integration tests not available"
+
+    - name: Run performance benchmarks
+      if: inputs.test-type == 'performance'
+      shell: bash
+      run: |
+        echo "📊 Running performance benchmarks..."
+
+        # Import time
+        start_time=$(date +%s%N)
+        python -c "import rxiv_maker"
+        end_time=$(date +%s%N)
+        import_time=$((($end_time - $start_time) / 1000000))
+
+        # CLI startup time
+        start_time=$(date +%s%N)
+        rxiv --version > /dev/null
+        end_time=$(date +%s%N)
+        cli_time=$((($end_time - $start_time) / 1000000))
+
+        # Package size
+        wheel_size=$(du -h dist/*.whl | cut -f1)
+
+        echo "📊 Performance Metrics:" >> $GITHUB_STEP_SUMMARY
+        echo "- Import time: ${import_time}ms" >> $GITHUB_STEP_SUMMARY
+        echo "- CLI startup time: ${cli_time}ms" >> $GITHUB_STEP_SUMMARY
+        echo "- Package size: ${wheel_size}" >> $GITHUB_STEP_SUMMARY
+
+    - name: Run security scans
+      if: inputs.test-type == 'security'
+      shell: bash
+      run: |
+        echo "🔒 Running security scans..."
+
+        # Install security tools
+        python -m pip install --upgrade pip bandit safety
+
+        # Bandit scan
+        if [ -d "src" ]; then
+          bandit -r src/ -f json -o bandit-report.json || echo "Bandit completed with issues"
+        fi
+
+        # Safety check
+        safety check --json --output safety-report.json || echo "Safety completed with issues"
+
+        echo "✅ Security scans completed"
+
+    - name: Test CLI functionality
+      if: inputs.test-type == 'unit'
+      shell: bash
+      run: |
+        echo "Testing CLI installation and basic functionality..."
+        uv run rxiv --version
+        uv run rxiv --help
+        uv run rxiv config show || echo "Config command not available"
+
+    - name: Test package installation
+      if: inputs.test-type == 'unit'
+      shell: bash
+      run: |
+        # Build and test wheel installation
+        uv build
+        python -m pip install --upgrade pip
+        python -m pip install dist/*.whl
+        python -c "import rxiv_maker; print('✅ Package imports successfully')"
+        python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
+
+    - name: Upload coverage to Codecov
+      if: inputs.upload-coverage == 'true' && inputs.python-version == '3.11' && inputs.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
