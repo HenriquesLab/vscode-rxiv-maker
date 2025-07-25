@@ -62,21 +62,42 @@ endif
 RXIV_ENGINE ?= LOCAL
 
 # Docker configuration
-# Get rxiv-maker version for Docker image tagging
+# Get rxiv-maker version for Docker image tagging with fallback mechanism
 RXIV_VERSION := $(shell python3 -c "import sys; sys.path.insert(0, 'src'); from rxiv_maker.__version__ import __version__; print(__version__)" 2>/dev/null || echo "latest")
-DOCKER_IMAGE ?= henriqueslab/rxiv-maker-base:v$(RXIV_VERSION)
+
+# Docker image with fallback: try versioned, then latest, then main
+DOCKER_IMAGE_VERSIONED := henriqueslab/rxiv-maker-base:v$(RXIV_VERSION)
+DOCKER_IMAGE_FALLBACK := $(shell \
+	if docker manifest inspect $(DOCKER_IMAGE_VERSIONED) >/dev/null 2>&1; then \
+		echo $(DOCKER_IMAGE_VERSIONED); \
+	elif docker manifest inspect henriqueslab/rxiv-maker-base:latest >/dev/null 2>&1; then \
+		echo henriqueslab/rxiv-maker-base:latest; \
+	else \
+		echo henriqueslab/rxiv-maker-base:main; \
+	fi)
+DOCKER_IMAGE ?= $(DOCKER_IMAGE_FALLBACK)
 DOCKER_HUB_REPO ?= henriqueslab/rxiv-maker-base
 
 # Platform detection for Docker
-# NOTE: rxiv-maker-base image is AMD64-only due to Chrome ARM64 Linux limitations
-# ARM64 users run with Rosetta emulation for full compatibility
-DOCKER_PLATFORM := linux/amd64
+# Multi-architecture support: AMD64 and ARM64 both supported
+# Detect host architecture for native execution (no emulation needed)
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),arm64)
+    DOCKER_PLATFORM := linux/arm64
+else ifeq ($(UNAME_M),aarch64)
+    DOCKER_PLATFORM := linux/arm64
+else ifeq ($(UNAME_M),x86_64)
+    DOCKER_PLATFORM := linux/amd64
+else
+    DOCKER_PLATFORM := linux/amd64
+endif
 
 # Engine-specific command configuration
 ifeq ($(RXIV_ENGINE),DOCKER)
     # Docker mode: Run all commands inside containers with platform-specific image
     DOCKER_RUN_CMD = docker run --rm --platform $(DOCKER_PLATFORM) -v $(PWD):/workspace -w /workspace
-    PYTHON_CMD = $(DOCKER_RUN_CMD) $(DOCKER_IMAGE) python
+    # Install package in editable mode and run python command
+    PYTHON_CMD = $(DOCKER_RUN_CMD) $(DOCKER_IMAGE) sh -c "pip install -e . >/dev/null 2>&1 && python"
     DOCKER_MODE_ACTIVE = true
     ENGINE_STATUS = 🐳 Docker ($(DOCKER_PLATFORM))
 else
@@ -132,6 +153,12 @@ setup:
 .PHONY: setup-reinstall
 setup-reinstall:
 	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --reinstall
+
+# Test platform detection
+.PHONY: test-platform
+test-platform:
+	@echo "Host machine: $(UNAME_M)"
+	@echo "Docker platform: $(DOCKER_PLATFORM)"
 
 # Install system dependencies (LaTeX, Node.js, R, etc.)
 .PHONY: install-deps

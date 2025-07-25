@@ -110,10 +110,10 @@ console = Console()
 
 
 class UpdateCheckGroup(click.Group):
-    """Custom Click group that handles update checking."""
+    """Custom Click group that handles update checking and Docker cleanup."""
 
     def invoke(self, ctx):
-        """Invoke command and handle update checking."""
+        """Invoke command and handle update checking and Docker cleanup."""
         try:
             # Start update check in background (non-blocking)
             check_for_updates_async()
@@ -130,6 +130,17 @@ class UpdateCheckGroup(click.Group):
         except Exception:
             # Always re-raise exceptions from commands
             raise
+        finally:
+            # Clean up Docker sessions if Docker engine was used
+            engine = ctx.obj.get("engine") if ctx.obj else None
+            if engine == "docker":
+                try:
+                    from ..docker import cleanup_global_docker_manager
+
+                    cleanup_global_docker_manager()
+                except Exception:
+                    # Ignore cleanup errors to avoid masking original exceptions
+                    pass
 
 
 @click.group(
@@ -140,8 +151,8 @@ class UpdateCheckGroup(click.Group):
 @click.option(
     "--engine",
     type=click.Choice(["local", "docker"]),
-    default="local",
-    help="Engine to use for processing (local or docker)",
+    default=lambda: os.environ.get("RXIV_ENGINE", "local").lower(),
+    help="Engine to use for processing (local or docker). Can be set with RXIV_ENGINE environment variable.",
 )
 @click.option(
     "--install-completion",
@@ -207,6 +218,36 @@ def main(
     ctx.obj["verbose"] = verbose
     ctx.obj["engine"] = engine
     ctx.obj["no_update_check"] = no_update_check
+
+    # Docker engine optimization: check Docker availability early
+    if engine == "docker":
+        from ..docker.manager import get_docker_manager
+
+        try:
+            if verbose:
+                console.print("🐳 Creating Docker manager...", style="blue")
+            # Use current working directory as workspace for consistency
+            workspace_dir = Path.cwd().resolve()
+            docker_manager = get_docker_manager(workspace_dir=workspace_dir)
+            if verbose:
+                console.print("🐳 Checking Docker availability...", style="blue")
+            if not docker_manager.check_docker_available():
+                console.print(
+                    "❌ Docker is not available or not running. Please start Docker and try again.",
+                    style="red",
+                )
+                console.print(
+                    "💡 Alternatively, use --engine local for local execution",
+                    style="yellow",
+                )
+                ctx.exit(1)
+
+            if verbose:
+                console.print("🐳 Docker is ready!", style="green")
+
+        except Exception as e:
+            if verbose:
+                console.print(f"⚠️ Docker setup warning: {e}", style="yellow")
 
     # Set environment variables
     os.environ["RXIV_ENGINE"] = engine.upper()

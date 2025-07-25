@@ -200,28 +200,24 @@ jobs:
           TARGET_VERSION="${{ needs.check-updates.outputs.target-version }}"
           echo "🔄 Updating manifest to version $TARGET_VERSION..."
 
-          # Get SHA256 hash from PyPI
-          echo "Fetching SHA256 hash for version $TARGET_VERSION..."
-          SHA256=$(curl -s "https://pypi.org/pypi/rxiv-maker/$TARGET_VERSION/json" | python3 -c "
-          import sys, json
-          try:
-              data = json.load(sys.stdin)
-              for file_info in data['releases']['$TARGET_VERSION']:
-                  if file_info['packagetype'] == 'sdist':
-                      print(file_info['digests']['sha256'])
-                      break
-              else:
-                  print('error')
-          except:
-              print('error')
-          ")
+          # Get SHA256 hash from GitHub releases
+          echo "Fetching SHA256 hash for Windows binary version $TARGET_VERSION..."
+          BINARY_URL="https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip"
 
-          if [ "$SHA256" = "error" ]; then
-            echo "❌ Failed to fetch SHA256 hash"
+          # Download binary to get SHA256
+          echo "Downloading binary to calculate SHA256..."
+          curl -L -o "/tmp/rxiv-maker-windows-x64.zip" "$BINARY_URL" --max-time 300 --retry 3 --retry-delay 10
+
+          if [ ! -f "/tmp/rxiv-maker-windows-x64.zip" ]; then
+            echo "❌ Failed to download Windows binary from GitHub releases"
             exit 1
           fi
 
+          SHA256=$(sha256sum "/tmp/rxiv-maker-windows-x64.zip" | cut -d' ' -f1)
           echo "New SHA256: $SHA256"
+
+          # Clean up downloaded file
+          rm -f "/tmp/rxiv-maker-windows-x64.zip"
 
           # Backup original manifest
           cp bucket/rxiv-maker.json bucket/rxiv-maker.json.bak
@@ -240,15 +236,15 @@ jobs:
           # Update version
           manifest['version'] = target_version
 
-          # Update URL
-          manifest['url'] = f'https://files.pythonhosted.org/packages/source/r/rxiv-maker/rxiv_maker-{target_version}.tar.gz'
+          # Update URL to GitHub releases (Windows binary)
+          manifest['url'] = f'https://github.com/henriqueslab/rxiv-maker/releases/download/v{target_version}/rxiv-maker-windows-x64.zip'
 
           # Update hash
           manifest['hash'] = f'sha256:{sha256_hash}'
 
           # Update autoupdate if present
           if 'autoupdate' in manifest:
-              manifest['autoupdate']['url'] = f'https://files.pythonhosted.org/packages/source/r/rxiv-maker/rxiv_maker-\$version.tar.gz'
+              manifest['autoupdate']['url'] = f'https://github.com/henriqueslab/rxiv-maker/releases/download/v\$version/rxiv-maker-windows-x64.zip'
 
           # Write updated manifest
           with open('bucket/rxiv-maker.json', 'w') as f:
@@ -299,7 +295,7 @@ jobs:
           # Test autoupdate mechanism with retry
           echo "Testing autoupdate URL pattern..."
           TARGET_VERSION="${{ needs.check-updates.outputs.target-version }}"
-          AUTOUPDATE_URL="https://files.pythonhosted.org/packages/source/r/rxiv-maker/rxiv_maker-$TARGET_VERSION.tar.gz"
+          AUTOUPDATE_URL="https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip"
 
           for i in {1..3}; do
             echo "Testing autoupdate URL, attempt $i/3..."
@@ -338,22 +334,23 @@ jobs:
           # Re-apply the same updates (since we're in a clean checkout)
           $TARGET_VERSION = "${{ needs.check-updates.outputs.target-version }}"
 
-          # Get SHA256 hash
-          $response = Invoke-WebRequest -Uri "https://pypi.org/pypi/rxiv-maker/$TARGET_VERSION/json" -UseBasicParsing
-          $data = $response.Content | ConvertFrom-Json
-          $sha256 = ""
+          # Get SHA256 hash from GitHub releases
+          $binaryUrl = "https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip"
+          $tempFile = "$env:TEMP\rxiv-maker-windows-x64.zip"
 
-          foreach ($file in $data.releases.($TARGET_VERSION)) {
-              if ($file.packagetype -eq "sdist") {
-                  $sha256 = $file.digests.sha256
-                  break
-              }
-          }
+          Write-Host "Downloading Windows binary to calculate SHA256..."
+          Invoke-WebRequest -Uri $binaryUrl -OutFile $tempFile -UseBasicParsing
+
+          $sha256 = (Get-FileHash -Path $tempFile -Algorithm SHA256).Hash.ToLower()
+          Write-Host "SHA256: $sha256"
+
+          # Clean up
+          Remove-Item $tempFile -ErrorAction SilentlyContinue
 
           # Update manifest
           $manifest = Get-Content "bucket/rxiv-maker.json" | ConvertFrom-Json
           $manifest.version = $TARGET_VERSION
-          $manifest.url = "https://files.pythonhosted.org/packages/source/r/rxiv-maker/rxiv_maker-$TARGET_VERSION.tar.gz"
+          $manifest.url = "https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip"
           $manifest.hash = "sha256:$sha256"
 
           $manifest | ConvertTo-Json -Depth 10 | Set-Content "bucket/rxiv-maker.json"
@@ -406,18 +403,11 @@ jobs:
         run: |
           TARGET_VERSION="${{ needs.check-updates.outputs.target-version }}"
 
-          # Get SHA256 hash
-          SHA256=$(curl -s "https://pypi.org/pypi/rxiv-maker/$TARGET_VERSION/json" | python3 -c "
-          import sys, json
-          try:
-              data = json.load(sys.stdin)
-              for file_info in data['releases']['$TARGET_VERSION']:
-                  if file_info['packagetype'] == 'sdist':
-                      print(file_info['digests']['sha256'])
-                      break
-          except:
-              print('error')
-          ")
+          # Get SHA256 hash from GitHub releases
+          BINARY_URL="https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip"
+          curl -L -o "/tmp/rxiv-maker-windows-x64.zip" "$BINARY_URL" --max-time 300 --retry 3 --retry-delay 10
+          SHA256=$(sha256sum "/tmp/rxiv-maker-windows-x64.zip" | cut -d' ' -f1)
+          rm -f "/tmp/rxiv-maker-windows-x64.zip"
 
           # Update manifest
           python3 -c "
@@ -427,7 +417,7 @@ jobs:
               manifest = json.load(f)
 
           manifest['version'] = '$TARGET_VERSION'
-          manifest['url'] = f'https://files.pythonhosted.org/packages/source/r/rxiv-maker/rxiv_maker-$TARGET_VERSION.tar.gz'
+          manifest['url'] = f'https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip'
           manifest['hash'] = f'sha256:$SHA256'
 
           with open('bucket/rxiv-maker.json', 'w') as f:
@@ -532,18 +522,11 @@ jobs:
         run: |
           TARGET_VERSION="${{ needs.check-updates.outputs.target-version }}"
 
-          # Get SHA256 hash
-          SHA256=$(curl -s "https://pypi.org/pypi/rxiv-maker/$TARGET_VERSION/json" | python3 -c "
-          import sys, json
-          try:
-              data = json.load(sys.stdin)
-              for file_info in data['releases']['$TARGET_VERSION']:
-                  if file_info['packagetype'] == 'sdist':
-                      print(file_info['digests']['sha256'])
-                      break
-          except:
-              print('error')
-          ")
+          # Get SHA256 hash from GitHub releases
+          BINARY_URL="https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip"
+          curl -L -o "/tmp/rxiv-maker-windows-x64.zip" "$BINARY_URL" --max-time 300 --retry 3 --retry-delay 10
+          SHA256=$(sha256sum "/tmp/rxiv-maker-windows-x64.zip" | cut -d' ' -f1)
+          rm -f "/tmp/rxiv-maker-windows-x64.zip"
 
           # Update manifest
           python3 -c "
@@ -553,7 +536,7 @@ jobs:
               manifest = json.load(f)
 
           manifest['version'] = '$TARGET_VERSION'
-          manifest['url'] = f'https://files.pythonhosted.org/packages/source/r/rxiv-maker/rxiv_maker-$TARGET_VERSION.tar.gz'
+          manifest['url'] = f'https://github.com/henriqueslab/rxiv-maker/releases/download/v$TARGET_VERSION/rxiv-maker-windows-x64.zip'
           manifest['hash'] = f'sha256:$SHA256'
 
           with open('bucket/rxiv-maker.json', 'w') as f:

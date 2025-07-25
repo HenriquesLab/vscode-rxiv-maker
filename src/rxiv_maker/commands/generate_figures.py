@@ -17,6 +17,7 @@ if __name__ == "__main__":
         0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
 
+from rxiv_maker.docker.manager import get_docker_manager
 from rxiv_maker.utils.platform import platform_detector
 
 
@@ -40,13 +41,20 @@ class FigureGenerator:
             r_only: Only process R files if True
             engine: Execution engine ("local" or "docker")
         """
-        self.figures_dir = Path(figures_dir)
-        self.output_dir = Path(output_dir)
+        self.figures_dir = Path(figures_dir).resolve()
+        self.output_dir = Path(output_dir).resolve()
         self.output_format = output_format.lower()
         self.r_only = r_only
         self.engine = engine
         self.supported_formats = ["png", "svg", "pdf", "eps"]
         self.platform = platform_detector
+
+        # Initialize Docker manager if using docker engine
+        self.docker_manager = None
+        if self.engine == "docker":
+            # Set workspace directory to current working directory to include all files
+            workspace_dir = Path.cwd().resolve()
+            self.docker_manager = get_docker_manager(workspace_dir=workspace_dir)
 
         if self.output_format not in self.supported_formats:
             raise ValueError(
@@ -59,64 +67,80 @@ class FigureGenerator:
 
     def generate_all_figures(self):
         """Generate all figures found in the figures directory."""
+        print("Starting figure generation...")
+
         if not self.figures_dir.exists():
             print(f"Warning: Figures directory '{self.figures_dir}' does not exist")
             return
 
         print(f"Scanning for figures in: {self.figures_dir}")
-        print(f"Output directory: {self.output_dir}")
-        print(f"Output format: {self.output_format}")
-        print("-" * 50)
+        print("DEBUG: About to do file globbing...")
 
-        # Find all figure files
-        if self.r_only:
-            mermaid_files = []
-            python_files = []
-            r_files = list(self.figures_dir.glob("*.R"))
-        else:
-            mermaid_files = list(self.figures_dir.glob("*.mmd"))
-            python_files = list(self.figures_dir.glob("*.py"))
-            r_files = list(self.figures_dir.glob("*.R"))  # Add support for R files
-
-        if not mermaid_files and not python_files and not r_files:
+        # Find all figure files - THIS IS WHERE IT MIGHT HANG
+        try:
             if self.r_only:
-                print("No R files found (.R)")
+                print("DEBUG: r_only mode, getting R files...")
+                r_files = list(self.figures_dir.glob("*.R"))
+                mermaid_files = []
+                python_files = []
             else:
-                print("No figure files found (.mmd, .py, or .R)")
-            return
+                print("DEBUG: Getting mermaid files...")
+                mermaid_files = list(self.figures_dir.glob("*.mmd"))
+                print(f"DEBUG: Found {len(mermaid_files)} mermaid files")
 
-        # Process Mermaid files
-        if mermaid_files and not self.r_only:
-            print(f"Found {len(mermaid_files)} Mermaid file(s):")
-            for mmd_file in mermaid_files:
-                print(f"  - {mmd_file.name}")
-                self.generate_mermaid_figure(mmd_file)
+                print("DEBUG: Getting python files...")
+                python_files = list(self.figures_dir.glob("*.py"))
+                print(f"DEBUG: Found {len(python_files)} python files")
 
-        # Process Python files
-        if python_files and not self.r_only:
-            print(f"\nFound {len(python_files)} Python file(s):")
-            for py_file in python_files:
-                print(f"  - {py_file.name}")
-                self.generate_python_figure(py_file)
+                print("DEBUG: Getting R files...")
+                r_files = list(self.figures_dir.glob("*.R"))
+                print(f"DEBUG: Found {len(r_files)} R files")
 
-        # Process R files
-        if r_files:
-            print(f"\nFound {len(r_files)} R file(s):")
-            for r_file in r_files:
-                print(f"  - {r_file.name}")
-                self.generate_r_figure(r_file)
+            print("DEBUG: File globbing completed successfully!")
 
-        print("\nFigure generation completed!")
+            # Now test calling individual generation methods
+            print("DEBUG: About to test Mermaid generation...")
+            if mermaid_files and not self.r_only:
+                print(f"Found {len(mermaid_files)} Mermaid file(s):")
+                for mmd_file in mermaid_files:
+                    print(f"  Processing: {mmd_file.name}")
+                    try:
+                        self.generate_mermaid_figure(mmd_file)
+                        print(f"  ✓ Completed: {mmd_file.name}")
+                    except Exception as e:
+                        print(f"  ✗ Failed: {mmd_file.name} - {e}")
+
+            print("DEBUG: About to test Python generation...")
+            if python_files and not self.r_only:
+                print(f"Found {len(python_files)} Python file(s):")
+                for py_file in python_files:
+                    print(f"  Processing: {py_file.name}")
+                    try:
+                        self.generate_python_figure(py_file)
+                        print(f"  ✓ Completed: {py_file.name}")
+                    except Exception as e:
+                        print(f"  ✗ Failed: {py_file.name} - {e}")
+
+            print("DEBUG: About to test R generation...")
+            if r_files:
+                print(f"Found {len(r_files)} R file(s):")
+                for r_file in r_files:
+                    print(f"  Processing: {r_file.name}")
+                    try:
+                        self.generate_r_figure(r_file)
+                        print(f"  ✓ Completed: {r_file.name}")
+                    except Exception as e:
+                        print(f"  ✗ Failed: {r_file.name} - {e}")
+
+            print("DEBUG: All generation methods completed!")
+
+        except Exception as e:
+            print(f"DEBUG: Error in method: {e}")
+            raise
 
     def generate_mermaid_figure(self, mmd_file):
         """Generate figure from Mermaid diagram file using two-step SVG process."""
         try:
-            # Check if mmdc (Mermaid CLI) is available
-            if not self._check_mermaid_cli():
-                print(f"  ⚠️  Skipping {mmd_file.name}: Mermaid CLI not available")
-                print("     Install with: npm install -g @mermaid-js/mermaid-cli")
-                return
-
             # Create subdirectory for this figure
             figure_dir = self.output_dir / mmd_file.stem
             figure_dir.mkdir(parents=True, exist_ok=True)
@@ -127,17 +151,32 @@ class FigureGenerator:
                 f"  🎨 Generating intermediate SVG: {figure_dir.name}/{svg_output_file.name}..."
             )
 
-            cmd_parts = [
-                "mmdc",
-                "-i",
-                str(mmd_file),
-                "-o",
-                str(svg_output_file),
-                "--backgroundColor",
-                "transparent",
-            ]
-            cmd = " ".join(cmd_parts)
-            result = self.platform.run_command(cmd, capture_output=True, text=True)
+            if self.engine == "docker":
+                # Use Docker for Mermaid processing
+                result = self.docker_manager.run_mermaid_generation(
+                    input_file=mmd_file.resolve(),
+                    output_file=svg_output_file.resolve(),
+                    background_color="transparent",
+                )
+            else:
+                # Check if mmdc (Mermaid CLI) is available locally
+                if not self._check_mermaid_cli():
+                    print(f"  ⚠️  Skipping {mmd_file.name}: Mermaid CLI not available")
+                    print("     Install with: npm install -g @mermaid-js/mermaid-cli")
+                    return
+
+                cmd_parts = [
+                    "mmdc",
+                    "-i",
+                    str(mmd_file),
+                    "-o",
+                    str(svg_output_file),
+                    "--backgroundColor",
+                    "transparent",
+                ]
+
+                cmd = " ".join(cmd_parts)
+                result = self.platform.run_command(cmd, capture_output=True, text=True)
 
             if result.returncode != 0:
                 print(f"  ❌ Error generating SVG for {mmd_file.name}:")
@@ -149,8 +188,13 @@ class FigureGenerator:
             )
 
             # --- Step 2: Convert SVG to PNG and PDF using CairoSVG ---
-            # Check CairoSVG availability before attempting conversion
-            cairosvg_available, cairo_error = self._check_cairosvg_availability()
+            if self.engine == "docker":
+                # Use Docker for CairoSVG conversion (Docker image has CairoSVG pre-installed)
+                cairosvg_available = True
+                cairo_error = None
+            else:
+                # Check CairoSVG availability for local execution
+                cairosvg_available, cairo_error = self._check_cairosvg_availability()
 
             if not cairosvg_available:
                 print(
@@ -167,31 +211,67 @@ class FigureGenerator:
             # Convert SVG to raster formats
             formats_to_generate = ["png", "pdf"]
             generated_files = [f"{figure_dir.name}/{svg_output_file.name}"]
-            import cairosvg
 
-            for format_type in formats_to_generate:
-                output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
-                print(
-                    f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}..."
-                )
-                try:
-                    if format_type == "png":
-                        cairosvg.svg2png(
-                            url=str(svg_output_file), write_to=str(output_file), dpi=300
-                        )
-                    elif format_type == "pdf":
-                        cairosvg.svg2pdf(
-                            url=str(svg_output_file), write_to=str(output_file)
+            if self.engine == "docker":
+                # Use Docker for CairoSVG conversion
+                for format_type in formats_to_generate:
+                    output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
+                    print(
+                        f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}..."
+                    )
+                    try:
+                        result = self.docker_manager.run_cairo_conversion(
+                            input_file=svg_output_file.resolve(),
+                            output_file=output_file.resolve(),
+                            output_format=format_type,
+                            dpi=300 if format_type == "png" else None,
                         )
 
+                        if result.returncode != 0:
+                            print(
+                                f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
+                            )
+                            print(f"     {result.stderr}")
+                            continue
+
+                        print(
+                            f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}"
+                        )
+                        generated_files.append(f"{figure_dir.name}/{output_file.name}")
+                    except Exception as e:
+                        print(
+                            f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
+                        )
+                        print(f"     {str(e)}")
+            else:
+                # Use local CairoSVG
+                import cairosvg
+
+                for format_type in formats_to_generate:
+                    output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
                     print(
-                        f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}"
+                        f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}..."
                     )
-                    generated_files.append(f"{figure_dir.name}/{output_file.name}")
-                except Exception as e:
-                    print(
-                        f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
-                    )
+                    try:
+                        if format_type == "png":
+                            cairosvg.svg2png(
+                                url=str(svg_output_file),
+                                write_to=str(output_file),
+                                dpi=300,
+                            )
+                        elif format_type == "pdf":
+                            cairosvg.svg2pdf(
+                                url=str(svg_output_file), write_to=str(output_file)
+                            )
+
+                        print(
+                            f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}"
+                        )
+                        generated_files.append(f"{figure_dir.name}/{output_file.name}")
+                    except Exception:
+                        print(
+                            f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
+                        )
                     print(f"     {e}")
                     if "cairo" in str(e).lower():
                         self._print_cairo_troubleshooting()
@@ -278,28 +358,14 @@ class FigureGenerator:
             import shlex
 
             if self.engine == "docker":
-                # Use Docker execution (Cairo-only image, no browser dependencies)
-                docker_image = "henriqueslab/rxiv-maker-base:latest"
-                # Ensure absolute paths for Docker volume mapping
-                cwd_abs = Path.cwd().resolve()
-                figure_dir_abs = figure_dir.resolve()
-                py_file_abs = py_file.resolve()
+                # Use Docker execution with centralized manager
+                env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
 
-                cmd_parts = [
-                    "docker",
-                    "run",
-                    "--rm",
-                    "-v",
-                    f"{cwd_abs}:/workspace",
-                    "-w",
-                    f"/workspace/{figure_dir_abs.relative_to(cwd_abs)}",
-                    docker_image,
-                    "python",
-                    f"/workspace/{py_file_abs.relative_to(cwd_abs)}",
-                ]
-                cmd = " ".join(shlex.quote(part) for part in cmd_parts)
-                cwd = None  # Docker handles working directory
-                print(f"     Using Docker: {docker_image}")
+                result = self.docker_manager.run_python_script(
+                    script_file=py_file.resolve(),
+                    working_dir=figure_dir.resolve(),
+                    environment=env,
+                )
             else:
                 # Use local Python execution
                 python_cmd = self.platform.python_cmd
@@ -323,19 +389,19 @@ class FigureGenerator:
                     # For other Python commands, run from figure directory
                     cwd = str(figure_dir.absolute())
 
-            # Set environment variable to ensure script saves to correct location
-            import os
+                # Set environment variable to ensure script saves to correct location
+                import os
 
-            env = os.environ.copy()
-            env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
+                env = os.environ.copy()
+                env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
 
-            result = self.platform.run_command(
-                cmd,
-                capture_output=True,
-                text=True,
-                cwd=cwd,
-                env=env,
-            )
+                result = self.platform.run_command(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    cwd=cwd,
+                    env=env,
+                )
 
             if result.stdout:
                 # Print any output from the script (like success messages)
@@ -410,8 +476,8 @@ class FigureGenerator:
     def generate_r_figure(self, r_file):
         """Generate figure from R script."""
         try:
-            # Check if Rscript is available
-            if not self._check_rscript():
+            # Check if Rscript is available (only for local execution)
+            if self.engine != "docker" and not self._check_rscript():
                 print(f"  ⚠️  Skipping {r_file.name}: Rscript not available")
                 print("     Ensure R is installed and accessible in your PATH")
                 print("Check https://www.r-project.org/ for installation instructions")
@@ -424,47 +490,33 @@ class FigureGenerator:
             print(f"  📊 Executing {r_file.name}...")
 
             # Execute the R script - use Docker if engine="docker"
-            import shlex
 
             if self.engine == "docker":
-                # Use Docker execution for R (Cairo-only image, no browser dependencies)
-                docker_image = "henriqueslab/rxiv-maker-base:latest"
-                # Ensure absolute paths for Docker volume mapping
-                cwd_abs = Path.cwd().resolve()
-                figure_dir_abs = figure_dir.resolve()
-                r_file_abs = r_file.resolve()
+                # Use Docker execution with centralized manager
+                env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
 
-                cmd_parts = [
-                    "docker",
-                    "run",
-                    "--rm",
-                    "-v",
-                    f"{cwd_abs}:/workspace",
-                    "-w",
-                    f"/workspace/{figure_dir_abs.relative_to(cwd_abs)}",
-                    docker_image,
-                    "Rscript",
-                    f"/workspace/{r_file_abs.relative_to(cwd_abs)}",
-                ]
-                cmd = " ".join(shlex.quote(part) for part in cmd_parts)
-                print(f"     Using Docker: {docker_image}")
+                result = self.docker_manager.run_r_script(
+                    script_file=r_file.resolve(),
+                    working_dir=figure_dir.resolve(),
+                    environment=env,
+                )
             else:
                 # Use local R execution
                 cmd = f"Rscript {str(r_file.absolute())}"
 
-            # Set environment variable to ensure script saves to correct location
-            import os
+                # Set environment variable to ensure script saves to correct location
+                import os
 
-            env = os.environ.copy()
-            env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
+                env = os.environ.copy()
+                env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
 
-            result = self.platform.run_command(
-                cmd,
-                capture_output=True,
-                text=True,
-                cwd=str(figure_dir.absolute()),
-                env=env,
-            )
+                result = self.platform.run_command(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    cwd=str(figure_dir.absolute()),
+                    env=env,
+                )
 
             if result.stdout:
                 # Print any output from the script (like success messages)
@@ -560,6 +612,7 @@ class FigureGenerator:
 def main():
     """Main function for CLI integration."""
     import argparse
+    import os
 
     parser = argparse.ArgumentParser(description="Generate figures from source files")
     parser.add_argument(
@@ -570,6 +623,13 @@ def main():
         "--format", default="png", help="Output format (png, svg, pdf, eps)"
     )
     parser.add_argument("--r-only", action="store_true", help="Process only R files")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument(
+        "--engine",
+        default=os.environ.get("RXIV_ENGINE", "local"),
+        choices=["local", "docker"],
+        help="Execution engine (local or docker, can be set via RXIV_ENGINE env var)",
+    )
 
     args = parser.parse_args()
 
@@ -578,7 +638,12 @@ def main():
         output_dir=args.output_dir,
         output_format=args.format,
         r_only=args.r_only,
+        engine=args.engine,
     )
+
+    # Set verbose mode if specified
+    if args.verbose:
+        generator.verbose = args.verbose
 
     generator.generate_all_figures()
     print("Figure generation complete!")

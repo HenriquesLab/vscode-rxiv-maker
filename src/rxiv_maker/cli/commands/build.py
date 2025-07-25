@@ -82,6 +82,31 @@ def build(
     if manuscript_path is None:
         manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
 
+    # Docker engine optimization: verify Docker readiness for build pipeline
+    if engine == "docker":
+        from ...docker.manager import get_docker_manager
+
+        try:
+            docker_manager = get_docker_manager()
+            if not docker_manager.check_docker_available():
+                console.print(
+                    "❌ Docker is not available for build pipeline. Please ensure Docker is running.",
+                    style="red",
+                )
+                console.print(
+                    "💡 Use --engine local to build without Docker", style="yellow"
+                )
+                sys.exit(1)
+
+            if verbose:
+                console.print(
+                    "🐳 Build pipeline will use Docker containers", style="blue"
+                )
+
+        except Exception as e:
+            console.print(f"❌ Docker setup error: {e}", style="red")
+            sys.exit(1)
+
     # Validate manuscript path exists
     if not Path(manuscript_path).exists():
         console.print(

@@ -185,7 +185,8 @@ jobs:
               echo "⚠️ Mermaid PNG generation failed (Cairo-only mode)"
             fi
           else
-            echo "❌ Mermaid diagram generation failed"
+            echo "⚠️ Mermaid diagram generation failed - continuing with build"
+            echo "ℹ️ This may indicate Cairo dependencies need updating in Docker image"
           fi
         else
           echo "⚠️ Mermaid CLI not found in container"
