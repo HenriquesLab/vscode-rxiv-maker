@@ -128,7 +128,9 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         build_job = workflow["jobs"]["build-pdf"]
         container = build_job["container"]
 
-        self.assertEqual(container["image"], "henriqueslab/rxiv-maker-base:latest")
+        # Check that the image is dynamically determined from prepare job
+        expected_image = "${{ needs.prepare.outputs.docker_image }}"
+        self.assertEqual(container["image"], expected_image)
         self.assertIn("--platform linux/amd64", container["options"])
         self.assertIn("--user root", container["options"])
 

@@ -1,8 +1,8 @@
-# Docker Engine Mode Guide (AMD64 only)
+# Docker Engine Mode Guide (Cross-Platform)
 
-Docker Engine Mode provides a **minimal dependency** approach to using Rxiv-Maker by running all operations inside pre-configured containers. This eliminates the need to install LaTeX, R, Node.js, or Python packages locally while ensuring reproducible builds across all AMD64 platforms. Only Docker and Make are required on the host system.
+Docker Engine Mode provides a **minimal dependency** approach to using Rxiv-Maker by running all operations inside pre-configured containers. This eliminates the need to install LaTeX, R, Node.js, or Python packages locally while ensuring reproducible builds across all platforms. Only Docker and Make are required on the host system.
 
-**⚠️ IMPORTANT:** Docker Engine Mode is optimized for **AMD64/x86_64 architecture**. While ARM64 users (Apple Silicon Macs) can run AMD64 Docker images via Rosetta emulation, performance may be reduced. The underlying technical limitation is that Google does not provide Chrome for ARM64 Linux distributions, requiring us to use AMD64-only base images.
+**✅ CROSS-PLATFORM:** Docker Engine Mode now supports **both AMD64 and ARM64 architectures** with native performance. As of v1.8+, we've transitioned to Cairo-only SVG processing, eliminating browser dependencies and enabling full cross-platform compatibility.
 
 ## Table of Contents
 - [Architecture Requirements](#architecture-requirements)
@@ -20,48 +20,44 @@ Docker Engine Mode provides a **minimal dependency** approach to using Rxiv-Make
 ## Architecture Requirements
 
 ### Supported Architectures
-- **✅ AMD64/x86_64**: Native support with optimal performance
-- **⚠️ ARM64/aarch64**: Can run via Rosetta emulation with reduced performance
+- **✅ AMD64/x86_64**: Native support with optimal performance  
+- **✅ ARM64/aarch64**: Native support with optimal performance (Apple Silicon, etc.)
 
-### Technical Background: The Google Chrome ARM64 Linux Limitation
+### Technical Background: Cairo-Only SVG Processing
 
-Docker Engine Mode requires **Google Chrome** for Mermaid diagram generation (`.mmd` files). The core issue is that **Google does not provide Chrome for ARM64 Linux distributions**. This creates several options:
+Docker Engine Mode uses Cairo-based SVG processing for all diagram generation (`.mmd` files):
 
-1. **AMD64 systems**: Use native AMD64 Docker images with Chrome (optimal)
-2. **Apple Silicon Macs**: Use AMD64 Docker images via Rosetta emulation (functional but slower)
-3. **ARM64 Linux**: Use AMD64 Docker images via emulation (functional but slower)
+1. **Mermaid CLI SVG Generation**: Creates SVG diagrams from `.mmd` files
+2. **Cairo SVG-to-PNG Conversion**: Converts SVG output to PNG/PDF using Cairo libraries
+3. **Enhanced Font Support**: Extended font collection for better rendering quality
+
+**Architecture Support:**
+1. **AMD64 systems**: Native Cairo performance with multi-architecture Docker images
+2. **Apple Silicon Macs**: Native ARM64 Cairo performance (no emulation needed)
+3. **ARM64 Linux**: Native ARM64 Cairo performance with full feature parity
 
 ### Performance Considerations
 
-- **Local Installation**: Always optimal performance on any architecture (Chrome available natively)
-- **Docker on AMD64**: Native performance, no emulation overhead
-- **Docker on ARM64**: Functional via Rosetta/emulation but with performance penalty
+- **Cairo-Only Processing**: Optimal performance on all architectures with consistent results
+- **No Browser Overhead**: Eliminated Chrome/Chromium dependencies reduce memory usage and startup time
+- **Multi-Platform Builds**: Native Docker images for both AMD64 and ARM64 architectures
 
 ### Recommendations by Platform
 
-**Apple Silicon Macs:**
+**All Platforms (AMD64 & ARM64):**
 ```bash
-# Option 1: Docker with Rosetta emulation (containerized but slower)
+# Docker mode with native performance on all architectures
 make pdf RXIV_ENGINE=DOCKER
 
-# Option 2: Local installation (faster, native performance)
+# Local installation (requires system dependencies)
 make setup && make pdf
 ```
 
-**ARM64 Linux:**
-```bash
-# Option 1: Docker with emulation (containerized but slower)  
-make pdf RXIV_ENGINE=DOCKER
-
-# Option 2: Local installation (faster, native performance)
-make setup && make pdf
-```
-
-**AMD64 systems:**
-```bash
-# Docker provides optimal performance (recommended)
-make pdf RXIV_ENGINE=DOCKER
-```
+**Key Benefits of Docker Mode:**
+- **Consistent Results**: Same output across all platforms and environments
+- **Minimal Dependencies**: Only Docker required (no LaTeX, R, Node.js installation)
+- **Cairo Performance**: Native rendering performance on all architectures
+- **No Emulation**: ARM64 images run natively on Apple Silicon and ARM64 Linux
 
 ---
 
@@ -72,18 +68,19 @@ make pdf RXIV_ENGINE=DOCKER
 Docker Engine Mode (`RXIV_ENGINE=DOCKER`) runs Rxiv-Maker commands inside containers that include all necessary dependencies:
 
 - **LaTeX** - Complete TeX Live distribution with all packages
-- **Python** - Python 3.11 with scientific libraries (matplotlib, numpy, pandas, etc.)
-- **R** - R base with common packages (ggplot2, dplyr, etc.)
-- **Node.js** - Node.js 18 with Mermaid CLI for diagram generation
-- **System tools** - All required system libraries and fonts
+- **Python** - Python 3.11 with enhanced Cairo libraries (CairoSVG, pycairo, matplotlib, numpy, pandas, etc.)
+- **R** - R base with Cairo graphics support (ggplot2, Cairo, svglite, etc.)
+- **Node.js** - Node.js 18 with Mermaid CLI for SVG diagram generation
+- **System tools** - Enhanced Cairo libraries, fonts, and SVG processing tools
 
 ### Key Advantages
 
 - ✅ **Minimal local dependencies** - Only Docker and Make required (no LaTeX, R, or Python installation needed)
-- ✅ **Cross-platform consistency** - Identical environment on Windows, macOS, Linux
-- ✅ **Reproducible builds** - Guaranteed dependency versions
-- ✅ **No conflicts** - Isolated from local installations
-- ✅ **Fast CI/CD** - Pre-compiled images accelerate workflows by ~5x
+- ✅ **Cross-platform consistency** - Identical Cairo-based output on all architectures
+- ✅ **Reproducible builds** - Guaranteed dependency versions with Cairo optimization
+- ✅ **No conflicts** - Isolated from local installations, no browser dependencies
+- ✅ **Fast CI/CD** - Pre-compiled Cairo-enhanced images accelerate workflows by ~5x
+- ✅ **Enhanced performance** - Cairo-only processing reduces memory usage and startup time
 
 ---
 
@@ -345,8 +342,11 @@ sudo systemctl start docker
 # Check internet connection
 ping docker.io
 
-# Try manual pull
+# Try manual pull (latest version)
 docker pull henriqueslab/rxiv-maker-base:latest
+
+# Or pull specific version (recommended for reproducibility)
+docker pull henriqueslab/rxiv-maker-base:v1.4.8
 
 # Use alternative registry if needed
 DOCKER_IMAGE=ghcr.io/henriqueslab/rxiv-maker-base:latest RXIV_ENGINE=DOCKER make pdf
@@ -428,8 +428,11 @@ make pdf RXIV_ENGINE=DOCKER 2>&1 | tee build.log
 
 #### Interactive Debugging
 ```bash
-# Start interactive container session
+# Start interactive container session (latest)
 docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest bash
+
+# Or use specific version for debugging
+docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:v1.4.8 bash
 
 # Inside container, run commands manually
 python src/py/commands/validate.py MANUSCRIPT
@@ -443,11 +446,11 @@ python src/py/commands/validate.py MANUSCRIPT
 
 #### Building Custom Images
 ```bash
-# Navigate to Docker directory
-cd src/docker
+# Navigate to Docker submodule directory
+cd submodules/docker-rxiv-maker/images/base
 
 # Build custom image
-make image-build DOCKER_HUB_REPO=myuser/rxiv-custom
+./build.sh --repo myuser/rxiv-custom --tag latest
 
 # Use custom image
 DOCKER_IMAGE=myuser/rxiv-custom:latest RXIV_ENGINE=DOCKER make pdf
@@ -496,14 +499,14 @@ docker run --rm \
 
 #### Building for Multiple Architectures
 ```bash
-cd src/docker
+cd submodules/docker-rxiv-maker/images/base
 
 # Build for both amd64 and arm64
-make image-build-multiplatform
+./build.sh --platform linux/amd64,linux/arm64
 
 # Build platform-specific images
-make image-amd64  # Intel/AMD processors
-make image-arm64  # Apple Silicon
+./build.sh --platform linux/amd64  # Intel/AMD processors
+./build.sh --platform linux/arm64  # Apple Silicon
 ```
 
 #### Platform-Specific Optimization

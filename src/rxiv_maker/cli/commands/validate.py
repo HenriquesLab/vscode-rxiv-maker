@@ -23,7 +23,8 @@ def validate(
 ) -> None:
     """Validate manuscript structure and content before PDF generation.
 
-    **MANUSCRIPT_PATH**: Directory containing your manuscript files. Defaults to MANUSCRIPT/
+    **MANUSCRIPT_PATH**: Directory containing your manuscript files.
+    Defaults to MANUSCRIPT/
 
     This command checks manuscript structure, citations, cross-references,
     figures, mathematical expressions, and special Markdown syntax elements.
@@ -31,24 +32,20 @@ def validate(
     ## Examples
 
     **Validate default manuscript:**
-    ```
-    $ rxiv validate
-    ```
+
+        $ rxiv validate
 
     **Validate custom manuscript directory:**
-    ```
-    $ rxiv validate MY_PAPER/
-    ```
+
+        $ rxiv validate MY_PAPER/
 
     **Show detailed validation report:**
-    ```
-    $ rxiv validate --detailed
-    ```
+
+        $ rxiv validate --detailed
 
     **Skip DOI validation:**
-    ```
-    $ rxiv validate --no-doi
-    ```
+
+        $ rxiv validate --no-doi
     """
     verbose = ctx.obj.get("verbose", False)
 

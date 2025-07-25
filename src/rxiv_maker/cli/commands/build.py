@@ -37,6 +37,7 @@ console = Console()
     help="Track changes against specified git tag",
     metavar="TAG",
 )
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.pass_context
 def build(
     ctx: click.Context,
@@ -45,44 +46,69 @@ def build(
     force_figures: bool,
     skip_validation: bool,
     track_changes: str | None,
+    verbose: bool,
 ) -> None:
-    """Generate a publication-ready PDF from your Markdown manuscript with automated
-    figure generation, professional typesetting, and bibliography management.
+    """Generate a publication-ready PDF from your Markdown manuscript.
 
-    **MANUSCRIPT_PATH**: Directory containing your manuscript files. Defaults to MANUSCRIPT/
+    Automated figure generation, professional typesetting, and bibliography management.
+
+    **MANUSCRIPT_PATH**: Directory containing your manuscript files.
+    Defaults to MANUSCRIPT/
 
     ## Examples
 
     **Build from default directory:**
-    ```
-    $ rxiv pdf
-    ```
+
+        $ rxiv pdf
 
     **Build from custom directory:**
-    ```
-    $ rxiv pdf MY_PAPER/
-    ```
+
+        $ rxiv pdf MY_PAPER/
 
     **Force regenerate all figures:**
-    ```
-    $ rxiv pdf --force-figures
-    ```
+
+        $ rxiv pdf --force-figures
 
     **Skip validation for debugging:**
-    ```
-    $ rxiv pdf --skip-validation
-    ```
+
+        $ rxiv pdf --skip-validation
 
     **Track changes against git tag:**
-    ```
-    $ rxiv pdf --track-changes v1.0.0
-    ```
+
+        $ rxiv pdf --track-changes v1.0.0
     """
-    verbose = ctx.obj.get("verbose", False)
+    # Use local verbose flag if provided, otherwise fall back to global context
+    verbose = verbose or ctx.obj.get("verbose", False)
+    engine = ctx.obj.get("engine", "local")
 
     # Default to MANUSCRIPT if not specified
     if manuscript_path is None:
         manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
+
+    # Docker engine optimization: verify Docker readiness for build pipeline
+    if engine == "docker":
+        from ...docker.manager import get_docker_manager
+
+        try:
+            docker_manager = get_docker_manager()
+            if not docker_manager.check_docker_available():
+                console.print(
+                    "❌ Docker is not available for build pipeline. Please ensure Docker is running.",
+                    style="red",
+                )
+                console.print(
+                    "💡 Use --engine local to build without Docker", style="yellow"
+                )
+                sys.exit(1)
+
+            if verbose:
+                console.print(
+                    "🐳 Build pipeline will use Docker containers", style="blue"
+                )
+
+        except Exception as e:
+            console.print(f"❌ Docker setup error: {e}", style="red")
+            sys.exit(1)
 
     # Validate manuscript path exists
     if not Path(manuscript_path).exists():
@@ -112,6 +138,7 @@ def build(
                 skip_validation=skip_validation,
                 track_changes_tag=track_changes,
                 verbose=verbose,
+                engine=engine,
             )
 
             # Build the PDF

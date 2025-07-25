@@ -30,6 +30,18 @@ class PlatformDetector:
         else:
             return "Unknown"
 
+    def get_platform_normalized(self) -> str:
+        """Get normalized platform name for cross-platform compatibility."""
+        system = platform.system().lower()
+        if system == "darwin":
+            return "macos"
+        elif system == "linux":
+            return "linux"
+        elif system == "windows" or os.name == "nt":
+            return "windows"
+        else:
+            return system
+
     def _detect_python_command(self) -> str:
         """Detect the best Python command to use."""
         # Priority: uv > venv > system python
@@ -196,6 +208,11 @@ platform_detector = PlatformDetector()
 def get_platform() -> str:
     """Get the current platform name."""
     return platform_detector.platform
+
+
+def get_platform_normalized() -> str:
+    """Get normalized platform name for cross-platform compatibility."""
+    return platform_detector.get_platform_normalized()
 
 
 def get_python_command() -> str:

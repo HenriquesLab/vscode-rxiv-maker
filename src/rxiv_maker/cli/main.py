@@ -42,7 +42,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Workflow Commands",
-            "commands": ["arxiv", "track-changes", "setup"],
+            "commands": ["arxiv", "track-changes", "setup", "install-deps"],
         },
         {
             "name": "Configuration",
@@ -77,7 +77,14 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Processing Options",
-            "options": ["-s", "--skip-validation", "-t", "--track-changes"],
+            "options": [
+                "-s",
+                "--skip-validation",
+                "-t",
+                "--track-changes",
+                "-v",
+                "--verbose",
+            ],
         },
         {
             "name": "Help",
@@ -110,10 +117,10 @@ console = Console()
 
 
 class UpdateCheckGroup(click.Group):
-    """Custom Click group that handles update checking."""
+    """Custom Click group that handles update checking and Docker cleanup."""
 
     def invoke(self, ctx):
-        """Invoke command and handle update checking."""
+        """Invoke command and handle update checking and Docker cleanup."""
         try:
             # Start update check in background (non-blocking)
             check_for_updates_async()
@@ -130,6 +137,17 @@ class UpdateCheckGroup(click.Group):
         except Exception:
             # Always re-raise exceptions from commands
             raise
+        finally:
+            # Clean up Docker sessions if Docker engine was used
+            engine = ctx.obj.get("engine") if ctx.obj else None
+            if engine == "docker":
+                try:
+                    from ..docker import cleanup_global_docker_manager
+
+                    cleanup_global_docker_manager()
+                except Exception:
+                    # Ignore cleanup errors to avoid masking original exceptions
+                    pass
 
 
 @click.group(
@@ -140,8 +158,8 @@ class UpdateCheckGroup(click.Group):
 @click.option(
     "--engine",
     type=click.Choice(["local", "docker"]),
-    default="local",
-    help="Engine to use for processing (local or docker)",
+    default=lambda: os.environ.get("RXIV_ENGINE", "local").lower(),
+    help="Engine to use for processing (local or docker). Can be set with RXIV_ENGINE environment variable.",
 )
 @click.option(
     "--install-completion",
@@ -159,38 +177,43 @@ def main(
     install_completion: str | None,
     no_update_check: bool,
 ) -> None:
-    """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs with
-    automated figure generation, professional LaTeX typesetting, and bibliography management.
+    """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs.
+
+    Automated figure generation, professional LaTeX typesetting, and bibliography management.
 
     ## Examples
 
     **Get help:**
-    ```
-    $ rxiv --help
-    ```
+
+        $ rxiv --help
 
     **Initialize a new manuscript:**
-    ```
-    $ rxiv init MY_PAPER/
-    ```
+
+        $ rxiv init MY_PAPER/
 
     **Build PDF from manuscript:**
-    ```
-    $ rxiv pdf                      # Build from MANUSCRIPT/
-    $ rxiv pdf MY_PAPER/            # Build from custom directory
-    $ rxiv pdf --force-figures      # Force regenerate figures
-    ```
+
+        $ rxiv pdf                      # Build from MANUSCRIPT/
+
+        $ rxiv pdf MY_PAPER/            # Build from custom directory
+
+        $ rxiv pdf --force-figures      # Force regenerate figures
 
     **Validate manuscript:**
-    ```
-    $ rxiv validate                 # Validate current manuscript
-    $ rxiv validate --no-doi        # Skip DOI validation
-    ```
+
+        $ rxiv validate                 # Validate current manuscript
+
+        $ rxiv validate --no-doi        # Skip DOI validation
 
     **Prepare arXiv submission:**
-    ```
-    $ rxiv arxiv                    # Prepare arXiv package
-    ```
+
+        $ rxiv arxiv                    # Prepare arXiv package
+
+    **Install system dependencies:**
+
+        $ rxiv install-deps             # Install LaTeX, Node.js, R, etc.
+
+        $ rxiv install-deps --mode=minimal  # Install only essential dependencies
     """
     # Handle completion installation
     if install_completion:
@@ -202,6 +225,36 @@ def main(
     ctx.obj["verbose"] = verbose
     ctx.obj["engine"] = engine
     ctx.obj["no_update_check"] = no_update_check
+
+    # Docker engine optimization: check Docker availability early
+    if engine == "docker":
+        from ..docker.manager import get_docker_manager
+
+        try:
+            if verbose:
+                console.print("🐳 Creating Docker manager...", style="blue")
+            # Use current working directory as workspace for consistency
+            workspace_dir = Path.cwd().resolve()
+            docker_manager = get_docker_manager(workspace_dir=workspace_dir)
+            if verbose:
+                console.print("🐳 Checking Docker availability...", style="blue")
+            if not docker_manager.check_docker_available():
+                console.print(
+                    "❌ Docker is not available or not running. Please start Docker and try again.",
+                    style="red",
+                )
+                console.print(
+                    "💡 Alternatively, use --engine local for local execution",
+                    style="yellow",
+                )
+                ctx.exit(1)
+
+            if verbose:
+                console.print("🐳 Docker is ready!", style="green")
+
+        except Exception as e:
+            if verbose:
+                console.print(f"⚠️ Docker setup warning: {e}", style="yellow")
 
     # Set environment variables
     os.environ["RXIV_ENGINE"] = engine.upper()
@@ -263,6 +316,7 @@ main.add_command(commands.init)
 main.add_command(commands.bibliography)
 main.add_command(commands.track_changes)
 main.add_command(commands.setup)
+main.add_command(commands.install_deps, name="install-deps")
 main.add_command(commands.version)
 main.add_command(config_cmd, name="config")
 main.add_command(check_installation, name="check-installation")

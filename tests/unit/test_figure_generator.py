@@ -377,21 +377,6 @@ graph TD
             output_file.touch()
             self.assertTrue(output_file.exists())
 
-    def test_puppeteer_config_usage(self):
-        """Test Puppeteer configuration for Mermaid generation."""
-        puppeteer_config = {
-            "args": [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-            ]
-        }
-
-        # Test config structure
-        self.assertIn("args", puppeteer_config)
-        self.assertIn("--no-sandbox", puppeteer_config["args"])
-
 
 class TestDockerFallbackBehavior(unittest.TestCase):
     """Test Docker fallback behavior for figure generation."""

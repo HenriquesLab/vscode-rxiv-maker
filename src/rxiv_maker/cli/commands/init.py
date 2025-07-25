@@ -34,7 +34,8 @@ def init(
 ) -> None:
     """Initialize a new manuscript directory with template files and structure.
 
-    **MANUSCRIPT_PATH**: Directory to create for your manuscript. Defaults to MANUSCRIPT/
+    **MANUSCRIPT_PATH**: Directory to create for your manuscript.
+    Defaults to MANUSCRIPT/
 
     Creates all required files including configuration, main content, supplementary
     information, bibliography, and figure directory with example scripts.
@@ -42,24 +43,20 @@ def init(
     ## Examples
 
     **Initialize default manuscript:**
-    ```
-    $ rxiv init
-    ```
+
+        $ rxiv init
 
     **Initialize custom manuscript directory:**
-    ```
-    $ rxiv init MY_PAPER/
-    ```
+
+        $ rxiv init MY_PAPER/
 
     **Use research template:**
-    ```
-    $ rxiv init --template research
-    ```
+
+        $ rxiv init --template research
 
     **Force overwrite existing directory:**
-    ```
-    $ rxiv init --force
-    ```
+
+        $ rxiv init --force
     """
     verbose = ctx.obj.get("verbose", False)
 

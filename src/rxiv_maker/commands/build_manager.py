@@ -12,6 +12,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
+from ..docker.manager import get_docker_manager
 from ..utils.figure_checksum import get_figure_checksum_manager
 from ..utils.platform import platform_detector
 
@@ -38,6 +39,7 @@ class BuildManager:
         skip_pdf_validation: bool = False,
         verbose: bool = False,
         track_changes_tag: str | None = None,
+        engine: str = "local",
     ):
         """Initialize build manager.
 
@@ -49,6 +51,7 @@ class BuildManager:
             skip_pdf_validation: Skip PDF validation
             verbose: Enable verbose output
             track_changes_tag: Git tag to track changes against
+            engine: Execution engine ("local" or "docker")
         """
         self.manuscript_path: str = manuscript_path or os.getenv(
             "MANUSCRIPT_PATH", "MANUSCRIPT"
@@ -64,7 +67,13 @@ class BuildManager:
         self.skip_pdf_validation = skip_pdf_validation
         self.verbose = verbose
         self.track_changes_tag = track_changes_tag
+        self.engine = engine
         self.platform = platform_detector
+
+        # Initialize Docker manager if using docker engine
+        self.docker_manager = None
+        if self.engine == "docker":
+            self.docker_manager = get_docker_manager(workspace_dir=Path.cwd().resolve())
 
         # Set up paths
         self.manuscript_dir = self.manuscript_dir_path
@@ -210,6 +219,58 @@ class BuildManager:
 
         self.log("Running manuscript validation...", "STEP")
 
+        if self.engine == "docker":
+            return self._validate_manuscript_docker()
+        else:
+            return self._validate_manuscript_local()
+
+    def _validate_manuscript_docker(self) -> bool:
+        """Run manuscript validation using Docker."""
+        try:
+            manuscript_path = Path(self.manuscript_path)
+
+            # Convert to absolute path, then make relative to workspace directory
+            manuscript_abs = manuscript_path.resolve()
+            workspace_dir = self.docker_manager.workspace_dir
+            
+            try:
+                manuscript_rel = manuscript_abs.relative_to(workspace_dir)
+            except ValueError:
+                # If manuscript is not within workspace, use just the name
+                manuscript_rel = manuscript_path.name
+
+            # Build validation command for Docker
+            validation_cmd = [
+                "python",
+                "/workspace/src/rxiv_maker/commands/validate.py",
+                str(manuscript_rel),
+                "--detailed",
+                "--check-latex",
+                "--enable-doi-validation",
+            ]
+
+            if self.verbose:
+                validation_cmd.append("--verbose")
+
+            result = self.docker_manager.run_command(
+                command=validation_cmd, session_key="validation"
+            )
+
+            if result.returncode == 0:
+                self.log("Validation completed successfully")
+                return True
+            else:
+                self.log("Validation failed", "ERROR")
+                if self.verbose and result.stderr:
+                    self.log(f"Validation errors: {result.stderr}", "WARNING")
+                return False
+
+        except Exception as e:
+            self.log(f"Docker validation error: {e}", "ERROR")
+            return False
+
+    def _validate_manuscript_local(self) -> bool:
+        """Run manuscript validation using local installation."""
         try:
             # Import and run validation directly instead of subprocess
             from .validate import validate_manuscript
@@ -274,6 +335,7 @@ class BuildManager:
                 figures_dir=str(self.figures_dir),
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
+                engine=self.engine,
             )
             figure_gen.generate_all_figures()
 
@@ -283,6 +345,7 @@ class BuildManager:
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
                 r_only=True,
+                engine=self.engine,
             )
             r_figure_gen.generate_all_figures()
 
@@ -530,6 +593,39 @@ class BuildManager:
         """Compile LaTeX to PDF."""
         self.log("Compiling LaTeX to PDF...", "STEP")
 
+        if self.engine == "docker":
+            return self._compile_pdf_docker()
+        else:
+            return self._compile_pdf_local()
+
+    def _compile_pdf_docker(self) -> bool:
+        """Compile LaTeX to PDF using Docker."""
+        try:
+            tex_file = self.output_dir / f"{self.manuscript_name}.tex"
+
+            # Run LaTeX compilation with multiple passes
+            results = self.docker_manager.run_latex_compilation(
+                tex_file=tex_file, working_dir=self.output_dir, passes=3
+            )
+
+            # Check if PDF was generated successfully
+            pdf_file = self.output_dir / f"{self.manuscript_name}.pdf"
+            if pdf_file.exists():
+                self.log("PDF compilation successful")
+                return True
+            else:
+                self.log("PDF compilation failed", "ERROR")
+                if self.verbose and results:
+                    for i, result in enumerate(results):
+                        self.log(f"Pass {i + 1} output: {result.stdout}", "WARNING")
+                return False
+
+        except Exception as e:
+            self.log(f"Error compiling PDF with Docker: {e}", "ERROR")
+            return False
+
+    def _compile_pdf_local(self) -> bool:
+        """Compile LaTeX to PDF using local installation."""
         # Change to output directory for compilation
         original_cwd = os.getcwd()
 
@@ -731,9 +827,68 @@ class BuildManager:
             self.log("Skipping PDF validation")
             return True
 
-        try:
-            self.log("Running PDF validation...", "STEP")
+        self.log("Running PDF validation...", "STEP")
 
+        if self.engine == "docker":
+            return self._run_pdf_validation_docker()
+        else:
+            return self._run_pdf_validation_local()
+
+    def _run_pdf_validation_docker(self) -> bool:
+        """Run PDF validation using Docker."""
+        try:
+            # Convert paths to be relative to Docker workspace
+            workspace_dir = self.docker_manager.workspace_dir
+            
+            # Handle manuscript path
+            manuscript_path = Path(self.manuscript_path)
+            manuscript_abs = manuscript_path.resolve()
+            try:
+                manuscript_rel = manuscript_abs.relative_to(workspace_dir)
+            except ValueError:
+                manuscript_rel = manuscript_path.name
+            
+            # Handle PDF path
+            pdf_abs = self.output_pdf.resolve()
+            try:
+                pdf_rel = pdf_abs.relative_to(workspace_dir)
+            except ValueError:
+                # Fallback to output directory relative path
+                pdf_rel = Path("output") / self.output_pdf.name
+
+            # Build PDF validation command for Docker
+            pdf_validation_cmd = [
+                "python",
+                "/workspace/src/rxiv_maker/validators/pdf_validator.py",
+                str(manuscript_rel),
+                "--pdf-path",
+                f"/workspace/{pdf_rel}",
+            ]
+
+            result = self.docker_manager.run_command(
+                command=pdf_validation_cmd, session_key="pdf_validation"
+            )
+
+            if result.returncode == 0:
+                self.log("PDF validation completed successfully")
+                if result.stdout:
+                    print(result.stdout)
+                return True
+            else:
+                self.log("PDF validation found issues", "WARNING")
+                if result.stderr:
+                    print(result.stderr)
+                if result.stdout:
+                    print(result.stdout)
+                return True  # Don't fail the build on PDF validation warnings
+
+        except Exception as e:
+            self.log(f"Error running PDF validation with Docker: {e}", "WARNING")
+            return True  # Don't fail the build on PDF validation errors
+
+    def _run_pdf_validation_local(self) -> bool:
+        """Run PDF validation using local installation."""
+        try:
             # Use the existing PDF validation command
             python_parts = self.platform.python_cmd.split()
             cmd = [

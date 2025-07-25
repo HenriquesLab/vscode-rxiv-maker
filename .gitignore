@@ -246,3 +246,4 @@ EXAMPLE_MANUSCRIPT/2025__Saraiva_et_al__for_arxiv.zip
 GEMINI.md
 output.md
 .folder2md_ignore
+submodules/vscode-rxiv-maker/node_modules

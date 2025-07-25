@@ -46,6 +46,9 @@ dependencies = [
     "rich-click>=1.6.0",
     "typing-extensions>=4.0.0",
     "packaging>=21.0.0",
+    "platformdirs>=4.0.0",
+    "tomli-w>=1.0.0",
+    "tomli>=2.0.0;python_version<'3.11'",
 ]
 
 [project.optional-dependencies]
@@ -106,6 +109,8 @@ dev = [
     "pytest-datadir>=1.4.0",
     "pytest-clarity>=1.0.0",
     "build>=1.2.2.post1",
+    "pyinstaller>=6.14.2",
+    "pyyaml>=6.0.2",
 ]
 
 # Configure rye to use uv for dependency resolution
@@ -195,7 +200,6 @@ convention = "google"
 "trace_*.py" = ["D"]
 "notebooks/*" = ["D", "E501"]
 # Ignore auto-generated files
-"src/rxiv_maker/_version.py" = ["ALL"]
 "rxiv_maker_colab.ipynb" = ["ALL"]
 
 [tool.mypy]
@@ -236,6 +240,7 @@ addopts = [
     "-v",
     "--tb=short",
     "--strict-markers",
+    "--strict-config",
     "-n",
     "auto"
 ]
@@ -248,10 +253,21 @@ markers = [
     "build_manager: marks tests as build manager-related tests",
     "pdf_validation: marks tests as PDF validation-related tests",
     "cli: marks tests as CLI-related tests",
+    "docker: marks tests as Docker engine mode tests",
+    "binary: Binary distribution tests",
+    "pyinstaller: PyInstaller-specific tests",
+    "package_manager: Package manager integration tests",
+    "homebrew: Homebrew-specific tests",
+    "scoop: Scoop-specific tests",
+    "end_to_end: End-to-end binary workflow tests",
+    "platform_specific: Tests that only run on specific platforms",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning:pkg_resources",
+    "error::pytest.PytestUnraisableExceptionWarning",
 ]
 
 # Hatch configuration

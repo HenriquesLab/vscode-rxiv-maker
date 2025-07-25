@@ -13,19 +13,22 @@ console = Console()
     "--reinstall",
     "-r",
     is_flag=True,
-    help="Reinstall dependencies (removes .venv and creates new one)",
+    help="Reinstall Python dependencies (removes .venv and creates new one)",
 )
 @click.option(
     "--check-deps-only", "-c", is_flag=True, help="Only check system dependencies"
 )
 @click.pass_context
 def setup(ctx: click.Context, reinstall: bool, check_deps_only: bool) -> None:
-    """Setup development environment.
+    """Setup Python development environment.
+
+    This command focuses on Python package installation and environment setup.
+    For system dependencies (LaTeX, Node.js, R), use 'rxiv install-deps' instead.
 
     This command:
     - Installs Python dependencies
-    - Checks system dependencies
-    - Sets up pre-commit hooks
+    - Sets up virtual environment
+    - Checks existing system dependencies
     """
     verbose = ctx.obj.get("verbose", False)
 
