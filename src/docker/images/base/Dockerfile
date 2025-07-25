@@ -210,25 +210,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g @mermaid-js/mermaid-cli@10.6.1
 
 # Create optimized Mermaid configuration for SVG output
-RUN mkdir -p /opt/mermaid && cat > /opt/mermaid/config.json << 'EOF'
-{
-  "theme": "default",
-  "themeVariables": {
-    "fontFamily": "Liberation Sans, DejaVu Sans, Arial, sans-serif",
-    "fontSize": "16px"
-  },
-  "flowchart": {
-    "useMaxWidth": false,
-    "htmlLabels": true
-  },
-  "sequence": {
-    "useMaxWidth": false
-  },
-  "gantt": {
-    "useMaxWidth": false
-  }
-}
-EOF
+RUN mkdir -p /opt/mermaid && \
+    echo '{ \
+      "theme": "default", \
+      "themeVariables": { \
+        "fontFamily": "Liberation Sans, DejaVu Sans, Arial, sans-serif", \
+        "fontSize": "16px" \
+      }, \
+      "flowchart": { \
+        "useMaxWidth": false, \
+        "htmlLabels": true \
+      }, \
+      "sequence": { \
+        "useMaxWidth": false \
+      }, \
+      "gantt": { \
+        "useMaxWidth": false \
+      } \
+    }' > /opt/mermaid/config.json
 
 # ======================================================================
 # LaTeX Installation Stage
