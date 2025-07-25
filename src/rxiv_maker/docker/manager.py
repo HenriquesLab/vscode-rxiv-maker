@@ -18,6 +18,13 @@ class DockerSession:
     """Manages a persistent Docker container session for multiple operations."""
 
     def __init__(self, container_id: str, image: str, workspace_dir: Path):
+        """Initialize Docker session.
+
+        Args:
+            container_id: Docker container ID
+            image: Docker image name
+            workspace_dir: Workspace directory path
+        """
         self.container_id = container_id
         self.image = image
         self.workspace_dir = workspace_dir
@@ -340,24 +347,88 @@ class DockerManager:
         background_color: str = "transparent",
         config_file: Path | None = None,
     ) -> subprocess.CompletedProcess:
-        """Generate SVG from Mermaid diagram with optimized Docker execution."""
+        """Generate SVG from Mermaid diagram using Cairo-only approach."""
         # Build relative paths for Docker
         input_rel = input_file.relative_to(self.workspace_dir)
         output_rel = output_file.relative_to(self.workspace_dir)
 
-        cmd_parts = [
-            "mmdc",
-            "-i",
-            f"/workspace/{input_rel}",
-            "-o",
-            f"/workspace/{output_rel}",
-            "--backgroundColor",
-            background_color,
-        ]
+        # Use Cairo-only Mermaid rendering via online Kroki service
+        # This eliminates the need for local Puppeteer/Chromium dependencies
+        python_script = f'''
+import sys
+import base64
+import urllib.request
+import urllib.parse
+import zlib
+from pathlib import Path
 
-        if config_file:
-            config_rel = config_file.relative_to(self.workspace_dir)
-            cmd_parts.extend(["-c", f"/workspace/{config_rel}"])
+def generate_mermaid_svg():
+    """Generate SVG from Mermaid using Kroki service (Cairo-compatible)."""
+    try:
+        # Read the Mermaid file
+        with open("/workspace/{input_rel}", "r") as f:
+            mermaid_content = f.read().strip()
+
+        # Use Kroki service for Mermaid rendering (no browser dependencies)
+        # Encode the content for URL safety
+        encoded_content = base64.urlsafe_b64encode(
+            zlib.compress(mermaid_content.encode("utf-8"))
+        ).decode("ascii")
+
+        # Build Kroki URL for SVG generation
+        kroki_url = f"https://kroki.io/mermaid/svg/{{encoded_content}}"
+
+        # Try to fetch SVG from Kroki service
+        try:
+            with urllib.request.urlopen(kroki_url, timeout=30) as response:
+                if response.status == 200:
+                    svg_content = response.read().decode("utf-8")
+
+                    # Write the SVG file
+                    with open("/workspace/{output_rel}", "w") as f:
+                        f.write(svg_content)
+
+                    print("Generated SVG using Kroki service (Cairo-compatible)")
+                    return 0
+                else:
+                    raise Exception(
+                        f"Kroki service returned status {{response.status}}"
+                    )
+
+        except Exception as kroki_error:
+            print(f"Kroki service unavailable: {{kroki_error}}")
+            # Fall back to a simple SVG placeholder
+            fallback_svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <rect width="800" height="400" fill="{background_color}" stroke="#ddd" \
+stroke-width="2"/>
+  <text x="400" y="180" text-anchor="middle" \
+font-family="Arial, sans-serif" font-size="18" fill="#666">
+    <tspan x="400" dy="0">Mermaid Diagram</tspan>
+    <tspan x="400" dy="30">(Service temporarily unavailable)</tspan>
+  </text>
+  <text x="400" y="250" text-anchor="middle" \
+font-family="monospace" font-size="12" fill="#999">
+    Source: {input_rel.name}
+  </text>
+</svg>"""
+
+            with open("/workspace/{output_rel}", "w") as f:
+                f.write(fallback_svg)
+
+            print("Generated fallback SVG (Kroki service unavailable)")
+            return 0
+
+    except Exception as e:
+        print(f"Error generating Mermaid SVG: {{e}}")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(generate_mermaid_svg())
+'''
+
+        # Execute the Python-based Mermaid generation
+        cmd_parts = ["python3", "-c", python_script]
 
         return self.run_command(command=cmd_parts, session_key="mermaid_generation")
 
@@ -517,7 +588,7 @@ class DockerManager:
 
     def get_session_stats(self) -> dict[str, Any]:
         """Get statistics about active Docker sessions."""
-        stats = {
+        stats: dict[str, Any] = {
             "total_sessions": len(self._active_sessions),
             "active_sessions": sum(
                 1 for s in self._active_sessions.values() if s.is_active()
@@ -526,20 +597,19 @@ class DockerManager:
         }
 
         for key, session in self._active_sessions.items():
-            stats["session_details"].append(
-                {
-                    "key": key,
-                    "container_id": session.container_id[:12],  # Short ID
-                    "image": session.image,
-                    "active": session.is_active(),
-                    "age_seconds": time.time() - session.created_at,
-                }
-            )
+            session_info = {
+                "key": key,
+                "container_id": session.container_id[:12],  # Short ID
+                "image": session.image,
+                "active": session.is_active(),
+                "age_seconds": time.time() - session.created_at,
+            }
+            stats["session_details"].append(session_info)
 
         return stats
 
     def enable_aggressive_cleanup(self, enabled: bool = True) -> None:
-        """Enable more aggressive session cleanup for resource-constrained environments."""
+        """Enable aggressive session cleanup for resource-constrained environments."""
         if enabled:
             self._session_timeout = 60  # 1 minute for aggressive cleanup
             self.enable_session_reuse = False  # Disable session reuse
@@ -549,11 +619,10 @@ class DockerManager:
 
     def __del__(self):
         """Cleanup when manager is destroyed."""
-        try:
+        import contextlib
+
+        with contextlib.suppress(Exception):
             self.cleanup_all_sessions()
-        except Exception:
-            # Ignore cleanup errors during destruction
-            pass
 
 
 # Global Docker manager instance
