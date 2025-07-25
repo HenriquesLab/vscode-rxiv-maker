@@ -28,7 +28,6 @@ readonly LOG_DIR="$PROJECT_ROOT/gha-logs"
 # Repository configurations
 REPO_CONFIGS=(
     "main:HenriquesLab/rxiv-maker:main"
-    "docker:HenriquesLab/docker-rxiv-maker:main"
     "homebrew:HenriquesLab/homebrew-rxiv-maker:main"
     "scoop:HenriquesLab/scoop-rxiv-maker:main"
     "vscode:HenriquesLab/vscode-rxiv-maker:main"

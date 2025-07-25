@@ -53,8 +53,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpangocairo-1.0-0 \
     libgdk-pixbuf2.0-dev \
     libgirepository1.0-dev \
-    git1.2-gobject-2.0 \
-    git1.2-glib-2.0 \
+    gir1.2-gobject-2.0 \
+    gir1.2-glib-2.0 \
     gobject-introspection \
     libglib2.0-dev \
     # Advanced SVG processing libraries
@@ -458,7 +458,7 @@ RUN /usr/local/bin/verify-python-deps.sh
 LABEL maintainer="Rxiv-Maker Project"
 LABEL description="Consolidated base image for Rxiv-Maker with enhanced Cairo capabilities (formerly experimental)"
 LABEL version="1.9-cairo-consolidated"
-LABEL org.opencontainers.image.source="https://github.com/henriqueslab/docker-rxiv-maker"
+LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, Node.js, R, Mermaid CLI, and consolidated Cairo SVG processing capabilities"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.variant="cairo-consolidated"

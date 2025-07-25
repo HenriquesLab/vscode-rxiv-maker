@@ -446,8 +446,8 @@ python src/py/commands/validate.py MANUSCRIPT
 
 #### Building Custom Images
 ```bash
-# Navigate to Docker submodule directory
-cd submodules/docker-rxiv-maker/images/base
+# Navigate to Docker directory
+cd src/docker/images/base
 
 # Build custom image
 ./build.sh --repo myuser/rxiv-custom --tag latest
@@ -499,7 +499,7 @@ docker run --rm \
 
 #### Building for Multiple Architectures
 ```bash
-cd submodules/docker-rxiv-maker/images/base
+cd src/docker/images/base
 
 # Build for both amd64 and arm64
 ./build.sh --platform linux/amd64,linux/arm64

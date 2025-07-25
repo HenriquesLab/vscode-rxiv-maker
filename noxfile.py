@@ -1,24 +1,189 @@
 """Nox configuration for Rxiv-Maker testing."""
 
+import os
+import subprocess
+
 import nox
 
 
-@nox.session(python=["3.11", "3.12", "3.13"])
-def tests(session):
-    """Run the test suite."""
-    # Install dependencies with explicit versions to avoid conflicts
+def _check_docker_available():
+    """Check if Docker is available and running."""
+    try:
+        result = subprocess.run(
+            ["docker", "info"], capture_output=True, text=True, timeout=10
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
+
+def _install_test_deps(session, include_build=False, include_coverage=False):
+    """Install common test dependencies."""
     session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("ruff>=0.8.0", "mypy>=1.0", "pytest-notebook>=0.10.0")
-    session.install("lazydocs>=0.4.8", "nbstripout>=0.7.1", "pre-commit>=4.0.0")
+    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-timeout>=2.4.0")
+
+    if include_build:
+        session.install("build>=0.10.0", "wheel>=0.40.0")
+
+    if include_coverage:
+        session.install("pytest-cov>=4.0", "coverage[toml]>=7.0")
+
+
+def _setup_engine(session, engine):
+    """Setup engine environment and check availability."""
+    if engine == "docker" and not _check_docker_available():
+        session.skip(
+            "Docker is not available. Install Docker to run docker engine tests."
+        )
+    session.env["RXIV_ENGINE"] = engine.upper()
+
+
+@nox.session(python=["3.11", "3.12", "3.13"])
+@nox.parametrize("engine", ["local", "docker"])
+def tests(session, engine):
+    """Run the test suite with specified engine (local or docker)."""
+    _setup_engine(session, engine)
+    _install_test_deps(session)
+
+    session.install("pytest-xdist>=3.8.0", "pytest-notebook>=0.10.0")
+
     session.run(
         "pytest",
         "tests/",
         "-v",
-        "--timeout=120",  # 2 minute timeout
+        "--timeout=120",
         "-m",
-        "not slow",  # Skip slow tests by default
+        "not slow",
     )
+
+
+@nox.session(python="3.11")
+@nox.parametrize("engine", ["local", "docker"])
+def integration(session, engine):
+    """Run integration tests with specified engine (local or docker)."""
+    _setup_engine(session, engine)
+    _install_test_deps(session)
+
+    session.install("pytest-notebook>=0.10.0")
+
+    session.run(
+        "pytest",
+        "tests/integration/",
+        "-v",
+        "-s",
+        "--timeout=180",
+        "-m",
+        "not slow",
+    )
+
+
+@nox.session(python="3.11")
+@nox.parametrize("engine", ["local", "docker"])
+@nox.parametrize("test_type", ["basic", "full"])
+def install_tests(session, engine, test_type):
+    """Run installation tests with specified engine and scope."""
+    _setup_engine(session, engine)
+    _install_test_deps(
+        session, include_build=True, include_coverage=(test_type == "full")
+    )
+
+    # Configure test filters based on engine and test type
+    filters = []
+    if engine == "local":
+        filters.append("not (docker or container)")
+
+    if test_type == "basic":
+        filters.extend(
+            ["not (performance or system_deps or resource_usage)", "not slow"]
+        )
+        timeout = 120
+    else:  # full
+        timeout = 300
+
+    args = [
+        "pytest",
+        "tests/install/",
+        "-v",
+        "-s",
+        "--tb=short",
+        f"--timeout={timeout}",
+    ]
+
+    if test_type == "full":
+        args.extend(
+            [
+                "--cov=src/rxiv_maker/install",
+                "--cov-report=html:htmlcov/install",
+                "--cov-report=term-missing",
+            ]
+        )
+
+    if filters:
+        args.extend(["-k", " and ".join(filters)])
+
+    session.run(*args)
+
+
+@nox.session(python="3.11")
+@nox.parametrize("engine", ["local", "docker"])
+def coverage(session, engine):
+    """Run tests with coverage reporting using specified engine."""
+    _setup_engine(session, engine)
+    _install_test_deps(session, include_coverage=True)
+
+    session.install("pytest-notebook>=0.10.0")
+
+    session.run(
+        "pytest",
+        "tests/",
+        "--cov=src/rxiv_maker",
+        "--cov-report=html",
+        "--cov-report=term-missing",
+        "-v",
+        "-m",
+        "not slow",
+    )
+
+
+@nox.session(python="3.11")
+def docker_e2e(session):
+    """Run end-to-end Docker tests including real manuscript generation."""
+    if not _check_docker_available():
+        session.skip("Docker is not available.")
+
+    _install_test_deps(session)
+    session.install("pytest-xdist>=3.8.0")
+    session.env["RXIV_ENGINE"] = "DOCKER"
+
+    # Run Docker-specific unit tests
+    session.run(
+        "pytest",
+        "tests/unit/test_figure_generator.py",
+        "tests/cli/test_build.py",
+        "tests/cli/test_config.py",
+        "-v",
+        "-s",
+        "--tb=short",
+        "--timeout=300",
+        "-k",
+        "docker or engine",
+    )
+
+    # Run real Docker integration test if EXAMPLE_MANUSCRIPT exists
+    if os.path.exists("EXAMPLE_MANUSCRIPT"):
+        session.log("Running Docker E2E test with EXAMPLE_MANUSCRIPT")
+        session.run(
+            "python",
+            "-m",
+            "rxiv_maker.cli.main",
+            "--engine",
+            "docker",
+            "pdf",
+            "EXAMPLE_MANUSCRIPT/",
+            external=False,
+        )
+    else:
+        session.log("EXAMPLE_MANUSCRIPT not found, skipping E2E test")
 
 
 @nox.session(venv_backend="none")
@@ -30,132 +195,28 @@ def tests_current(session):
 @nox.session(python="3.11")
 def lint(session):
     """Run linting checks."""
-    session.install(".")
-    session.install("ruff>=0.8.0")
+    session.install(".", "ruff>=0.8.0")
     session.run("ruff", "check", "src/")
-
-
-@nox.session(python="3.11")
-def type_check(session):
-    """Run type checking."""
-    session.install(".")
-    session.install("mypy>=1.0", "types-PyYAML>=6.0.0")
-    session.run("mypy", "src/")
 
 
 @nox.session(python="3.11")
 def format(session):
     """Format code with ruff."""
-    session.install(".")
-    session.install("ruff>=0.8.0")
+    session.install(".", "ruff>=0.8.0")
     session.run("ruff", "format", "src/")
 
 
 @nox.session(python="3.11")
-def integration(session):
-    """Run integration tests that generate actual PDFs."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("pytest-notebook>=0.10.0")
-    session.run(
-        "pytest",
-        "tests/integration/",
-        "-v",
-        "-s",
-        "--timeout=180",  # 3 minute timeout for integration tests
-        "-m",
-        "not slow",  # Skip slow integration tests
-    )
+def type_check(session):
+    """Run type checking."""
+    session.install(".", "mypy>=1.0", "types-PyYAML>=6.0.0")
+    session.run("mypy", "src/")
 
 
 @nox.session(python="3.11")
-def coverage(session):
-    """Run tests with coverage reporting."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
-    session.install("coverage[toml]>=7.0", "pytest-cov>=4.0")
-    session.install("pytest-notebook>=0.10.0")
-    session.run(
-        "pytest",
-        "tests/",
-        "--cov=src/rxiv_maker",  # Fixed coverage path
-        "--cov-report=html",
-        "--cov-report=term-missing",
-        "-v",
-        "-m",
-        "not slow",  # Skip slow tests for coverage
-    )
-
-
-@nox.session(python="3.11")
-def install_tests(session):
-    """Run essential installation tests."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Run essential installation tests only
-    session.run(
-        "pytest",
-        "tests/install/",
-        "-v",
-        "-s",
-        "--tb=short",
-        "--timeout=120",  # 2 minute timeout per test
-        "-m",
-        "not slow",  # Skip slow tests by default
-        "-k",
-        "not (performance or system_deps or resource_usage or docker or container)",  # Skip expensive tests and Docker tests
-    )
-
-
-@nox.session(python="3.11")
-def install_tests_full(session):
-    """Run complete installation tests including slow tests."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Run all installation tests including slow ones
-    session.run(
-        "pytest",
-        "tests/install/",
-        "-v",
-        "-s",
-        "--tb=short",
-        "--timeout=300",  # 5 minute timeout per test (reduced from 10)
-        "--cov=src/rxiv_maker/install",
-        "--cov-report=html:htmlcov/install",
-        "--cov-report=term-missing",
-        "-k",
-        "not (docker or container)",  # Skip Docker tests
-    )
-
-
-@nox.session(python="3.11")
-def install_tests_basic(session):
-    """Run basic installation tests without Docker."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
-
-    # Run only unit tests that don't require Docker
-    session.run(
-        "pytest",
-        "tests/install/",
-        "-v",
-        "-k",
-        "not docker and not container",
-        "--tb=short",
-        "--timeout=60",  # 1 minute timeout for basic tests
-    )
-
-
-@nox.session(python="3.11")
-def install_tests_fast(session):
-    """Run fast installation tests for CI."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
-    session.install("build>=0.10.0", "wheel>=0.40.0")
+def ci_fast(session):
+    """Fast CI tests for quick feedback."""
+    _install_test_deps(session, include_build=True)
 
     # Run only the most essential tests
     session.run(
@@ -165,52 +226,5 @@ def install_tests_fast(session):
         "-v",
         "-s",
         "--tb=short",
-        "--timeout=90",  # 1.5 minute timeout for fast tests
-    )
-
-
-@nox.session(python="3.11")
-def docker_tests(session):
-    """Run Docker engine mode tests (requires Docker)."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("pytest-timeout>=2.4.0", "pytest-xdist>=3.8.0")
-
-    # Set Docker engine mode
-    session.env["RXIV_ENGINE"] = "DOCKER"
-
-    # Run Docker-specific unit tests first
-    session.run(
-        "pytest",
-        "tests/unit/test_figure_generator.py",
-        "tests/cli/test_build.py",
-        "tests/cli/test_config.py",
-        "-v",
-        "-s",
-        "--tb=short",
-        "--timeout=300",  # 5 minute timeout for Docker tests
-        "-k",
-        "docker or engine",  # Only run Docker-related tests
-    )
-
-    # Run real Docker integration test with EXAMPLE_MANUSCRIPT
-    session.log("Running Docker integration test with EXAMPLE_MANUSCRIPT")
-
-    # Check if EXAMPLE_MANUSCRIPT exists
-    import os
-
-    if not os.path.exists("EXAMPLE_MANUSCRIPT"):
-        session.log("EXAMPLE_MANUSCRIPT not found, skipping integration test")
-        return
-
-    # Set environment and run rxiv pdf command with Docker engine
-    session.run(
-        "python",
-        "-m",
-        "rxiv_maker.cli.main",
-        "--engine",
-        "docker",
-        "pdf",
-        "EXAMPLE_MANUSCRIPT/",
-        external=False,
+        "--timeout=90",
     )

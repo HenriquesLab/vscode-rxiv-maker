@@ -94,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 🏗️ Docker Engine Mode Infrastructure
 - **Complete Containerization**: RXIV_ENGINE=DOCKER mode for all operations requiring only Docker and Make
-- **Docker Image Management**: Comprehensive build system in `submodules/docker-rxiv-maker/` with automated image building
+- **Docker Image Management**: Comprehensive build system in `src/docker/` with automated image building
 - **GitHub Actions Acceleration**: 5x faster CI/CD workflows using pre-compiled Docker images
 - **Platform Detection**: Automatic AMD64/ARM64 architecture compatibility with performance optimizations
 - **Safe Build Wrapper**: Resource monitoring, timeout management, and system protection via `build-safe.sh`

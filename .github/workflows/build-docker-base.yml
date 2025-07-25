@@ -1,16 +1,16 @@
-name: Build Base Images
+name: Build Docker Base Images
 
 on:
   push:
     branches: [ main, dev ]
     paths:
-      - 'images/base/**'
-      - '.github/workflows/build-base.yml'
+      - 'src/docker/**'
+      - '.github/workflows/build-docker-base.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'images/base/**'
-      - '.github/workflows/build-base.yml'
+      - 'src/docker/**'
+      - '.github/workflows/build-docker-base.yml'
   workflow_dispatch:
     inputs:
       tag:
@@ -63,7 +63,7 @@ jobs:
       run: |
         # Determine version from multiple sources
         if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-          # Repository dispatch from main repo
+          # Repository dispatch from version sync
           VERSION="${{ github.event.client_payload.version }}"
           echo "Using version from repository_dispatch: $VERSION"
         elif [ -n "${{ github.event.inputs.rxiv_version }}" ]; then
@@ -75,9 +75,14 @@ jobs:
           VERSION="${{ github.event.inputs.tag }}"
           echo "Using custom tag as version: $VERSION"
         else
-          # Default to latest for development builds
-          VERSION="latest"
-          echo "Using default version: $VERSION"
+          # Extract version from Python package for development builds
+          VERSION=$(python3 -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from rxiv_maker.__version__ import __version__
+          print(__version__)
+          " 2>/dev/null || echo "latest")
+          echo "Using version from package: $VERSION"
         fi
 
         echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -98,13 +103,14 @@ jobs:
           org.opencontainers.image.title=rxiv-maker-base
           org.opencontainers.image.description=Ubuntu-based image with LaTeX, Python, Node.js, R, and enhanced Cairo SVG processing (no browser dependencies)
           org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
           rxiv-maker.version=${{ steps.version.outputs.version }}
           rxiv-maker.variant=cairo-only
 
     - name: Build and push base image
       uses: docker/build-push-action@v6
       with:
-        context: ./images/base
+        context: ./src/docker/images/base
         platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
@@ -114,59 +120,73 @@ jobs:
         build-args: |
           BUILDKIT_INLINE_CACHE=1
 
-    - name: Test consolidated base image functionality
+    - name: Comprehensive Docker image testing
+      if: github.event_name != 'pull_request'
+      run: |
+        # Build image locally for testing
+        docker build -t test-base ./src/docker/images/base
+
+        echo "## Docker Image Testing Results" >> $GITHUB_STEP_SUMMARY
+        echo "Testing image: test-base" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Make test script executable
+        chmod +x src/docker/test-docker-image.sh
+
+        # Run comprehensive test suite
+        if ./src/docker/test-docker-image.sh test-base; then
+          echo "✅ **All Docker image tests passed**" >> $GITHUB_STEP_SUMMARY
+          echo "- Basic functionality verified" >> $GITHUB_STEP_SUMMARY
+          echo "- Python dependencies confirmed" >> $GITHUB_STEP_SUMMARY
+          echo "- Cairo SVG processing validated" >> $GITHUB_STEP_SUMMARY
+          echo "- rxiv-maker installation successful" >> $GITHUB_STEP_SUMMARY
+          echo "- Pytest suite executed" >> $GITHUB_STEP_SUMMARY
+          echo "- Manuscript generation tested" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance benchmarks completed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Docker image tests failed**" >> $GITHUB_STEP_SUMMARY
+          echo "Image validation failed - check logs for details" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+
+    - name: Quick validation for pull requests
       if: github.event_name == 'pull_request'
       run: |
-        # Load image for testing (only for PRs)
-        docker build -t test-base ./images/base
+        # Build image locally for PR testing
+        docker build -t test-base ./src/docker/images/base
+
+        echo "=== Quick PR Validation ==="
+        echo "Testing critical functionality for PR..."
 
         # Test basic functionality
-        echo "=== Basic Component Testing ==="
         echo "Testing Python..."
         docker run --rm test-base python3 --version
 
         echo "Testing LaTeX..."
         docker run --rm test-base pdflatex --version
 
-        echo "Testing Node.js..."
-        docker run --rm test-base node --version
-
-        echo "Testing Mermaid..."
-        docker run --rm test-base mmdc --version
-
-        echo "Testing R..."
-        docker run --rm test-base R --version
-
-        # Test consolidated Cairo functionality
-        echo "=== Consolidated Cairo Testing ==="
         echo "Testing Cairo functionality..."
         docker run --rm test-base /usr/local/bin/test-cairo.sh
 
-        echo "Testing PyGObject (consolidated dependency)..."
+        echo "Testing critical Python dependencies..."
         docker run --rm test-base python3 -c "
-        import gi
-        gi.require_version('GObject', '2.0')
-        from gi.repository import GObject
-        print('PyGObject version:', gi.version_info)
-        print('✅ PyGObject working correctly')
+        import matplotlib, numpy, cairosvg, yaml
+        print('✅ Critical dependencies available')
         "
 
-        echo "Testing enhanced font support..."
-        docker run --rm test-base fc-list | grep -i liberation | head -5
+        echo "✅ Quick PR validation passed!"
 
-        echo "Testing additional system dependencies..."
-        docker run --rm test-base pkg-config --modversion libavfilter || echo "libavfilter OK"
-        docker run --rm test-base pkg-config --modversion Magick++ || echo "Magick++ OK"
-
-        echo "=== R Package Testing ==="
-        echo "Testing R graphics packages..."
-        docker run --rm test-base R -e "
-        library(Cairo)
-        library(magick)
-        cat('✅ R Cairo and magick libraries loaded successfully\n')
-        "
-
-        echo "All consolidated tests passed!"
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-test-results-${{ github.run_id }}
+        path: |
+          /tmp/rxiv-docker-test-*/
+          *.log
+          test_*.png
+          test_*.pdf
+        retention-days: 7
 
     - name: Performance benchmark
       if: github.event_name != 'pull_request'
@@ -226,7 +246,7 @@ jobs:
             --retry 2 \
             --retry-delay 5 \
             -d '{
-              "full_description": "# Rxiv-Maker Consolidated Docker Image\n\nUbuntu-based image with LaTeX, Python, Node.js, R, and comprehensive Cairo SVG processing for scientific document generation. This consolidated image incorporates all features from the former experimental-cairo variant.\n\n## Quick Start\n```bash\ndocker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest\n```\n\n## Consolidated Features\n- **Complete LaTeX distribution** with all packages\n- **Python 3.11** with enhanced Cairo libraries (CairoSVG, pycairo, pygobject)\n- **Advanced SVG processing** with consolidated Cairo capabilities\n- **Extended font collection** for better rendering quality\n- **Node.js 18** with Mermaid CLI (SVG-only output)\n- **R with Cairo graphics** support including magick and additional packages\n- **Multi-platform support** (AMD64/ARM64)\n- **Enhanced system dependencies** for multimedia processing\n- **No browser dependencies** (Cairo-only for optimal performance)\n\n## Migration from Experimental\nThis image now includes all features from the deprecated henriqueslab/rxiv-maker-experimental:latest-cairo. Simply use this consolidated base image instead.\n\n## Usage with rxiv-maker\n```bash\n# Use Docker engine mode\nRXIV_ENGINE=docker rxiv pdf\n```\n\n## Documentation\nSee [GitHub repository](https://github.com/HenriquesLab/docker-rxiv-maker) for full documentation and migration guides."
+              "full_description": "# Rxiv-Maker Consolidated Docker Image\n\nUbuntu-based image with LaTeX, Python, Node.js, R, and comprehensive Cairo SVG processing for scientific document generation. This consolidated image incorporates all features from the former experimental-cairo variant.\n\n## Quick Start\n```bash\ndocker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest\n```\n\n## Consolidated Features\n- **Complete LaTeX distribution** with all packages\n- **Python 3.11** with enhanced Cairo libraries (CairoSVG, pycairo, pygobject)\n- **Advanced SVG processing** with consolidated Cairo capabilities\n- **Extended font collection** for better rendering quality\n- **Node.js 18** with Mermaid CLI (SVG-only output)\n- **R with Cairo graphics** support including magick and additional packages\n- **Multi-platform support** (AMD64/ARM64)\n- **Enhanced system dependencies** for multimedia processing\n- **No browser dependencies** (Cairo-only for optimal performance)\n\n## Migration from Experimental\nThis image now includes all features from the deprecated henriqueslab/rxiv-maker-experimental:latest-cairo. Simply use this consolidated base image instead.\n\n## Usage with rxiv-maker\n```bash\n# Use Docker engine mode\nRXIV_ENGINE=docker rxiv pdf\n```\n\n## Documentation\nSee [GitHub repository](https://github.com/${{ github.repository }}) for full documentation and migration guides."
             }' \
             "https://hub.docker.com/v2/repositories/${{ env.BASE_IMAGE_NAME }}/"; then
             echo "✅ Docker Hub description updated successfully"

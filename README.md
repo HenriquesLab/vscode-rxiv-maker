@@ -403,17 +403,17 @@ rxiv-maker/
 
 ## Docker Strategy
 
-Rxiv-Maker provides robust Docker support through a dedicated submodule architecture that ensures consistency across environments while maintaining code organization.
+Rxiv-Maker provides robust Docker support through an integrated architecture that ensures consistency across environments while maintaining streamlined development workflows.
 
 ### 🏗️ Architecture Overview
 
-**Submodule Design**: Docker infrastructure is maintained in [`submodules/docker-rxiv-maker/`](submodules/docker-rxiv-maker/) as a separate repository to:
-- Enable independent versioning of Docker images
-- Allow specialized CI/CD workflows for container builds
-- Maintain separation between core application and infrastructure
-- Support experimental variants without affecting main codebase
+**Integrated Design**: Docker infrastructure is maintained in [`src/docker/`](src/docker/) to:
+- Enable streamlined development and maintenance workflows
+- Provide centralized CI/CD workflows for container builds
+- Simplify repository structure and dependency management
+- Support rapid iteration and testing of Docker improvements
 
-**Docker Infrastructure**: All Docker build scripts and configuration are now consolidated in the [`submodules/docker-rxiv-maker/`](submodules/docker-rxiv-maker/) repository for centralized management.
+**Docker Infrastructure**: All Docker build scripts and configuration are consolidated in the [`src/docker/`](src/docker/) directory for simplified management.
 
 ### 🐳 Available Images
 
@@ -454,7 +454,7 @@ make pdf RXIV_ENGINE=DOCKER RXIV_DOCKER_VARIANT=experimental-cairo
 - **Isolation**: No conflicts with existing system packages
 - **Multi-platform**: AMD64 support with ARM64 compatibility via Rosetta
 
-For detailed Docker documentation, see the [Docker submodule repository](submodules/docker-rxiv-maker/) and [Docker Engine Mode Guide](docs/workflows/docker-engine-mode.md).
+For detailed Docker documentation, see the [Docker infrastructure directory](src/docker/) and [Docker Engine Mode Guide](docs/workflows/docker-engine-mode.md).
 
 ## Contributing
 
