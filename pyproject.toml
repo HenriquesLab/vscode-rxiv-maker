@@ -350,6 +350,8 @@ tennant = "tennant"      # Proper surname
 ois = "ois"              # Part of LaTeX accent commands like {\c{c}}ois
 # File extensions
 fot = "fot"              # LaTeX font outline file extension
+# GObject Introspection packages - legitimate package names, not typos
+gir = "gir"              # Prevent "gir1.2-*" packages from being changed to "git1.2-*"
 
 # Bandit security scanner configuration
 [tool.bandit]
