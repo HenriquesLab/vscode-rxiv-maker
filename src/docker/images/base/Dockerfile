@@ -53,6 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpangocairo-1.0-0 \
     libgdk-pixbuf2.0-dev \
     libgirepository1.0-dev \
+    libgirepository-2.0-dev \
     gir1.2-gobject-2.0 \
     gir1.2-glib-2.0 \
     gobject-introspection \
