@@ -77,7 +77,14 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Processing Options",
-            "options": ["-s", "--skip-validation", "-t", "--track-changes"],
+            "options": [
+                "-s",
+                "--skip-validation",
+                "-t",
+                "--track-changes",
+                "-v",
+                "--verbose",
+            ],
         },
         {
             "name": "Help",

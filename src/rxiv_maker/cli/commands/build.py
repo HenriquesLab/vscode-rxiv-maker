@@ -37,6 +37,7 @@ console = Console()
     help="Track changes against specified git tag",
     metavar="TAG",
 )
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.pass_context
 def build(
     ctx: click.Context,
@@ -45,6 +46,7 @@ def build(
     force_figures: bool,
     skip_validation: bool,
     track_changes: str | None,
+    verbose: bool,
 ) -> None:
     """Generate a publication-ready PDF from your Markdown manuscript.
 
@@ -75,7 +77,8 @@ def build(
 
         $ rxiv pdf --track-changes v1.0.0
     """
-    verbose = ctx.obj.get("verbose", False)
+    # Use local verbose flag if provided, otherwise fall back to global context
+    verbose = verbose or ctx.obj.get("verbose", False)
     engine = ctx.obj.get("engine", "local")
 
     # Default to MANUSCRIPT if not specified
