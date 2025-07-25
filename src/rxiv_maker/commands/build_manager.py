@@ -229,11 +229,21 @@ class BuildManager:
         try:
             manuscript_path = Path(self.manuscript_path)
 
+            # Convert to absolute path, then make relative to workspace directory
+            manuscript_abs = manuscript_path.resolve()
+            workspace_dir = self.docker_manager.workspace_dir
+            
+            try:
+                manuscript_rel = manuscript_abs.relative_to(workspace_dir)
+            except ValueError:
+                # If manuscript is not within workspace, use just the name
+                manuscript_rel = manuscript_path.name
+
             # Build validation command for Docker
             validation_cmd = [
                 "python",
                 "/workspace/src/rxiv_maker/commands/validate.py",
-                str(manuscript_path.relative_to(Path.cwd())),
+                str(manuscript_rel),
                 "--detailed",
                 "--check-latex",
                 "--enable-doi-validation",
@@ -827,13 +837,32 @@ class BuildManager:
     def _run_pdf_validation_docker(self) -> bool:
         """Run PDF validation using Docker."""
         try:
+            # Convert paths to be relative to Docker workspace
+            workspace_dir = self.docker_manager.workspace_dir
+            
+            # Handle manuscript path
+            manuscript_path = Path(self.manuscript_path)
+            manuscript_abs = manuscript_path.resolve()
+            try:
+                manuscript_rel = manuscript_abs.relative_to(workspace_dir)
+            except ValueError:
+                manuscript_rel = manuscript_path.name
+            
+            # Handle PDF path
+            pdf_abs = self.output_pdf.resolve()
+            try:
+                pdf_rel = pdf_abs.relative_to(workspace_dir)
+            except ValueError:
+                # Fallback to output directory relative path
+                pdf_rel = Path("output") / self.output_pdf.name
+
             # Build PDF validation command for Docker
             pdf_validation_cmd = [
                 "python",
                 "/workspace/src/rxiv_maker/validators/pdf_validator.py",
-                self.manuscript_path,
+                str(manuscript_rel),
                 "--pdf-path",
-                f"/workspace/{self.output_pdf.relative_to(Path.cwd())}",
+                f"/workspace/{pdf_rel}",
             ]
 
             result = self.docker_manager.run_command(

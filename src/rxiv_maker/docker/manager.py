@@ -105,7 +105,9 @@ class DockerManager:
 
         # Session management
         self._active_sessions: dict[str, DockerSession] = {}
-        self._session_timeout = 300  # 5 minutes
+        self._session_timeout = 600  # 10 minutes for better reuse
+        self._max_sessions = 5  # Limit concurrent sessions
+        self._last_cleanup = time.time()
 
         # Docker configuration
         self._docker_platform = self._detect_docker_platform()
@@ -242,16 +244,105 @@ class DockerManager:
             if result.returncode == 0:
                 container_id = result.stdout.strip()
                 session = DockerSession(container_id, image, self.workspace_dir)
-                self._active_sessions[session_key] = session
-                return session
+                
+                # Initialize container with health checks
+                if self._initialize_container(session):
+                    self._active_sessions[session_key] = session
+                    return session
+                else:
+                    # Cleanup failed session
+                    session.cleanup()
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
             pass
 
         return None
 
-    def _cleanup_expired_sessions(self) -> None:
+    def _initialize_container(self, session: DockerSession) -> bool:
+        """Initialize a Docker container with health checks and dependency verification."""
+        try:
+            # Basic connectivity test
+            exec_cmd = [
+                "docker", "exec", session.container_id,
+                "echo", "container_ready"
+            ]
+            result = subprocess.run(
+                exec_cmd, capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                return False
+            
+            # Test Python availability and basic imports
+            python_test = [
+                "docker", "exec", session.container_id,
+                "python3", "-c", 
+                "import sys, os; print(f'Python {sys.version_info.major}.{sys.version_info.minor} ready')"
+            ]
+            result = subprocess.run(
+                python_test, capture_output=True, text=True, timeout=15
+            )
+            if result.returncode != 0:
+                return False
+            
+            # Test critical Python dependencies (cairosvg, numpy, matplotlib)
+            deps_test = [
+                "docker", "exec", session.container_id,
+                "python3", "-c",
+                """
+try:
+    import cairosvg, numpy, matplotlib, yaml
+    print('Critical dependencies verified')
+except ImportError as e:
+    print(f'Dependency error: {e}')
+    exit(1)
+"""
+            ]
+            result = subprocess.run(
+                deps_test, capture_output=True, text=True, timeout=20
+            )
+            if result.returncode != 0:
+                return False
+            
+            # Test R availability if container supports it
+            r_test = [
+                "docker", "exec", session.container_id,
+                "sh", "-c", "which Rscript && Rscript --version || echo 'R not available'"
+            ]
+            subprocess.run(r_test, capture_output=True, text=True, timeout=10)
+            # R test is non-blocking, we just log availability
+            
+            # Test LaTeX availability
+            latex_test = [
+                "docker", "exec", session.container_id,
+                "sh", "-c", "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'"
+            ]
+            subprocess.run(latex_test, capture_output=True, text=True, timeout=10)
+            # LaTeX test is non-blocking
+            
+            # Set up workspace permissions
+            workspace_setup = [
+                "docker", "exec", session.container_id,
+                "sh", "-c", "chmod -R 755 /workspace && mkdir -p /workspace/output"
+            ]
+            result = subprocess.run(
+                workspace_setup, capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                return False
+            
+            return True
+            
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            return False
+
+    def _cleanup_expired_sessions(self, force: bool = False) -> None:
         """Clean up expired or inactive Docker sessions."""
         current_time = time.time()
+        
+        # Only run cleanup every 30 seconds unless forced
+        if not force and current_time - self._last_cleanup < 30:
+            return
+        
+        self._last_cleanup = current_time
         expired_keys = []
 
         for key, session in self._active_sessions.items():
@@ -264,6 +355,17 @@ class DockerManager:
 
         for key in expired_keys:
             del self._active_sessions[key]
+        
+        # If we have too many sessions, cleanup the oldest ones
+        if len(self._active_sessions) > self._max_sessions:
+            sorted_sessions = sorted(
+                self._active_sessions.items(), 
+                key=lambda x: x[1].created_at
+            )
+            excess_count = len(self._active_sessions) - self._max_sessions
+            for key, session in sorted_sessions[:excess_count]:
+                session.cleanup()
+                del self._active_sessions[key]
 
     def run_command(
         self,
@@ -348,9 +450,18 @@ class DockerManager:
         config_file: Path | None = None,
     ) -> subprocess.CompletedProcess:
         """Generate SVG from Mermaid diagram using Cairo-only approach."""
-        # Build relative paths for Docker
-        input_rel = input_file.relative_to(self.workspace_dir)
-        output_rel = output_file.relative_to(self.workspace_dir)
+        # Build relative paths for Docker with proper error handling
+        try:
+            input_rel = input_file.relative_to(self.workspace_dir)
+        except ValueError:
+            # If input file is not within workspace, use absolute path resolution
+            input_rel = Path(input_file.name)
+        
+        try:
+            output_rel = output_file.relative_to(self.workspace_dir)
+        except ValueError:
+            # If output file is not within workspace, use absolute path resolution
+            output_rel = Path("output") / output_file.name
 
         # Use Cairo-only Mermaid rendering via online Kroki service
         # This eliminates the need for local Puppeteer/Chromium dependencies
@@ -440,8 +551,15 @@ if __name__ == "__main__":
         dpi: int | None = 300,
     ) -> subprocess.CompletedProcess:
         """Convert SVG to other formats using CairoSVG with optimized execution."""
-        input_rel = input_file.relative_to(self.workspace_dir)
-        output_rel = output_file.relative_to(self.workspace_dir)
+        try:
+            input_rel = input_file.relative_to(self.workspace_dir)
+        except ValueError:
+            input_rel = Path(input_file.name)
+        
+        try:
+            output_rel = output_file.relative_to(self.workspace_dir)
+        except ValueError:
+            output_rel = Path("output") / output_file.name
 
         # Build Python command for Cairo conversion
         cairo_cmd = (
@@ -467,12 +585,19 @@ if __name__ == "__main__":
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess:
         """Execute a Python script with optimized Docker execution."""
-        script_rel = script_file.relative_to(self.workspace_dir)
+        try:
+            script_rel = script_file.relative_to(self.workspace_dir)
+        except ValueError:
+            script_rel = Path(script_file.name)
+        
         docker_working_dir = "/workspace"
 
         if working_dir:
-            work_rel = working_dir.relative_to(self.workspace_dir)
-            docker_working_dir = f"/workspace/{work_rel}"
+            try:
+                work_rel = working_dir.relative_to(self.workspace_dir)
+                docker_working_dir = f"/workspace/{work_rel}"
+            except ValueError:
+                docker_working_dir = "/workspace/output"
 
         return self.run_command(
             command=["python", f"/workspace/{script_rel}"],
@@ -488,12 +613,19 @@ if __name__ == "__main__":
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess:
         """Execute an R script with optimized Docker execution."""
-        script_rel = script_file.relative_to(self.workspace_dir)
+        try:
+            script_rel = script_file.relative_to(self.workspace_dir)
+        except ValueError:
+            script_rel = Path(script_file.name)
+        
         docker_working_dir = "/workspace"
 
         if working_dir:
-            work_rel = working_dir.relative_to(self.workspace_dir)
-            docker_working_dir = f"/workspace/{work_rel}"
+            try:
+                work_rel = working_dir.relative_to(self.workspace_dir)
+                docker_working_dir = f"/workspace/{work_rel}"
+            except ValueError:
+                docker_working_dir = "/workspace/output"
 
         return self.run_command(
             command=["Rscript", f"/workspace/{script_rel}"],
@@ -506,12 +638,19 @@ if __name__ == "__main__":
         self, tex_file: Path, working_dir: Path | None = None, passes: int = 3
     ) -> list[subprocess.CompletedProcess]:
         """Run LaTeX compilation with multiple passes in Docker."""
-        tex_rel = tex_file.relative_to(self.workspace_dir)
+        try:
+            tex_rel = tex_file.relative_to(self.workspace_dir)
+        except ValueError:
+            tex_rel = Path(tex_file.name)
+        
         docker_working_dir = "/workspace"
 
         if working_dir:
-            work_rel = working_dir.relative_to(self.workspace_dir)
-            docker_working_dir = f"/workspace/{work_rel}"
+            try:
+                work_rel = working_dir.relative_to(self.workspace_dir)
+                docker_working_dir = f"/workspace/{work_rel}"
+            except ValueError:
+                docker_working_dir = "/workspace/output"
 
         results = []
         session_key = "latex_compilation"
@@ -526,14 +665,14 @@ if __name__ == "__main__":
 
             # Run bibtex after first pass if bib file exists
             if i == 0:
-                bib_file = tex_file.with_suffix(".bib")
-                if bib_file.exists():
-                    bib_result = self.run_command(
-                        command=["bibtex", tex_rel.stem],
-                        working_dir=docker_working_dir,
-                        session_key=session_key,
-                    )
-                    results.append(bib_result)
+                # Check for bib file in the working directory
+                bib_file_name = "03_REFERENCES.bib"
+                bib_result = self.run_command(
+                    command=["sh", "-c", f"if [ -f {bib_file_name} ]; then bibtex {tex_rel.stem}; fi"],
+                    working_dir=docker_working_dir,
+                    session_key=session_key,
+                )
+                results.append(bib_result)
 
         return results
 
@@ -608,13 +747,102 @@ if __name__ == "__main__":
 
         return stats
 
+    def warmup_session(self, session_key: str, image: str | None = None) -> bool:
+        """Pre-warm a Docker session for faster subsequent operations."""
+        target_image = image or self.default_image
+        
+        # Ensure image is available
+        if not self.pull_image(target_image):
+            return False
+        
+        # Create session if it doesn't exist
+        session = self._get_or_create_session(session_key, target_image)
+        
+        if session and session.is_active():
+            # Run a simple health check to warm up the container
+            try:
+                result = self.run_command(
+                    command=["echo", "warmup"], 
+                    session_key=session_key,
+                    timeout=10
+                )
+                return result.returncode == 0
+            except Exception:
+                return False
+        
+        return False
+    
+    def health_check_session(self, session_key: str) -> bool:
+        """Check if a specific session is healthy and responsive."""
+        if session_key not in self._active_sessions:
+            return False
+        
+        session = self._active_sessions[session_key]
+        if not session.is_active():
+            return False
+        
+        try:
+            result = self.run_command(
+                command=["echo", "health_check"], 
+                session_key=session_key,
+                timeout=5
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
+
+    def initialize_common_sessions(self) -> dict[str, bool]:
+        """Pre-initialize common Docker sessions for faster operations."""
+        common_sessions = {
+            "validation": self.warmup_session("validation"),
+            "mermaid_generation": self.warmup_session("mermaid_generation"),
+            "cairo_conversion": self.warmup_session("cairo_conversion"),
+            "python_execution": self.warmup_session("python_execution"),
+            "r_execution": self.warmup_session("r_execution"),
+            "latex_compilation": self.warmup_session("latex_compilation"),
+        }
+        return common_sessions
+
+    def get_container_info(self, session_key: str) -> dict[str, str] | None:
+        """Get detailed information about a container session."""
+        if session_key not in self._active_sessions:
+            return None
+        
+        session = self._active_sessions[session_key]
+        try:
+            # Get container details
+            inspect_cmd = [
+                "docker", "container", "inspect", session.container_id,
+                "--format", "{{json .}}"
+            ]
+            result = subprocess.run(
+                inspect_cmd, capture_output=True, text=True, timeout=10
+            )
+            
+            if result.returncode == 0:
+                import json
+                container_info = json.loads(result.stdout)
+                return {
+                    "id": session.container_id[:12],
+                    "image": session.image,
+                    "status": container_info.get("State", {}).get("Status", "unknown"),
+                    "created": container_info.get("Created", "unknown"),
+                    "platform": container_info.get("Platform", "unknown"),
+                }
+        except Exception:
+            pass
+        
+        return None
+
     def enable_aggressive_cleanup(self, enabled: bool = True) -> None:
         """Enable aggressive session cleanup for resource-constrained environments."""
         if enabled:
             self._session_timeout = 60  # 1 minute for aggressive cleanup
+            self._max_sessions = 2  # Fewer concurrent sessions
             self.enable_session_reuse = False  # Disable session reuse
         else:
-            self._session_timeout = 300  # 5 minutes default
+            self._session_timeout = 600  # 10 minutes default
+            self._max_sessions = 5  # Normal concurrent sessions
             self.enable_session_reuse = True
 
     def __del__(self):

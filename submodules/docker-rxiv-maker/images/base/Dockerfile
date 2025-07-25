@@ -132,8 +132,38 @@ RUN echo 'options(repos = c(CRAN = "https://packagemanager.rstudio.com/cran/__li
     && echo 'options(Ncpus = parallel::detectCores())' >> /usr/lib/R/etc/Rprofile.site \
     && echo 'options(bitmapType = "cairo")' >> /usr/lib/R/etc/Rprofile.site
 
-# Pre-install additional R graphics packages
-RUN R -e "install.packages(c('optparse', 'svglite', 'Cairo', 'magick', 'rsvg'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+# Pre-install comprehensive R packages to eliminate runtime compilation
+# Optimized for Docker layer caching - stable packages first
+
+# Core R infrastructure packages (most stable - cache efficiently)
+RUN R -e "install.packages(c('cli', 'rlang', 'lifecycle', 'vctrs', 'digest', 'fastmap'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Essential graphics and visualization packages (high stability)
+RUN R -e "install.packages(c('ggplot2', 'scales', 'Cairo', 'svglite', 'magick', 'rsvg'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Data manipulation packages (high stability)
+RUN R -e "install.packages(c('dplyr', 'tidyr', 'readr', 'stringr', 'stringi', 'magrittr'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# System and development tools (moderate stability)
+RUN R -e "install.packages(c('fs', 'processx', 'ps', 'callr', 'withr', 'yaml', 'jsonlite', 'optparse'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Development and testing infrastructure (moderate stability)
+RUN R -e "install.packages(c('pkgbuild', 'pkgload', 'rprojroot', 'desc', 'brio', 'diffobj', 'waldo', 'praise'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Documentation and reporting tools (moderate stability)
+RUN R -e "install.packages(c('knitr', 'rmarkdown', 'evaluate', 'highr', 'xfun', 'tinytex', 'base64enc'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Network and web-related packages (higher change frequency)
+RUN R -e "install.packages(c('curl', 'httr', 'mime', 'openssl', 'askpass', 'sys'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Font and advanced graphics packages (higher change frequency)
+RUN R -e "install.packages(c('systemfonts', 'textshaping', 'fontBitstreamVera', 'fontLiberation', 'fontawesome', 'fontquiver'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Web UI and styling packages (highest change frequency - put last)
+RUN R -e "install.packages(c('htmltools', 'bslib', 'jquerylib', 'sass', 'cachem', 'memoise', 'rappdirs', 'lazyeval', 'rex'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
+
+# Testing and coverage packages (highest change frequency)
+RUN R -e "install.packages(c('testthat', 'covr', 'getopt', 'xml2'), repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores())"
 
 # ======================================================================
 # Node.js and Mermaid CLI Installation Stage (Minimal for SVG Generation)
@@ -280,32 +310,24 @@ ENV PATH="/root/.local/bin:$PATH"
 # Make uv available globally for all users
 RUN cp /root/.local/bin/uv /usr/local/bin/uv && chmod +x /usr/local/bin/uv
 
-# Install Python packages in stages for better error handling and caching
-# Stage 1: Core scientific libraries
+# Install Python packages in optimized stages for better caching
+# Core dependencies that rarely change (put first for better caching)
 RUN uv pip install --system --no-cache-dir \
     "numpy>=1.24.0,<2.0.0" \
     "scipy>=1.10.0,<2.0.0" \
+    "pandas>=2.0.0,<3.0.0" \
+    "Pillow>=9.0.0,<11.0.0" \
+    "PyYAML>=6.0.0,<7.0.0"
+
+# Graphics and visualization libraries (moderate change frequency)
+RUN uv pip install --system --no-cache-dir \
     "matplotlib>=3.7.0,<3.9.0" \
     "seaborn>=0.12.0,<0.14.0" \
-    "pandas>=2.0.0,<3.0.0" \
-    "Pillow>=9.0.0,<11.0.0"
-
-# Stage 2: Core utility libraries
-RUN uv pip install --system --no-cache-dir \
-    "pypdf>=3.0.0,<5.0.0" \
-    "PyYAML>=6.0.0,<7.0.0" \
-    "python-dotenv>=1.0.0,<2.0.0" \
-    "crossref-commons>=0.0.7,<1.0.0" \
-    "lazydocs>=0.4.8,<1.0.0" \
-    "types-requests>=2.32.4.20250611"
-
-# Stage 3: Cairo and graphics libraries (most problematic ones)
-RUN uv pip install --system --no-cache-dir \
     "pycairo>=1.25.0,<2.0.0" \
     "cairocffi>=1.6.0,<2.0.0" \
     "pygobject>=3.42.0,<4.0.0"
 
-# Stage 4: SVG and document processing libraries
+# Document processing libraries (moderate change frequency)
 RUN uv pip install --system --no-cache-dir \
     "cairosvg>=2.7.0,<3.0.0" \
     "svglib>=1.5.0,<2.0.0" \
@@ -313,9 +335,17 @@ RUN uv pip install --system --no-cache-dir \
     "tinycss2>=1.2.0,<2.0.0" \
     "cssselect2>=0.7.0,<1.0.0" \
     "defusedxml>=0.7.0,<1.0.0" \
-    "lxml>=4.9.0,<6.0.0"
+    "lxml>=4.9.0,<6.0.0" \
+    "pypdf>=3.0.0,<5.0.0"
 
-# Stage 5: Development and testing dependencies
+# Utility and application-specific libraries (higher change frequency)
+RUN uv pip install --system --no-cache-dir \
+    "python-dotenv>=1.0.0,<2.0.0" \
+    "crossref-commons>=0.0.7,<1.0.0" \
+    "lazydocs>=0.4.8,<1.0.0" \
+    "types-requests>=2.32.4.20250611"
+
+# Development and testing dependencies (highest change frequency - put last)
 RUN uv pip install --system --no-cache-dir \
     "pytest>=7.4,<8.0" \
     "py>=1.11.0,<2.0.0" \
@@ -363,29 +393,66 @@ RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache /tmp/fontconfig-c
     && chown -R rxivmaker:rxivmaker /home/rxivmaker/.R /home/rxivmaker/.cache /tmp/fontconfig-cache \
     && chmod -R 777 /tmp/fontconfig-cache
 
-# Create Cairo test script for validation
-RUN cat > /usr/local/bin/test-cairo.sh << 'EOF'
+# Create comprehensive Python dependency verification script
+RUN cat > /usr/local/bin/verify-python-deps.sh << 'EOF'
 #!/bin/bash
-echo "Testing Cairo SVG to PNG conversion..."
+echo "Verifying Python dependencies..."
+
+# Test cairosvg (most critical for figure generation)
+echo "Testing cairosvg import and functionality..."
 python3 -c "
+import sys
 import cairosvg
 import io
 from pathlib import Path
 
+print(f'Python path: {sys.executable}')
+print(f'Python version: {sys.version}')
+print(f'CairoSVG version: {cairosvg.__version__}')
+
 # Create test SVG
-svg_content = '''<?xml version='1.0' encoding='UTF-8'?>
-<svg width='200' height='100' xmlns='http://www.w3.org/2000/svg'>
-  <rect width='200' height='100' fill='lightblue' stroke='navy' stroke-width='2'/>
-  <text x='100' y='50' text-anchor='middle' font-family='Liberation Sans' font-size='16'>Cairo Test</text>
+svg_content = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<svg width=\"200\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\">
+  <rect width=\"200\" height=\"100\" fill=\"lightblue\" stroke=\"navy\" stroke-width=\"2\"/>
+  <text x=\"100\" y=\"50\" text-anchor=\"middle\" font-family=\"Liberation Sans\" font-size=\"16\">Cairo Test</text>
 </svg>'''
 
 # Convert to PNG
 png_data = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
 print(f'Successfully converted SVG to PNG ({len(png_data)} bytes)')
-print('Cairo functionality verified!')
+
+# Convert to PDF
+pdf_data = cairosvg.svg2pdf(bytestring=svg_content.encode('utf-8'))
+print(f'Successfully converted SVG to PDF ({len(pdf_data)} bytes)')
+
+print('✅ CairoSVG functionality verified!')
 "
+
+# Test other critical dependencies
+echo "Testing other Python dependencies..."
+python3 -c "
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import yaml
+import subprocess
+print('✅ Core scientific libraries verified!')
+"
+
+echo "All Python dependencies verified successfully!"
+EOF
+RUN chmod +x /usr/local/bin/verify-python-deps.sh
+
+# Create Cairo test script for backward compatibility
+RUN cat > /usr/local/bin/test-cairo.sh << 'EOF'
+#!/bin/bash
+/usr/local/bin/verify-python-deps.sh
 EOF
 RUN chmod +x /usr/local/bin/test-cairo.sh
+
+# Run dependency verification during build to catch issues early
+RUN /usr/local/bin/verify-python-deps.sh
 
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"

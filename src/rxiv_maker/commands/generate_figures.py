@@ -65,8 +65,13 @@ class FigureGenerator:
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def generate_all_figures(self):
-        """Generate all figures found in the figures directory."""
+    def generate_all_figures(self, parallel: bool = True, max_workers: int = 4):
+        """Generate all figures found in the figures directory.
+        
+        Args:
+            parallel: Enable parallel processing of figures
+            max_workers: Maximum number of worker threads for parallel processing
+        """
         print("Starting figure generation...")
 
         if not self.figures_dir.exists():
@@ -76,7 +81,7 @@ class FigureGenerator:
         print(f"Scanning for figures in: {self.figures_dir}")
         print("DEBUG: About to do file globbing...")
 
-        # Find all figure files - THIS IS WHERE IT MIGHT HANG
+        # Find all figure files
         try:
             if self.r_only:
                 print("DEBUG: r_only mode, getting R files...")
@@ -98,45 +103,131 @@ class FigureGenerator:
 
             print("DEBUG: File globbing completed successfully!")
 
-            # Now test calling individual generation methods
-            print("DEBUG: About to test Mermaid generation...")
-            if mermaid_files and not self.r_only:
-                print(f"Found {len(mermaid_files)} Mermaid file(s):")
-                for mmd_file in mermaid_files:
-                    print(f"  Processing: {mmd_file.name}")
-                    try:
-                        self.generate_mermaid_figure(mmd_file)
-                        print(f"  ✓ Completed: {mmd_file.name}")
-                    except Exception as e:
-                        print(f"  ✗ Failed: {mmd_file.name} - {e}")
-
-            print("DEBUG: About to test Python generation...")
-            if python_files and not self.r_only:
-                print(f"Found {len(python_files)} Python file(s):")
-                for py_file in python_files:
-                    print(f"  Processing: {py_file.name}")
-                    try:
-                        self.generate_python_figure(py_file)
-                        print(f"  ✓ Completed: {py_file.name}")
-                    except Exception as e:
-                        print(f"  ✗ Failed: {py_file.name} - {e}")
-
-            print("DEBUG: About to test R generation...")
-            if r_files:
-                print(f"Found {len(r_files)} R file(s):")
-                for r_file in r_files:
-                    print(f"  Processing: {r_file.name}")
-                    try:
-                        self.generate_r_figure(r_file)
-                        print(f"  ✓ Completed: {r_file.name}")
-                    except Exception as e:
-                        print(f"  ✗ Failed: {r_file.name} - {e}")
+            # Process figures with optional parallelization
+            if parallel and (len(mermaid_files) + len(python_files) + len(r_files)) > 1:
+                self._generate_figures_parallel(mermaid_files, python_files, r_files, max_workers)
+            else:
+                self._generate_figures_sequential(mermaid_files, python_files, r_files)
 
             print("DEBUG: All generation methods completed!")
 
         except Exception as e:
             print(f"DEBUG: Error in method: {e}")
             raise
+
+    def _generate_figures_sequential(self, mermaid_files, python_files, r_files):
+        """Generate figures sequentially (original behavior)."""
+        # Mermaid generation
+        print("DEBUG: About to test Mermaid generation...")
+        if mermaid_files and not self.r_only:
+            print(f"Found {len(mermaid_files)} Mermaid file(s):")
+            for mmd_file in mermaid_files:
+                print(f"  Processing: {mmd_file.name}")
+                try:
+                    self.generate_mermaid_figure(mmd_file)
+                    print(f"  ✓ Completed: {mmd_file.name}")
+                except Exception as e:
+                    print(f"  ✗ Failed: {mmd_file.name} - {e}")
+
+        # Python generation
+        print("DEBUG: About to test Python generation...")
+        if python_files and not self.r_only:
+            print(f"Found {len(python_files)} Python file(s):")
+            for py_file in python_files:
+                print(f"  Processing: {py_file.name}")
+                try:
+                    self.generate_python_figure(py_file)
+                    print(f"  ✓ Completed: {py_file.name}")
+                except Exception as e:
+                    print(f"  ✗ Failed: {py_file.name} - {e}")
+
+        # R generation
+        print("DEBUG: About to test R generation...")
+        if r_files:
+            print(f"Found {len(r_files)} R file(s):")
+            for r_file in r_files:
+                print(f"  Processing: {r_file.name}")
+                try:
+                    self.generate_r_figure(r_file)
+                    print(f"  ✓ Completed: {r_file.name}")
+                except Exception as e:
+                    print(f"  ✗ Failed: {r_file.name} - {e}")
+
+    def _generate_figures_parallel(self, mermaid_files, python_files, r_files, max_workers):
+        """Generate figures in parallel using ThreadPoolExecutor."""
+        import concurrent.futures
+        import threading
+        
+        print(f"Using parallel processing with {max_workers} workers")
+        
+        # Create thread-safe print function
+        print_lock = threading.Lock()
+        def safe_print(*args, **kwargs):
+            with print_lock:
+                print(*args, **kwargs)
+        
+        def process_figure(file_info):
+            """Process a single figure file."""
+            file_path, file_type = file_info
+            try:
+                safe_print(f"  [Parallel] Processing: {file_path.name}")
+                
+                if file_type == "mermaid":
+                    self.generate_mermaid_figure(file_path)
+                elif file_type == "python":
+                    self.generate_python_figure(file_path)
+                elif file_type == "r":
+                    self.generate_r_figure(file_path)
+                
+                safe_print(f"  [Parallel] ✓ Completed: {file_path.name}")
+                return True, file_path.name, None
+            except Exception as e:
+                safe_print(f"  [Parallel] ✗ Failed: {file_path.name} - {e}")
+                return False, file_path.name, str(e)
+        
+        # Prepare work items
+        work_items = []
+        
+        if mermaid_files and not self.r_only:
+            work_items.extend([(f, "mermaid") for f in mermaid_files])
+        
+        if python_files and not self.r_only:
+            work_items.extend([(f, "python") for f in python_files])
+        
+        if r_files:
+            work_items.extend([(f, "r") for f in r_files])
+        
+        if not work_items:
+            print("No figures to process")
+            return
+        
+        safe_print(f"Processing {len(work_items)} figures in parallel...")
+        
+        # Process figures in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all tasks
+            future_to_file = {
+                executor.submit(process_figure, item): item[0] 
+                for item in work_items
+            }
+            
+            # Collect results
+            completed = 0
+            failed = 0
+            
+            for future in concurrent.futures.as_completed(future_to_file):
+                file_path = future_to_file[future]
+                try:
+                    success, filename, error = future.result()
+                    if success:
+                        completed += 1
+                    else:
+                        failed += 1
+                except Exception as exc:
+                    safe_print(f"  [Parallel] ✗ Exception for {file_path.name}: {exc}")
+                    failed += 1
+            
+            safe_print(f"Parallel processing completed: {completed} successful, {failed} failed")
 
     def generate_mermaid_figure(self, mmd_file):
         """Generate figure from Mermaid diagram file using two-step SVG process."""
@@ -625,6 +716,15 @@ def main():
     parser.add_argument("--r-only", action="store_true", help="Process only R files")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument(
+        "--parallel", action="store_true", default=True, help="Enable parallel processing (default: True)"
+    )
+    parser.add_argument(
+        "--no-parallel", action="store_true", help="Disable parallel processing"
+    )
+    parser.add_argument(
+        "--max-workers", type=int, default=4, help="Maximum number of parallel workers (default: 4)"
+    )
+    parser.add_argument(
         "--engine",
         default=os.environ.get("RXIV_ENGINE", "local"),
         choices=["local", "docker"],
@@ -645,7 +745,11 @@ def main():
     if args.verbose:
         generator.verbose = args.verbose
 
-    generator.generate_all_figures()
+    # Determine parallel processing settings
+    use_parallel = args.parallel and not args.no_parallel
+    max_workers = max(1, min(args.max_workers, 8))  # Limit to reasonable range
+
+    generator.generate_all_figures(parallel=use_parallel, max_workers=max_workers)
     print("Figure generation complete!")
 
 
