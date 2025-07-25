@@ -345,41 +345,6 @@ class DockerManager:
         input_rel = input_file.relative_to(self.workspace_dir)
         output_rel = output_file.relative_to(self.workspace_dir)
 
-        # First, try to ensure Chromium is available in the container
-        # Install chromium-browser if not present (for Cairo-only images)
-        install_cmd = [
-            "sh",
-            "-c",
-            "if ! command -v chromium-browser >/dev/null 2>&1 && ! command -v google-chrome >/dev/null 2>&1; then "
-            "echo 'Installing minimal Chromium for Mermaid...'; "
-            "apt-get update -qq && apt-get install -y -qq chromium-browser --no-install-recommends; "
-            "fi",
-        ]
-
-        # Run the installation command first
-        install_result = self.run_command(
-            command=install_cmd, session_key="mermaid_setup"
-        )
-        if install_result.returncode != 0:
-            print(f"Warning: Could not install Chromium: {install_result.stderr}")
-
-        # Determine available browser
-        browser_check_cmd = [
-            "sh",
-            "-c",
-            "if command -v chromium-browser >/dev/null 2>&1; then echo '/usr/bin/chromium-browser'; "
-            "elif command -v google-chrome >/dev/null 2>&1; then echo '/usr/bin/google-chrome'; "
-            "else echo 'none'; fi",
-        ]
-
-        browser_result = self.run_command(
-            command=browser_check_cmd, session_key="mermaid_setup"
-        )
-        browser_path = (
-            browser_result.stdout.strip() if browser_result.returncode == 0 else "none"
-        )
-
-        # Build Mermaid command with appropriate Puppeteer configuration
         cmd_parts = [
             "mmdc",
             "-i",
@@ -390,34 +355,11 @@ class DockerManager:
             background_color,
         ]
 
-        # Set Docker-friendly environment variables for Puppeteer
-        docker_env = {
-            "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true",
-            "PUPPETEER_CACHE_DIR": "/tmp/.cache/puppeteer",
-        }
-
-        # Configure Puppeteer based on available browser
-        if browser_path != "none":
-            docker_env["PUPPETEER_EXECUTABLE_PATH"] = browser_path
-            # Add Docker-friendly Puppeteer configuration
-            cmd_parts.extend(
-                [
-                    "--puppeteerConfig",
-                    '{"args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--disable-web-security"]}',
-                ]
-            )
-        else:
-            print("Warning: No suitable browser found for Mermaid rendering")
-
         if config_file:
             config_rel = config_file.relative_to(self.workspace_dir)
             cmd_parts.extend(["-c", f"/workspace/{config_rel}"])
 
-        return self.run_command(
-            command=cmd_parts,
-            session_key="mermaid_generation",
-            environment=docker_env,
-        )
+        return self.run_command(command=cmd_parts, session_key="mermaid_generation")
 
     def run_cairo_conversion(
         self,
