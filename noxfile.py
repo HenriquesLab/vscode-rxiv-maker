@@ -48,6 +48,43 @@ def tests(session, engine):
         "--timeout=120",
         "-m",
         "not slow",
+        "-n",
+        "auto",  # Enable parallel execution with pytest-xdist
+        "--dist=worksteal",  # Optimize work distribution
+        *session.posargs,
+    )
+
+
+@nox.session(name="test-fast", python="3.11")
+def test_fast(session):
+    """Run tests with maximum parallelization and class-scoped fixtures."""
+    # Install dependencies using uv
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run(
+        "uv",
+        "pip",
+        "install",
+        "pytest>=7.4.0",
+        "pytest-timeout>=2.4.0",
+        "pytest-xdist>=3.8.0",
+        external=True,
+    )
+    
+    session.log("Running optimized test suite with maximum parallelization")
+    
+    # Run with maximum performance settings
+    session.run(
+        "pytest",
+        "--engine=local",
+        "-v",
+        "--timeout=120",
+        "-m",
+        "not slow",
+        "-n",
+        "auto",  # Auto-detect CPU cores
+        "--dist=worksteal",  # Optimize work distribution
+        "--tb=short",  # Shorter traceback for speed
+        "--no-cov",  # Disable coverage for speed
         *session.posargs,
     )
 

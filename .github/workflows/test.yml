@@ -210,6 +210,73 @@ jobs:
         with:
           test-type: integration
 
+  multi-engine:
+    name: Multi-Engine Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [setup, test]
+    if: needs.setup.outputs.test-scope == 'comprehensive'
+    strategy:
+      matrix:
+        engine: [local, docker]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+        with:
+          python-version: '3.11'
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-latex-base \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-science \
+            texlive-plain-generic
+
+      - name: Setup Docker (if needed)
+        if: matrix.engine == 'docker'
+        run: |
+          # Ensure Docker is running
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+          # Pull the latest rxiv-maker base image
+          docker pull henriqueslab/rxiv-maker-base:latest || echo "Failed to pull image, will use local build"
+
+      - name: Run multi-engine integration tests
+        run: |
+          echo "Running multi-engine tests with engine: ${{ matrix.engine }}"
+
+          # Run engine-specific tests
+          uv run pytest tests/integration/test_example_manuscript.py::TestExampleManuscript::test_rxiv_pdf_example_manuscript_cli \
+            --engine=${{ matrix.engine }} -v -s
+
+          uv run pytest tests/integration/test_validation_workflow.py::TestValidationWorkflow::test_makefile_validation_valid_manuscript \
+            --engine=${{ matrix.engine }} -v -s
+
+          uv run pytest tests/integration/test_pypi_package_integration.py::TestPyPIPackageIntegration::test_cli_init_and_build_workflow \
+            --engine=${{ matrix.engine }} -v -s
+
+      - name: Upload multi-engine test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-engine-test-results-${{ matrix.engine }}
+          path: |
+            test-results/
+            logs/
+          retention-days: 7
+
   build:
     name: Build & Test Distribution
     runs-on: ubuntu-latest
@@ -478,7 +545,7 @@ jobs:
     name: Test Summary
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [setup, test, integration, build, performance, security, ecosystem, docker-version-sync]
+    needs: [setup, test, integration, multi-engine, build, performance, security, ecosystem, docker-version-sync]
     if: always()
 
     steps:
