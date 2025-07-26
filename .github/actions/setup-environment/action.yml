@@ -46,6 +46,9 @@ runs:
         version: "latest"
         enable-cache: ${{ inputs.enable-cache }}
         cache-suffix: ${{ inputs.cache-suffix }}
+        cache-dependency-glob: "**/uv.lock"
+        prune-cache: true
+        ignore-nothing-to-cache: false
 
     - name: Install system dependencies (Linux)
       if: inputs.install-system-deps == 'true' && runner.os == 'Linux'

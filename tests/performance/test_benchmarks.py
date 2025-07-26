@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from rxiv_maker.converters.citation_processor import CitationProcessor
+from rxiv_maker.converters.citation_processor import convert_citations_to_latex
 from rxiv_maker.converters.md2tex import MarkdownToLaTeXConverter
 from rxiv_maker.processors.yaml_processor import YAMLProcessor
 from rxiv_maker.utils.file_helpers import copy_tree_optimized
@@ -49,7 +49,11 @@ keywords: ["benchmark", "performance", "testing"]
             main_content = "# Large Benchmark Manuscript\n\n"
             for i in range(100):
                 main_content += f"## Section {i + 1}\n\n"
-                main_content += f"This section references @citation{i:03d} and shows ![Figure {i}](FIGURES/figure_{i % 50:03d}.png){{#fig:{i:03d}}}.\n\n"
+                main_content += (
+                    f"This section references @citation{i:03d} and shows "
+                    f"![Figure {i}](FIGURES/figure_{i % 50:03d}.png)"
+                    f"{{#fig:{i:03d}}}.\n\n"
+                )
 
             (manuscript_dir / "01_MAIN.md").write_text(main_content)
 
@@ -129,7 +133,8 @@ Mathematical equations: $E = mc^2$ and display equations:
 
 $$F_{i + 1} = F_i + F_{{i-1}}$$ {{#eq:fib{i}}}
 
-Citations like @reference{i:03d} and figure references ![Figure](FIGURES/fig{i}.png){{#fig:{i}}}.
+Citations like @reference{i:03d} and figure references
+![Figure](FIGURES/fig{i}.png){{#fig:{i}}}.
 
 ### Subsection {i + 1}.1
 
@@ -171,10 +176,8 @@ Lists and tables:
                 f"Reference @citation{i:03d} and @another{i:03d}. "
             )
 
-        processor = CitationProcessor()
-
         def process_citations():
-            return processor.process_citations(content_with_citations)
+            return convert_citations_to_latex(content_with_citations)
 
         result = benchmark(process_citations)
         assert result is not None

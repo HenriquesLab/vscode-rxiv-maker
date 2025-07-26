@@ -131,6 +131,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.setup.outputs.test-matrix) }}
       fail-fast: false
+      max-parallel: 6  # Limit concurrent jobs to optimize resource usage
     timeout-minutes: 45
 
     steps:
