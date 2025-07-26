@@ -7,9 +7,12 @@ from pathlib import Path
 
 import pytest
 
+from ..conftest import requires_latex
+
 
 @pytest.mark.integration
 @pytest.mark.slow
+@requires_latex
 class TestExampleManuscript:
     """Test the full pipeline for EXAMPLE_MANUSCRIPT."""
 

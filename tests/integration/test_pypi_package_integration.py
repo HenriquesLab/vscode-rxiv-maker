@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from ..conftest import requires_latex
+
 
 class TestPyPIPackageIntegration:
     """Test that the PyPI package contains all necessary files for building PDFs."""
@@ -84,6 +86,7 @@ class TestPyPIPackageIntegration:
             f"No .cls style files found. Package path: {package_path}"
         )
 
+    @requires_latex
     def test_cli_init_and_build_workflow(self):
         """Test full CLI workflow: init -> validate -> build."""
         with tempfile.TemporaryDirectory() as tmpdir:

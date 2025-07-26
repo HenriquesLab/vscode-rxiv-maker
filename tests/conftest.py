@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures for Rxiv-Maker tests."""
 
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -73,3 +74,31 @@ def sample_tex_template():
 <PY-RPL:MAIN-CONTENT>
 \\end{document}
 """
+
+
+def check_latex_available():
+    """Check if LaTeX is available in the system."""
+    try:
+        result = subprocess.run(
+            ["pdflatex", "--version"], capture_output=True, text=True
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, OSError):
+        return False
+
+
+def check_r_available():
+    """Check if R is available in the system."""
+    try:
+        result = subprocess.run(["R", "--version"], capture_output=True, text=True)
+        return result.returncode == 0
+    except (FileNotFoundError, OSError):
+        return False
+
+
+# Markers for conditional test execution
+requires_latex = pytest.mark.skipif(
+    not check_latex_available(), reason="LaTeX not available"
+)
+
+requires_r = pytest.mark.skipif(not check_r_available(), reason="R not available")

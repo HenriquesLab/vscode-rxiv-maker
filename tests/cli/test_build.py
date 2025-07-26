@@ -41,30 +41,32 @@ authors:
             (manuscript_dir / "01_MAIN.md").write_text("# Test\n\nContent")
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
-            with patch(
-                "rxiv_maker.cli.commands.build.os.environ.get",
-                return_value=str(manuscript_dir),
-            ):
-                with patch(
+            with (
+                patch(
+                    "rxiv_maker.cli.commands.build.os.environ.get",
+                    return_value=str(manuscript_dir),
+                ),
+                patch(
                     "rxiv_maker.cli.commands.build.BuildManager"
-                ) as mock_build_manager:
-                    mock_build_manager.return_value.build.return_value = True
+                ) as mock_build_manager,
+            ):
+                mock_build_manager.return_value.build.return_value = True
 
-                    result = self.runner.invoke(
-                        build, obj={"verbose": False, "engine": "local"}
-                    )
+                result = self.runner.invoke(
+                    build, obj={"verbose": False, "engine": "local"}
+                )
 
-                    # Debug: print result output and exit code
-                    print(f"Exit code: {result.exit_code}")
-                    print(f"Output: {result.output}")
-                    if result.exception:
-                        print(f"Exception: {result.exception}")
+                # Debug: print result output and exit code
+                print(f"Exit code: {result.exit_code}")
+                print(f"Output: {result.output}")
+                if result.exception:
+                    print(f"Exception: {result.exception}")
 
-                    # Should not exit with error if manuscript exists
-                    # Note: This will fail in the actual test due to missing dependencies
-                    # but we can test the argument parsing
-                    if result.exit_code == 0:
-                        mock_build_manager.assert_called_once()
+                # Should not exit with error if manuscript exists
+                # Note: This will fail in the actual test due to missing
+                # dependencies but we can test the argument parsing
+                if result.exit_code == 0:
+                    mock_build_manager.assert_called_once()
 
     def test_build_custom_manuscript_path(self):
         """Test build with custom manuscript path."""
@@ -83,11 +85,12 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             with patch(
-                "rxiv_maker.cli.commands.build.BuildManager"
+                "rxiv_maker.commands.build_manager.BuildManager"
             ) as mock_build_manager:
-                mock_build_manager.return_value.build.return_value = True
+                mock_instance = mock_build_manager.return_value
+                mock_instance.run_full_build.return_value = True
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     build,
                     [str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
@@ -122,11 +125,12 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             with patch(
-                "rxiv_maker.cli.commands.build.BuildManager"
+                "rxiv_maker.commands.build_manager.BuildManager"
             ) as mock_build_manager:
-                mock_build_manager.return_value.build.return_value = True
+                mock_instance = mock_build_manager.return_value
+                mock_instance.run_full_build.return_value = True
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     build,
                     [
                         str(manuscript_dir),
@@ -144,10 +148,10 @@ authors:
                 args, kwargs = mock_build_manager.call_args
                 assert kwargs["manuscript_path"] == str(manuscript_dir)
                 assert kwargs["output_dir"] == "custom_output"
-                assert kwargs["force_figures"] == True
-                assert kwargs["skip_validation"] == True
+                assert kwargs["force_figures"] is True
+                assert kwargs["skip_validation"] is True
                 assert kwargs["track_changes_tag"] == "v1.0.0"
-                assert kwargs["verbose"] == True
+                assert kwargs["verbose"] is True
 
     def test_build_failure(self):
         """Test build failure handling."""
