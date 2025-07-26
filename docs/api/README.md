@@ -1,20 +1,4 @@
-<!-- markdownlint-disable -->
+# API Documentation
 
-# API Overview
+Welcome to the API documentation for rxiv-maker.
 
-## Modules
-
-- No modules
-
-## Classes
-
-- No classes
-
-## Functions
-
-- No functions
-
-
----
-
-_This file was automatically generated via [lazydocs](https://github.com/ml-tooling/lazydocs)._

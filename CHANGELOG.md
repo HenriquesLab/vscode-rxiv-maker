@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.9] - 2025-07-26
+
+### Fixed
+- **Critical CI/CD Pipeline Issues**: Comprehensive fixes to improve build reliability and stability
+  - Resolve Docker build shell escaping failures in Dockerfile with proper command formatting
+  - Improve cross-platform Windows dependency handling in setup-environment GitHub Action
+  - Enhance test execution error handling and exit code capture for better failure detection
+  - Add UTF-8 encoding consistency across all GitHub workflows to prevent encoding issues
+  - Disable Docker provenance/SBOM generation to prevent cache conflicts and build failures
+  - Optimize multi-architecture build performance with streamlined Docker configurations
+  - Fixed Docker base image build failures by adding missing system dependencies
+  - Resolved package conflicts in Docker build by replacing libmariadb-dev with proper dependencies
+  - Address root causes of workflow failures that were impacting CI/CD pipeline stability
+
 ### Changed
 - **Project Optimization and Cleanup**: Comprehensive codebase organization and maintenance improvements
   - Removed obsolete test files and temporary artifacts (14 deleted files)
