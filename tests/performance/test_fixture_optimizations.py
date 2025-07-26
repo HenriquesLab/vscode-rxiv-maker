@@ -8,6 +8,9 @@ from pathlib import Path
 
 import pytest
 
+# Mark all tests in this file as CI excluded due to performance sensitivity
+pytestmark = [pytest.mark.performance, pytest.mark.ci_exclude]
+
 
 class OptimizedManuscriptFixtures:
     """Optimized fixtures for manuscript testing."""
@@ -228,7 +231,7 @@ Caching is effective for test performance.
         def scope_simulation():
             # Function-scoped (highest overhead)
             function_time = 0
-            for i in range(3):
+            for _ in range(3):
                 start = time.perf_counter()
                 with tempfile.TemporaryDirectory() as tmpdir:
                     Path(tmpdir, "test.txt").write_text("test")
@@ -237,8 +240,8 @@ Caching is effective for test performance.
             # Class-scoped simulation (medium overhead)
             start = time.perf_counter()
             with tempfile.TemporaryDirectory() as tmpdir:
-                for i in range(3):
-                    Path(tmpdir, f"test_{i}.txt").write_text("test")
+                for j in range(3):
+                    Path(tmpdir, f"test_{j}.txt").write_text("test")
             class_time = time.perf_counter() - start
 
             # Session-scoped simulation (lowest overhead)
@@ -272,7 +275,7 @@ class TestContainerOptimizations:
             startup_times = []
 
             # Scenario 1: Container per test (high overhead)
-            for i in range(3):
+            for _i in range(3):
                 start = time.perf_counter()
                 # Simulate container startup
                 time.sleep(0.05)  # 50ms startup time
@@ -286,7 +289,7 @@ class TestContainerOptimizations:
             start = time.perf_counter()
             # Simulate single container startup
             time.sleep(0.05)  # 50ms startup time
-            for i in range(3):
+            for _i in range(3):
                 # Simulate test work only
                 time.sleep(0.01)  # 10ms test work per test
             # Simulate single container shutdown

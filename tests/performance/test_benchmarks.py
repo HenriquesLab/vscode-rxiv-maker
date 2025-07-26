@@ -12,6 +12,7 @@ from rxiv_maker.utils.file_helpers import copy_tree_optimized
 
 
 @pytest.mark.performance
+@pytest.mark.ci_exclude  # Exclude from CI due to timing sensitivity
 class TestFileOperationBenchmarks:
     """Benchmark file operations that are used frequently in tests."""
 
@@ -114,6 +115,7 @@ keywords: ["benchmark", "performance", "testing"]
 
 
 @pytest.mark.performance
+@pytest.mark.ci_exclude  # Exclude from CI due to timing sensitivity
 class TestConversionBenchmarks:
     """Benchmark conversion operations."""
 
@@ -213,6 +215,7 @@ Lists and tables:
 
 
 @pytest.mark.performance
+@pytest.mark.ci_exclude  # Exclude from CI due to timing sensitivity
 class TestFixturePerformanceBenchmarks:
     """Benchmark test fixture operations."""
 
@@ -261,6 +264,7 @@ class TestFixturePerformanceBenchmarks:
 
 @pytest.mark.performance
 @pytest.mark.slow
+@pytest.mark.ci_exclude  # Exclude from CI due to timing sensitivity
 class TestIntegrationBenchmarks:
     """Benchmark integration test scenarios."""
 

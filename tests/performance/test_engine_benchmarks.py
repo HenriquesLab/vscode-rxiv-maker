@@ -7,6 +7,9 @@ from pathlib import Path
 
 import pytest
 
+# Mark all tests in this file as CI excluded due to performance sensitivity
+pytestmark = [pytest.mark.performance, pytest.mark.ci_exclude, pytest.mark.slow]
+
 
 @pytest.mark.performance
 @pytest.mark.slow
@@ -139,7 +142,7 @@ class TestOptimizedFixtureBenchmarks:
         def function_scoped_setup():
             # Simulate function-scoped fixture setup
             results = []
-            for i in range(10):
+            for _i in range(10):
                 with tempfile.TemporaryDirectory() as tmpdir:
                     manuscript_dir = Path(tmpdir) / "manuscript"
                     manuscript_dir.mkdir()
@@ -236,7 +239,7 @@ class TestParallelExecutionBenchmarks:
         def sequential_tests():
             # Simulate running tests sequentially
             total_time = 0
-            for i in range(10):
+            for _i in range(10):
                 start = time.perf_counter()
                 # Simulate test work
                 time.sleep(0.01)  # 10ms per test
