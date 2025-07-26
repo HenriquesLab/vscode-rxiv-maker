@@ -65,10 +65,17 @@ runs:
       shell: bash
       run: |
         echo "Running unit tests with enhanced error reporting..."
+        echo "Python version: $(python --version)"
+        echo "UV version: $(uv --version)"
+        echo "Working directory: $(pwd)"
+        echo "Available memory: $(free -h 2>/dev/null || echo 'N/A')"
 
         # Set test result output
         echo "result=success" >> $GITHUB_OUTPUT
         echo "coverage-file=coverage.xml" >> $GITHUB_OUTPUT
+
+        # Verify dependencies are installed
+        uv pip list | head -10
 
         # Run tests with detailed output and continue on failure for better debugging
         set +e  # Don't exit on failure to capture exit code
@@ -79,7 +86,7 @@ runs:
           PYTEST_FLAGS="-n 1 --cache-clear --disable-warnings --tb=short"
         else
           # Unix-like systems can use parallel execution, but limit workers
-          PYTEST_FLAGS="-n 4 --tb=short"  # Limit to 4 workers for better resource management
+          PYTEST_FLAGS="-n 3 --tb=short"  # Reduced to 3 workers for better stability
         fi
 
         uv run pytest tests/ \
