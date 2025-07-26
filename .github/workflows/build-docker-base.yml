@@ -126,6 +126,8 @@ jobs:
         cache-to: type=gha,mode=max
         build-args: |
           BUILDKIT_INLINE_CACHE=1
+        provenance: false  # Disable provenance to prevent cache issues
+        sbom: false       # Disable SBOM to prevent cache issues
 
 
     - name: Update repository description

@@ -53,6 +53,7 @@ runs:
         echo "coverage-file=coverage.xml" >> $GITHUB_OUTPUT
 
         # Run tests with detailed output and continue on failure for better debugging
+        set +e  # Don't exit on failure to capture exit code
         uv run pytest tests/ \
           --cov=rxiv_maker \
           --cov-report=xml \
@@ -64,10 +65,14 @@ runs:
           -v \
           --durations=10 \
           --strict-markers \
-          --junit-xml=pytest-results.xml || {
-            echo "result=failure" >> $GITHUB_OUTPUT
-            TEST_EXIT_CODE=$?
-          }
+          --junit-xml=pytest-results.xml
+        TEST_EXIT_CODE=$?
+        set -e  # Re-enable exit on error
+
+        # Set result based on exit code
+        if [ $TEST_EXIT_CODE -ne 0 ]; then
+          echo "result=failure" >> $GITHUB_OUTPUT
+        fi
 
         # Report test results even if some failed
         if [ -f "pytest-results.xml" ]; then

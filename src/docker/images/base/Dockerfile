@@ -352,43 +352,45 @@ RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache /tmp/fontconfig-c
     && chown -R rxivmaker:rxivmaker /home/rxivmaker/.R /home/rxivmaker/.cache /tmp/fontconfig-cache \
     && chmod -R 777 /tmp/fontconfig-cache
 
-# Create Python dependency verification script
-RUN printf '#!/bin/bash\n\
-echo "Verifying Python dependencies..."\n\
-\n\
-# Test mermaid.ink integration (requests library)\n\
-echo "Testing requests library for mermaid.ink API..."\n\
-python3 -c "\n\
-import sys\n\
-import requests\n\
-import base64\n\
-\n\
-print(f'"'"'Python path: {sys.executable}'"'"')\n\
-print(f'"'"'Python version: {sys.version}'"'"')\n\
-print(f'"'"'Requests version: {requests.__version__}'"'"')\n\
-\n\
-# Test mermaid.ink API connection\n\
-test_diagram = 'graph TD; A-->B'\n\
-encoded = base64.b64encode(test_diagram.encode('"'"'utf-8'"'"')).decode('"'"'ascii'"'"')\n\
-api_url = f'"'"'https://mermaid.ink/svg/{encoded}'"'"'\n\
-print(f'"'"'Testing mermaid.ink API: {api_url[:50]}...'"'"')\n\
-print('"'"'✅ Mermaid.ink API integration ready!'"'"')\n\
-"\n\
-\n\
-# Test other critical dependencies\n\
-echo "Testing other Python dependencies..."\n\
-python3 -c "\n\
-import matplotlib.pyplot as plt\n\
-import numpy as np\n\
-import pandas as pd\n\
-import seaborn as sns\n\
-import yaml\n\
-import subprocess\n\
-print('"'"'✅ Core scientific libraries verified!'"'"')\n\
-"\n\
-\n\
-echo "All Python dependencies verified successfully!"\n' > /usr/local/bin/verify-python-deps.sh \
-    && chmod +x /usr/local/bin/verify-python-deps.sh
+# Create Python dependency verification script using here document approach
+RUN cat > /usr/local/bin/verify-python-deps.sh << 'VERIFY_SCRIPT'
+#!/bin/bash
+echo "Verifying Python dependencies..."
+
+# Test mermaid.ink integration (requests library)
+echo "Testing requests library for mermaid.ink API..."
+python3 -c "
+import sys
+import requests
+import base64
+
+print(f'Python path: {sys.executable}')
+print(f'Python version: {sys.version}')
+print(f'Requests version: {requests.__version__}')
+
+# Test mermaid.ink API connection
+test_diagram = 'graph TD; A-->B'
+encoded = base64.b64encode(test_diagram.encode('utf-8')).decode('ascii')
+api_url = f'https://mermaid.ink/svg/{encoded}'
+print(f'Testing mermaid.ink API: {api_url[:50]}...')
+print('✅ Mermaid.ink API integration ready!')
+"
+
+# Test other critical dependencies
+echo "Testing other Python dependencies..."
+python3 -c "
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import yaml
+import subprocess
+print('✅ Core scientific libraries verified!')
+"
+
+echo "All Python dependencies verified successfully!"
+VERIFY_SCRIPT
+RUN chmod +x /usr/local/bin/verify-python-deps.sh
 
 # Create test script for backward compatibility
 RUN printf '#!/bin/bash\n/usr/local/bin/verify-python-deps.sh\n' > /usr/local/bin/test-deps.sh \

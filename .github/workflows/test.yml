@@ -52,6 +52,8 @@ env:
   FORCE_COLOR: 1
   PIP_DISABLE_PIP_VERSION_CHECK: 1
   PYTHONIOENCODING: utf-8
+  PYTHONUTF8: 1
+  UV_CACHE_DIR: ~/.cache/uv
 
 jobs:
   setup:
