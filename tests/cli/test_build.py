@@ -7,6 +7,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from rxiv_maker.cli.commands.build import build
+from rxiv_maker.core import logging_config
 
 
 class TestBuildCommand:
@@ -15,6 +16,11 @@ class TestBuildCommand:
     def setup_method(self):
         """Set up test environment."""
         self.runner = CliRunner()
+
+    def teardown_method(self):
+        """Clean up test environment, especially for Windows."""
+        # Ensure logging cleanup for Windows file locking issues
+        logging_config.cleanup()
 
     def test_build_help(self):
         """Test build command help."""

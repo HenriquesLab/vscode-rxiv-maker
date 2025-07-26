@@ -244,7 +244,8 @@ addopts = [
     "--strict-config",
     "--durations=10",  # Show slowest tests
     "--cov-report=term-missing:skip-covered",
-    "--dist=loadscope",  # Better parallelization with pytest-xdist
+    "--dist=worksteal",  # Optimized work distribution with pytest-xdist
+    "--maxfail=3",  # Stop after 3 failures for faster feedback
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
