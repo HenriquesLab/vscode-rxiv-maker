@@ -435,7 +435,7 @@ docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest bas
 docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:v1.4.8 bash
 
 # Inside container, run commands manually
-python src/py/commands/validate.py MANUSCRIPT
+rxiv validate MANUSCRIPT
 ```
 
 ---

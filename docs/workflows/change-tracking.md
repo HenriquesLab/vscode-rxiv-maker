@@ -95,7 +95,7 @@ make pdf-track-changes TAG=daily-$(date -d yesterday +%Y-%m-%d)
 make pdf-track-changes TAG=v1.0.0 MANUSCRIPT_PATH=MY_RESEARCH_PAPER
 
 # Use custom output location
-python src/py/commands/track_changes.py \
+rxiv track-changes \
     --manuscript-path MANUSCRIPT \
     --git-tag v1.0.0 \
     --output-dir custom_output \
@@ -233,7 +233,7 @@ git log --oneline -5
 
 ```bash
 # Verbose change tracking
-python src/py/commands/track_changes.py \
+rxiv track-changes \
     --manuscript-path MANUSCRIPT \
     --git-tag v1.0.0 \
     --verbose

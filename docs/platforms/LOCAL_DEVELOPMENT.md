@@ -262,18 +262,18 @@ code --install-extension James-Yu.latex-workshop
             "name": "Generate PDF",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/src/py/commands/generate_preprint.py",
+            "program": "${workspaceFolder}/src/rxiv_maker/commands/generate_preprint.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/src/py"
+                "PYTHONPATH": "${workspaceFolder}/src"
             }
         },
         {
             "name": "Generate Figures",
             "type": "python", 
             "request": "launch",
-            "program": "${workspaceFolder}/src/py/commands/generate_figures.py",
+            "program": "${workspaceFolder}/src/rxiv_maker/commands/generate_figures.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         }

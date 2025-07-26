@@ -12,10 +12,10 @@ make validate
 make validate MANUSCRIPT_PATH=MY_PAPER
 
 # Detailed validation with suggestions
-python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT
+python -m rxiv_maker.scripts.validate_manuscript --detailed MANUSCRIPT
 
 # Advanced validation options
-python src/py/commands/validate.py MANUSCRIPT --verbose --output detailed
+rxiv validate MANUSCRIPT --verbose --output detailed
 ```
 
 ## Validation Types
@@ -133,31 +133,31 @@ make validate && make pdf
 ### Script-based Validation
 ```bash
 # Basic validation
-python src/py/scripts/validate_manuscript.py MANUSCRIPT
+python -m rxiv_maker.scripts.validate_manuscript MANUSCRIPT
 
 # Detailed validation with context and suggestions
-python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT
+python -m rxiv_maker.scripts.validate_manuscript --detailed MANUSCRIPT
 
 # Quiet mode (errors only)
-python src/py/scripts/validate_manuscript.py --quiet MANUSCRIPT
+python -m rxiv_maker.scripts.validate_manuscript --quiet MANUSCRIPT
 
 # Verbose mode (all details)
-python src/py/scripts/validate_manuscript.py --verbose MANUSCRIPT
+python -m rxiv_maker.scripts.validate_manuscript --verbose MANUSCRIPT
 ```
 
 ### Advanced Validation Command
 ```bash
 # Comprehensive validation with rich output
-python src/py/commands/validate.py MANUSCRIPT
+rxiv validate MANUSCRIPT
 
 # Different output formats
-python src/py/commands/validate.py MANUSCRIPT --output basic
-python src/py/commands/validate.py MANUSCRIPT --output detailed
-python src/py/commands/validate.py MANUSCRIPT --output verbose
+rxiv validate MANUSCRIPT --output basic
+rxiv validate MANUSCRIPT --output detailed
+rxiv validate MANUSCRIPT --output verbose
 
 # Focus on specific validation types
-python src/py/commands/validate.py MANUSCRIPT --validators citation,reference
-python src/py/commands/validate.py MANUSCRIPT --skip-validators latex
+rxiv validate MANUSCRIPT --validators citation,reference
+rxiv validate MANUSCRIPT --skip-validators latex
 ```
 
 ## Understanding Validation Output
@@ -226,7 +226,7 @@ make validate MANUSCRIPT_PATH=NEW_PROJECT
 ### 2. Citation Issues
 ```bash
 # Check citation problems
-python src/py/commands/validate.py MANUSCRIPT --validators citation
+rxiv validate MANUSCRIPT --validators citation
 
 # Common fixes:
 # - Add missing references to 03_REFERENCES.bib
@@ -237,7 +237,7 @@ python src/py/commands/validate.py MANUSCRIPT --validators citation
 ### 3. Figure Problems
 ```bash
 # Check figure-related issues
-python src/py/commands/validate.py MANUSCRIPT --validators figure
+rxiv validate MANUSCRIPT --validators figure
 
 # Common fixes:
 # - Create missing figure files
@@ -248,7 +248,7 @@ python src/py/commands/validate.py MANUSCRIPT --validators figure
 ### 4. LaTeX Compilation Debugging
 ```bash
 # Check LaTeX-specific issues after a failed build
-python src/py/commands/validate.py MANUSCRIPT --validators latex
+rxiv validate MANUSCRIPT --validators latex
 
 # Common fixes based on log analysis:
 # - Fix special character escaping
@@ -290,7 +290,7 @@ alias build="make validate && make pdf"
 ### 2. Use Detailed Mode for Debugging
 ```bash
 # Get comprehensive feedback when troubleshooting
-python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT
+python -m rxiv_maker.scripts.validate_manuscript --detailed MANUSCRIPT
 ```
 
 ### 3. Fix Errors Before Warnings
@@ -326,7 +326,7 @@ python -m src.py.scripts.validate_manuscript MANUSCRIPT
 ```bash
 # Ensure you're in the rxiv-maker root directory
 cd /path/to/rxiv-maker
-python src/py/scripts/validate_manuscript.py MANUSCRIPT
+python -m rxiv_maker.scripts.validate_manuscript MANUSCRIPT
 ```
 
 #### Permission Issues

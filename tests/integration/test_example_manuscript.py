@@ -39,7 +39,7 @@ class TestExampleManuscript:
                 if workspace_test_dir.exists():
                     shutil.rmtree(workspace_test_dir)
                 shutil.copytree(src_path, workspace_test_dir, dirs_exist_ok=True)
-                
+
                 # Clean any existing output in workspace copy
                 workspace_output_dir = workspace_test_dir / "output"
                 if workspace_output_dir.exists():
@@ -52,14 +52,23 @@ class TestExampleManuscript:
                 if workspace_test_dir and workspace_test_dir.exists():
                     try:
                         shutil.rmtree(workspace_test_dir)
-                        print(f"\n🧹 Cleaned up temporary workspace: {workspace_test_dir}")
+                        print(
+                            f"\n🧹 Cleaned up temporary workspace: {workspace_test_dir}"
+                        )
                     except Exception as e:
-                        print(f"\n⚠️ Warning: Could not clean up {workspace_test_dir}: {e}")
+                        print(
+                            f"\n⚠️ Warning: Could not clean up {workspace_test_dir}: {e}"
+                        )
 
-    def test_rxiv_pdf_example_manuscript_cli(self, example_manuscript_copy, execution_engine):
+    def test_rxiv_pdf_example_manuscript_cli(
+        self, example_manuscript_copy, execution_engine
+    ):
         """Test full PDF generation using rxiv CLI command across engines."""
-        print(f"\n🔧 Running PDF generation test with {execution_engine.engine_type} engine")
-        
+        print(
+            f"\n🔧 Running PDF generation test with "
+            f"{execution_engine.engine_type} engine"
+        )
+
         # Use engine abstraction to handle local vs container execution
         if execution_engine.engine_type == "local":
             # Try uv run rxiv first, then fall back to python module if not available
@@ -71,7 +80,13 @@ class TestExampleManuscript:
             except (subprocess.CalledProcessError, FileNotFoundError):
                 # Fall back to python module call
                 result = execution_engine.run(
-                    ["python", "-m", "rxiv_maker.cli", "pdf", str(example_manuscript_copy)],
+                    [
+                        "python",
+                        "-m",
+                        "rxiv_maker.cli",
+                        "pdf",
+                        str(example_manuscript_copy),
+                    ],
                     cwd=Path.cwd(),
                 )
         else:
@@ -90,9 +105,11 @@ class TestExampleManuscript:
             figures_dir = example_manuscript_copy / "FIGURES"
         else:
             # For container execution, files are in the mounted workspace
-            output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
+            output_pdf = (
+                Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
+            )
             figures_dir = Path("TEMP_TEST_MANUSCRIPT") / "FIGURES"
-            
+
         assert output_pdf.exists(), f"Output PDF was not created at {output_pdf}"
         assert output_pdf.stat().st_size > 1000, "Output PDF is too small"
 
@@ -104,8 +121,8 @@ class TestExampleManuscript:
 
     def test_rxiv_pdf_example_manuscript_python(self, example_manuscript_copy):
         """Test full PDF generation using Python API."""
-        print(f"\n🔧 Running Python API test with local execution")
-        
+        print("\n🔧 Running Python API test with local execution")
+
         from rxiv_maker.commands.build_manager import BuildManager
 
         # Create build manager and run build
@@ -124,10 +141,14 @@ class TestExampleManuscript:
         assert output_pdf.exists(), "Output PDF was not created"
         assert output_pdf.stat().st_size > 1000, "Output PDF is too small"
 
-    def test_rxiv_validate_example_manuscript(self, example_manuscript_copy, execution_engine):
+    def test_rxiv_validate_example_manuscript(
+        self, example_manuscript_copy, execution_engine
+    ):
         """Test validation of EXAMPLE_MANUSCRIPT."""
-        print(f"\n🔧 Running validation test with {execution_engine.engine_type} engine")
-        
+        print(
+            f"\n🔧 Running validation test with {execution_engine.engine_type} engine"
+        )
+
         # Run figure generation first to ensure all figure files exist
         if execution_engine.engine_type == "local":
             try:
@@ -168,7 +189,7 @@ class TestExampleManuscript:
                 )
         else:
             # Container execution - use workspace paths
-            container_path = Path("/workspace") / "TEMP_TEST_MANUSCRIPT" 
+            container_path = Path("/workspace") / "TEMP_TEST_MANUSCRIPT"
             execution_engine.run(
                 ["rxiv", "figures", str(container_path)],
                 cwd="/workspace",
@@ -183,19 +204,26 @@ class TestExampleManuscript:
         assert result.returncode == 0, f"Validation failed: {result.stderr}"
         assert "✅" in result.stdout or "passed" in result.stdout.lower()
 
-    def test_rxiv_figures_example_manuscript(self, example_manuscript_copy, execution_engine):
+    def test_rxiv_figures_example_manuscript(
+        self, example_manuscript_copy, execution_engine
+    ):
         """Test figure generation for EXAMPLE_MANUSCRIPT."""
-        print(f"\n🔧 Running figure generation test with {execution_engine.engine_type} engine")
+        print(
+            f"\n🔧 Running figure generation test with "
+            f"{execution_engine.engine_type} engine"
+        )
         print(f"📁 Test manuscript path: {example_manuscript_copy}")
-        
+
         # Clean existing figures (including subdirectories)
         figures_dir = example_manuscript_copy / "FIGURES"
         print(f"📁 Figures directory: {figures_dir}")
-        
+
         # Count existing figures before cleanup
-        existing_figures = list(figures_dir.rglob("*.pdf")) + list(figures_dir.rglob("*.png"))
+        existing_figures = list(figures_dir.rglob("*.pdf")) + list(
+            figures_dir.rglob("*.png")
+        )
         print(f"🔍 Found {len(existing_figures)} existing figure files before cleanup")
-        
+
         for fig in figures_dir.rglob("*.pdf"):
             fig.unlink()
             print(f"🗑️ Deleted PDF: {fig}")
@@ -204,7 +232,9 @@ class TestExampleManuscript:
             print(f"🗑️ Deleted PNG: {fig}")
 
         # Verify figures are cleaned
-        remaining_figures = list(figures_dir.rglob("*.pdf")) + list(figures_dir.rglob("*.png"))
+        remaining_figures = list(figures_dir.rglob("*.pdf")) + list(
+            figures_dir.rglob("*.png")
+        )
         print(f"🔍 Found {len(remaining_figures)} figure files after cleanup")
 
         # Run figure generation
@@ -248,14 +278,22 @@ class TestExampleManuscript:
         print(f"🎨 Generated {len(generated_figures)} figure files:")
         for fig in generated_figures:
             print(f"  📄 {fig}")
-        assert len(generated_figures) >= 2, f"Expected at least 2 figures, found {len(generated_figures)} in {figures_dir}"
+        assert len(generated_figures) >= 2, (
+            f"Expected at least 2 figures, found {len(generated_figures)} "
+            f"in {figures_dir}"
+        )
 
     @pytest.mark.parametrize("force_figures", [True, False])
-    def test_rxiv_pdf_force_figures(self, example_manuscript_copy, force_figures, execution_engine):
+    def test_rxiv_pdf_force_figures(
+        self, example_manuscript_copy, force_figures, execution_engine
+    ):
         """Test PDF generation with and without force_figures option."""
-        print(f"\n🔧 Running force_figures={force_figures} test with {execution_engine.engine_type} engine")
+        print(
+            f"\n🔧 Running force_figures={force_figures} test with "
+            f"{execution_engine.engine_type} engine"
+        )
         print(f"📁 Test manuscript path: {example_manuscript_copy}")
-        
+
         # Use engine abstraction to handle local vs container execution
         if execution_engine.engine_type == "local":
             args = ["uv", "run", "rxiv", "pdf", str(example_manuscript_copy)]
@@ -289,18 +327,22 @@ class TestExampleManuscript:
 
         print(f"📊 PDF generation exit code: {result.returncode}")
         if result.stdout:
-            print(f"📝 PDF generation stdout (last 1000 chars): {result.stdout[-1000:]}")
+            print(
+                f"📝 PDF generation stdout (last 1000 chars): {result.stdout[-1000:]}"
+            )
         if result.stderr:
             print(f"❌ PDF generation stderr: {result.stderr}")
-        
+
         assert result.returncode == 0, f"Command failed: {result.stderr}"
 
         # PDF should exist
         if execution_engine.engine_type == "local":
             output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
         else:
-            output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
-        
+            output_pdf = (
+                Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
+            )
+
         print(f"🔍 Checking for PDF at: {output_pdf}")
         print(f"📁 PDF exists: {output_pdf.exists()}")
         if output_pdf.exists():
@@ -314,13 +356,13 @@ class TestExampleManuscript:
                     print(f"  📄 {f}")
             else:
                 print(f"❌ Output directory {output_dir} does not exist")
-        
+
         assert output_pdf.exists(), f"Output PDF was not created at {output_pdf}"
 
     def test_make_pdf_compatibility(self, example_manuscript_copy):
         """Test that make pdf still works (backwards compatibility)."""
-        print(f"\n🔧 Running Makefile compatibility test with local execution")
-        
+        print("\n🔧 Running Makefile compatibility test with local execution")
+
         # Run make pdf with command-line variable override
         result = subprocess.run(
             ["make", "pdf", f"MANUSCRIPT_PATH={example_manuscript_copy}"],
@@ -337,7 +379,7 @@ class TestExampleManuscript:
     def test_rxiv_clean(self, example_manuscript_copy, execution_engine):
         """Test cleaning generated files."""
         print(f"\n🔧 Running clean test with {execution_engine.engine_type} engine")
-        
+
         # First generate some output
         if execution_engine.engine_type == "local":
             try:

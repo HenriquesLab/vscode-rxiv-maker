@@ -242,6 +242,9 @@ addopts = [
     "--tb=short",
     "--strict-markers",
     "--strict-config",
+    "--durations=10",  # Show slowest tests
+    "--cov-report=term-missing:skip-covered",
+    "--dist=loadscope",  # Better parallelization with pytest-xdist
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -262,6 +265,10 @@ markers = [
     "scoop: Scoop-specific tests",
     "end_to_end: End-to-end binary workflow tests",
     "platform_specific: Tests that only run on specific platforms",
+    "performance: Performance benchmark tests",
+    "memory_intensive: Tests that use significant memory",
+    "requires_latex: Requires LaTeX installation",
+    "requires_docker: Requires Docker availability",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",

@@ -18,7 +18,8 @@ class ExecutionEngine:
         self.engine_type = engine_type
         self.container_id = container_id
         print(
-            f"\n✅ Engine initialized: type={self.engine_type}, container_id={self.container_id}"
+            f"\n✅ Engine initialized: type={self.engine_type}, "
+            f"container_id={self.container_id}"
         )
 
     def run(self, command: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
@@ -34,6 +35,9 @@ class ExecutionEngine:
 
         # Assumes podman commands are compatible with docker for exec
         if self.engine_type in ["docker", "podman"]:
+            if self.container_id is None:
+                raise ValueError(f"Container ID required for {self.engine_type} engine")
+
             # For containerized engines, handle cwd by using sh -c with cd
             if "cwd" in kwargs:
                 cwd = kwargs.pop("cwd")
@@ -58,6 +62,24 @@ class ExecutionEngine:
                 return subprocess.run(full_command, **run_kwargs)
 
         raise ValueError(f"Unsupported engine type: {self.engine_type}")
+
+    def rxiv_command(self, *args, **kwargs) -> subprocess.CompletedProcess:
+        """Standardized rxiv command execution across engines."""
+        import sys
+
+        if self.engine_type == "local":
+            try:
+                # Try uv run first (modern approach)
+                cmd = ["uv", "run", "rxiv"] + list(args)
+                return self.run(cmd, **kwargs)
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                # Fallback to python module
+                cmd = [sys.executable, "-m", "rxiv_maker.cli"] + list(args)
+                return self.run(cmd, **kwargs)
+        else:
+            # In containers, rxiv should be installed
+            cmd = ["rxiv"] + list(args)
+            return self.run(cmd, **kwargs)
 
 
 # --- Pytest Hooks and Fixtures ---
@@ -144,12 +166,31 @@ def execution_engine(request):
             )
 
 
+# --- Optimized Temporary Directory Fixtures ---
+
+
+@pytest.fixture(scope="session")
+def session_temp_dir():
+    """Session-scoped temporary directory for read-only test data."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield Path(tmpdir)
+
+
+@pytest.fixture(scope="class")
+def class_temp_dir():
+    """Class-scoped temporary directory for test class isolation."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield Path(tmpdir)
+
+
 @pytest.fixture
-def temp_dir():
-    """Create a temporary directory for test files."""
-    temp_path = Path(tempfile.mkdtemp())
-    yield temp_path
-    shutil.rmtree(temp_path)
+def temp_dir(class_temp_dir):
+    """Test-scoped subdirectory within class temp directory."""
+    import uuid
+
+    test_dir = class_temp_dir / f"test_{uuid.uuid4().hex[:8]}"
+    test_dir.mkdir()
+    return test_dir
 
 
 @pytest.fixture
@@ -212,6 +253,101 @@ def sample_tex_template():
 """
 
 
+# --- Optimized Manuscript Fixtures ---
+
+
+@pytest.fixture(scope="session")
+def example_manuscript_template():
+    """Session-scoped read-only reference to EXAMPLE_MANUSCRIPT."""
+    return Path("EXAMPLE_MANUSCRIPT")
+
+
+@pytest.fixture
+def example_manuscript_copy(example_manuscript_template, temp_dir):
+    """Fast copy of example manuscript using optimized copying."""
+    dst = temp_dir / "manuscript"
+    copy_manuscript_optimized(example_manuscript_template, dst)
+    return dst
+
+
+def copy_manuscript_optimized(src: Path, dst: Path):
+    """Optimized copying using hardlinks for static files where possible."""
+    import os
+
+    dst.mkdir(parents=True, exist_ok=True)
+    for item in src.rglob("*"):
+        if item.is_file():
+            rel_path = item.relative_to(src)
+            dst_item = dst / rel_path
+            dst_item.parent.mkdir(parents=True, exist_ok=True)
+
+            # Use hardlinks for static files, copy for files that might be modified
+            if item.suffix in {
+                ".md",
+                ".yml",
+                ".yaml",
+                ".bib",
+            }:  # Text files that might be modified
+                shutil.copy2(item, dst_item)
+            else:  # Binary files and other static files can use hardlinks
+                try:
+                    os.link(item, dst_item)
+                except (OSError, AttributeError):
+                    # Fallback to copy if hardlink fails
+                    shutil.copy2(item, dst_item)
+
+
+@pytest.fixture(scope="session")
+def minimal_manuscript_template():
+    """Session-scoped minimal manuscript template for fast tests."""
+    return {
+        "config": """title: "Test Article"
+authors:
+  - name: "Test Author"
+    affiliation: "Test University"
+    email: "test@example.com"
+keywords: ["test"]
+""",
+        "content": """# Introduction
+
+This is a minimal test manuscript.
+
+## Methods
+
+Simple methodology section.
+
+## Results
+
+Test results here.
+""",
+        "bibliography": """@article{test2023,
+  title={Test Article},
+  author={Test Author},
+  year={2023}
+}""",
+    }
+
+
+@pytest.fixture
+def minimal_manuscript(minimal_manuscript_template, temp_dir):
+    """Create minimal manuscript in temp directory for fast tests."""
+    manuscript_dir = temp_dir / "minimal_manuscript"
+    manuscript_dir.mkdir()
+
+    # Create files
+    (manuscript_dir / "00_CONFIG.yml").write_text(minimal_manuscript_template["config"])
+    (manuscript_dir / "01_MAIN.md").write_text(minimal_manuscript_template["content"])
+    (manuscript_dir / "03_REFERENCES.bib").write_text(
+        minimal_manuscript_template["bibliography"]
+    )
+
+    # Create basic figures directory
+    figures_dir = manuscript_dir / "FIGURES"
+    figures_dir.mkdir()
+
+    return manuscript_dir
+
+
 def check_latex_available():
     """Check if LaTeX is available in the system."""
     try:
@@ -241,15 +377,7 @@ requires_r = pytest.mark.skipif(not check_r_available(), reason="R not available
 
 
 # --- Class-Scoped Fixtures for Performance ---
-
-
-@pytest.fixture(scope="class")
-def class_temp_dir():
-    """Create a temporary directory that persists for the entire test class."""
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        yield Path(tmpdir)
+# (Already defined above in optimized fixtures section)
 
 
 @pytest.fixture(scope="class")

@@ -69,9 +69,9 @@ def test_fast(session):
         "pytest-xdist>=3.8.0",
         external=True,
     )
-    
+
     session.log("Running optimized test suite with maximum parallelization")
-    
+
     # Run with maximum performance settings
     session.run(
         "pytest",

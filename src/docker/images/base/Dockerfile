@@ -99,19 +99,15 @@ RUN R -e " \
   # Most stable core infrastructure \
   install.packages(c('cli', 'rlang', 'lifecycle', 'vctrs', 'digest', 'fastmap'), \
     repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
-  \
   # Essential data science stack \
   install.packages(c('ggplot2', 'scales', 'dplyr', 'tidyr', 'readr', 'stringr', 'stringi', 'magrittr'), \
     repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
-  \
   # Graphics and visualization \
   install.packages(c('Cairo', 'svglite', 'systemfonts', 'textshaping'), \
     repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
-  \
   # System utilities and I/O \
   install.packages(c('fs', 'processx', 'ps', 'callr', 'withr', 'yaml', 'jsonlite', 'optparse'), \
     repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
-  \
   # Network and utility packages \
   install.packages(c('curl', 'httr', 'mime', 'openssl', 'askpass', 'sys', 'base64enc', 'cachem', 'memoise', 'getopt', 'xml2'), \
     repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \

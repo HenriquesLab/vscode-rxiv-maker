@@ -53,7 +53,7 @@ For more control, you can use the dedicated figure generation command:
 ```bash
 # Generate all figures automatically (Mermaid + Python)
 source .venv/bin/activate
-python src/py/commands/generate_figures.py --figures-dir MANUSCRIPT/FIGURES --verbose
+rxiv figures --figures-dir MANUSCRIPT/FIGURES --verbose
 
 # Force regenerate all figures even if they exist
 make pdf FORCE_FIGURES=true
