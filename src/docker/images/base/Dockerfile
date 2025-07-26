@@ -97,7 +97,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libproj-dev \
     libgeos-dev \
     # Database client libraries for R packages
-    libmariadb-dev \
+    default-libmysqlclient-dev \
     libpq-dev \
     libsqlite3-dev \
     # Additional graphics and system libraries
