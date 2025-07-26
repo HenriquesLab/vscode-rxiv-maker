@@ -5,12 +5,12 @@ import sys
 from pathlib import Path
 
 import rich_click as click
-from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ...commands.build_manager import BuildManager
+from ...core.logging_config import get_logger, set_debug, set_log_directory, set_quiet
 
-console = Console()
+logger = get_logger()
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
@@ -38,6 +38,8 @@ console = Console()
     metavar="TAG",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
+@click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
+@click.option("--debug", "-d", is_flag=True, help="Enable debug output")
 @click.pass_context
 def build(
     ctx: click.Context,
@@ -47,6 +49,8 @@ def build(
     skip_validation: bool,
     track_changes: str | None,
     verbose: bool,
+    quiet: bool,
+    debug: bool,
 ) -> None:
     """Generate a publication-ready PDF from your Markdown manuscript.
 
@@ -77,6 +81,12 @@ def build(
 
         $ rxiv pdf --track-changes v1.0.0
     """
+    # Configure logging based on flags
+    if debug:
+        set_debug(True)
+    elif quiet:
+        set_quiet(True)
+
     # Use local verbose flag if provided, otherwise fall back to global context
     verbose = verbose or ctx.obj.get("verbose", False)
     engine = ctx.obj.get("engine", "local")
@@ -85,6 +95,16 @@ def build(
     if manuscript_path is None:
         manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
 
+    # Set up preliminary log directory (will be updated by BuildManager)
+    manuscript_dir = Path(manuscript_path)
+    if Path(output_dir).is_absolute():
+        preliminary_output_dir = Path(output_dir)
+    else:
+        preliminary_output_dir = manuscript_dir / output_dir
+
+    # Set up logging to the output directory early
+    set_log_directory(preliminary_output_dir)
+
     # Docker engine optimization: verify Docker readiness for build pipeline
     if engine == "docker":
         from ...docker.manager import get_docker_manager
@@ -92,41 +112,28 @@ def build(
         try:
             docker_manager = get_docker_manager()
             if not docker_manager.check_docker_available():
-                console.print(
-                    "❌ Docker is not available for build pipeline. Please ensure Docker is running.",
-                    style="red",
-                )
-                console.print(
-                    "💡 Use --engine local to build without Docker", style="yellow"
-                )
+                logger.error("Docker is not available for build pipeline. Please ensure Docker is running.")
+                logger.tip("Use --engine local to build without Docker")
                 sys.exit(1)
 
             if verbose:
-                console.print(
-                    "🐳 Build pipeline will use Docker containers", style="blue"
-                )
+                logger.docker_info("Build pipeline will use Docker containers")
 
         except Exception as e:
-            console.print(f"❌ Docker setup error: {e}", style="red")
+            logger.error(f"Docker setup error: {e}")
             sys.exit(1)
 
     # Validate manuscript path exists
     if not Path(manuscript_path).exists():
-        console.print(
-            f"❌ Error: Manuscript directory '{manuscript_path}' does not exist",
-            style="red",
-        )
-        console.print(
-            f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript",
-            style="yellow",
-        )
+        logger.error(f"Manuscript directory '{manuscript_path}' does not exist")
+        logger.tip(f"Run 'rxiv init {manuscript_path}' to create a new manuscript")
         sys.exit(1)
 
     try:
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            console=console,
+            console=logger.console,
             transient=True,
         ) as progress:
             # Create build manager
@@ -147,37 +154,26 @@ def build(
 
             if success:
                 progress.update(task, description="✅ PDF generated successfully!")
-                console.print(
-                    f"📄 PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf",
-                    style="green",
-                )
+                logger.success(f"PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf")
 
                 # Show additional info
                 if track_changes:
-                    console.print(
-                        f"🔍 Change tracking enabled against tag: {track_changes}",
-                        style="blue",
-                    )
+                    logger.info(f"Change tracking enabled against tag: {track_changes}")
                 if force_figures:
-                    console.print("🎨 All figures regenerated", style="blue")
+                    logger.info("All figures regenerated")
 
             else:
                 progress.update(task, description="❌ PDF generation failed")
-                console.print(
-                    "❌ PDF generation failed. Check output above for errors.",
-                    style="red",
-                )
-                console.print("💡 Run with --verbose for more details", style="yellow")
-                console.print(
-                    "💡 Run 'rxiv validate' to check for issues", style="yellow"
-                )
+                logger.error("PDF generation failed. Check output above for errors.")
+                logger.tip("Run with --verbose for more details")
+                logger.tip("Run 'rxiv validate' to check for issues")
                 sys.exit(1)
 
     except KeyboardInterrupt:
-        console.print("\n⏹️  PDF generation interrupted by user", style="yellow")
+        logger.warning("\nPDF generation interrupted by user")
         sys.exit(1)
     except Exception as e:
-        console.print(f"❌ Unexpected error: {e}", style="red")
+        logger.error(f"Unexpected error: {e}")
         if verbose:
-            console.print_exception()
+            logger.console.print_exception()
         sys.exit(1)

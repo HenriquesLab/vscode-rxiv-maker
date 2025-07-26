@@ -11,6 +11,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 from rxiv_maker.commands.build_manager import BuildManager
 from rxiv_maker.commands.generate_figures import FigureGenerator
 
@@ -43,6 +45,7 @@ class TestDockerCairoIntegration(unittest.TestCase):
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir, ignore_errors=True)
 
+    @pytest.mark.slow
     def test_cairo_docker_image_integration(self):
         """Test that Cairo Docker integration works end-to-end."""
         # Check if matplotlib is available

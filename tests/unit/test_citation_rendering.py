@@ -22,6 +22,7 @@ requires_latex = pytest.mark.skipif(not has_latex(), reason="LaTeX not installed
 class TestCitationRendering:
     """Test that citations are properly rendered in the final PDF."""
 
+    @pytest.mark.medium
     @requires_latex
     def test_bibtex_processing(self, tmp_path):
         """Test that BibTeX processing works correctly."""
@@ -212,6 +213,7 @@ class TestCitationProcessingIntegration:
                 f"Citation {citation} appears incomplete in bibliography"
             )
 
+    @pytest.mark.medium
     @requires_latex
     def test_build_process_resolves_citations(self, tmp_path):
         """Test that the full build process properly resolves citations."""

@@ -241,11 +241,11 @@ addopts = [
     "--tb=short",
     "--strict-markers",
     "--strict-config",
-    "-n",
-    "auto"
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "fast: marks tests as fast (select with '-m fast')",
+    "medium: marks tests as medium speed (1-5s duration)",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
     "notebook: marks tests as notebook tests",
@@ -323,6 +323,7 @@ extend-exclude = [
     ".git/",
     "__pycache__/",
     "*.egg-info/",
+    "src/docker/**",  # Docker-related files may contain non-standard text
 ]
 
 [tool.typos.default]
@@ -348,8 +349,11 @@ instituto = "instituto"  # Portuguese for "institute"
 tennant = "tennant"      # Proper surname
 # LaTeX formatting sequences
 ois = "ois"              # Part of LaTeX accent commands like {\c{c}}ois
+ure = "ure"              # As in "Figure" 
 # File extensions
 fot = "fot"              # LaTeX font outline file extension
+# Python/matplotlib functions
+setp = "setp"            # matplotlib function plt.setp()
 # GObject Introspection packages - legitimate package names, not typos
 gir = "gir"              # Prevent "gir1.2-*" packages from being changed to "git1.2-*"
 

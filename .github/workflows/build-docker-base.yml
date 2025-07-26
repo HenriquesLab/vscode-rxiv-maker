@@ -1,10 +1,11 @@
-name: Build Docker Base Images
+name: Docker Images
 
 on:
   push:
     branches: [ main, dev ]
     paths:
       - 'src/docker/**'
+      - 'src/rxiv_maker/__version__.py'  # Trigger on version changes
       - '.github/workflows/build-docker-base.yml'
   pull_request:
     branches: [ main ]
@@ -25,6 +26,11 @@ on:
         description: 'Platforms to build for'
         required: false
         default: 'linux/amd64,linux/arm64'
+      force_build:
+        description: 'Force rebuild even if no changes detected'
+        required: false
+        default: false
+        type: boolean
   repository_dispatch:
     types: [build-docker-image]
 

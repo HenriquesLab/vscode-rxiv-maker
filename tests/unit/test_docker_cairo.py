@@ -9,6 +9,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 from rxiv_maker.commands.generate_figures import FigureGenerator
 
 
@@ -30,6 +32,7 @@ class TestDockerCairoFunctionality(unittest.TestCase):
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir, ignore_errors=True)
 
+    @pytest.mark.slow
     @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_cairo_svg_processing(self, mock_run):
         """Test that Cairo processes SVG files correctly in Docker."""
@@ -53,6 +56,7 @@ class TestDockerCairoFunctionality(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("Cairo", result.stdout)
 
+    @pytest.mark.slow
     def test_docker_image_uses_cairo_only(self):
         """Test that Docker engine configuration is properly set up."""
         # Test that Docker engine can be configured
@@ -78,6 +82,7 @@ class TestDockerCairoFunctionality(unittest.TestCase):
             # If it fails, it should be for a legitimate reason, not Docker unavailability
             self.fail(f"Figure generation failed unexpectedly: {e}")
 
+    @pytest.mark.slow
     @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_mermaid_cairo_rendering(self, mock_run):
         """Test Mermaid diagram rendering with Cairo in Docker."""

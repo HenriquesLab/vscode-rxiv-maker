@@ -13,6 +13,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 
+import pytest
+
 
 class TestNetworkErrorHandling(unittest.TestCase):
     """Test network error handling scenarios."""
@@ -282,6 +284,7 @@ class TestResourceExhaustionScenarios(unittest.TestCase):
         minimum_required_gb = 2.0
         self.assertLess(free_gb, minimum_required_gb)
 
+    @pytest.mark.fast
     def test_memory_exhaustion(self):
         """Test handling of memory exhaustion."""
         try:

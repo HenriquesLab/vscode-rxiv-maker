@@ -365,13 +365,13 @@ class FigureGenerator:
                             f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}"
                         )
                         generated_files.append(f"{figure_dir.name}/{output_file.name}")
-                    except Exception:
+                    except Exception as conversion_error:
                         print(
                             f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
                         )
-                    print(f"     {e}")
-                    if "cairo" in str(e).lower():
-                        self._print_cairo_troubleshooting()
+                        print(f"     {conversion_error}")
+                        if "cairo" in str(conversion_error).lower():
+                            self._print_cairo_troubleshooting()
 
             if generated_files:
                 print(f"     Total files generated: {', '.join(generated_files)}")

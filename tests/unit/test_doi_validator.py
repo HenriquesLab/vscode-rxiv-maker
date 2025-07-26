@@ -86,6 +86,7 @@ class TestDOICache(unittest.TestCase):
         self.assertIsNotNone(cached)
         self.assertEqual(cached["title"], ["Test Article"])
 
+    @pytest.mark.fast
     def test_cache_clear(self):
         """Test cache clearing."""
         test_doi = "10.1000/test.2023.001"
@@ -124,6 +125,7 @@ class TestDOIValidator(unittest.TestCase):
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
+    @pytest.mark.fast
     def test_doi_format_validation(self):
         """Test DOI format validation."""
         validator = DOIValidator(
@@ -365,6 +367,7 @@ class TestDOIValidator(unittest.TestCase):
             any("not found in available registrars" in msg for msg in warning_messages)
         )
 
+    @pytest.mark.fast
     @patch("requests.get")
     @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_datacite_fallback_success(self, mock_crossref, mock_datacite):

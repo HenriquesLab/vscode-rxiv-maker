@@ -1,8 +1,0 @@
-[files]
-# Exclude the src/docker directory from typo checking
-extend-exclude = ["src/docker/**"]
-
-[default.extend-words]
-# Technical terms and abbreviations
-ure = "ure"  # As in "Figure"
-fot = "fot"  # Font file extension

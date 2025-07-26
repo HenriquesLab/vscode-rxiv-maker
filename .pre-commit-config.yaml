@@ -26,9 +26,9 @@ repos:
       - id: check-shebang-scripts-are-executable
         exclude: ^git_submodules/.*$
 
-  # Spell checking with typos (Rust-based)
+    # Spell checking with typos (Rust-based)
   - repo: https://github.com/crate-ci/typos
-    rev: v1.28.0
+    rev: v1.34.0
     hooks:
       - id: typos
         exclude: ^git_submodules/.*$
@@ -84,9 +84,9 @@ repos:
     hooks:
       - id: lazydocs-generate
         name: Generate API documentation
-        entry: python src/py/commands/generate_docs.py
+        entry: python src/rxiv_maker/commands/generate_docs.py
         language: system
-        files: ^src/py/.*\.py$
+        files: ^src/rxiv_maker/.*\.py$
         exclude: ^git_submodules/.*$
         pass_filenames: false
 

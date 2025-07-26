@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
 import yaml
 
 
@@ -27,6 +28,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         """Test that the GitHub Actions workflow file exists."""
         self.assertTrue(self.workflow_file.exists())
 
+    @pytest.mark.fast
     def test_workflow_yaml_structure(self):
         """Test GitHub Actions workflow YAML structure."""
         if not self.workflow_file.exists():
@@ -63,6 +65,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
             else:
                 self.assertEqual(tags, ["v*"])
 
+    @pytest.mark.fast
     def test_workflow_dispatch_inputs(self):
         """Test workflow_dispatch input configuration."""
         if not self.workflow_file.exists():
@@ -91,6 +94,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         self.assertEqual(manuscript_input["type"], "string")
         self.assertFalse(manuscript_input["required"])
 
+    @pytest.mark.fast
     def test_jobs_configuration(self):
         """Test jobs configuration in the workflow."""
         if not self.workflow_file.exists():
@@ -117,6 +121,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         self.assertIn("needs", build_job)
         self.assertEqual(build_job["needs"], "prepare")
 
+    @pytest.mark.fast
     def test_docker_container_configuration(self):
         """Test Docker container configuration in build job."""
         if not self.workflow_file.exists():
@@ -134,6 +139,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         self.assertIn("--platform linux/amd64", container["options"])
         self.assertIn("--user root", container["options"])
 
+    @pytest.mark.fast
     def test_caching_strategies(self):
         """Test caching strategies in the workflow."""
         if not self.workflow_file.exists():
