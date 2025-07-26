@@ -43,7 +43,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Basic build tools
     build-essential \
     make \
+    cmake \
     pkg-config \
+    autoconf \
+    automake \
+    libtool \
     # Graphics libraries for scientific plots (minimal set)
     libjpeg-dev \
     libpng-dev \
@@ -52,6 +56,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     # Git for version control
     git \
+    # Additional development tools
+    gfortran \
+    g++ \
+    gcc \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
@@ -67,7 +75,7 @@ ENV XDG_CACHE_HOME="/tmp/.cache"
 
 FROM systemdeps AS rdeps
 
-# Install R with essential graphics support
+# Install R with essential graphics support and compilation dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     r-base \
     r-base-dev \
@@ -75,6 +83,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
+    # Font and graphics libraries for R packages (systemfonts, textshaping, ragg)
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    libpng-dev \
+    # Scientific computing libraries
+    libudunits2-dev \
+    libgdal-dev \
+    libproj-dev \
+    libgeos-dev \
+    # Database client libraries for R packages
+    libmariadb-dev \
+    libpq-dev \
+    libsqlite3-dev \
+    # Additional graphics and system libraries
+    libcairo2-dev \
+    libxt-dev \
+    libx11-dev \
+    libxmu-dev \
     # Essential R graphics packages (system versions)
     r-cran-ggplot2 \
     r-cran-dplyr \
@@ -93,24 +123,57 @@ RUN echo 'options(repos = c(CRAN = "https://packagemanager.rstudio.com/cran/__li
     && echo 'options(download.file.method = "auto")' >> /usr/lib/R/etc/Rprofile.site \
     && echo 'options(timeout = 300)' >> /usr/lib/R/etc/Rprofile.site
 
-# Install essential R packages (consolidated for better caching)
-# Core packages grouped by stability and functionality
+# Install essential R packages with robust error handling
+# Install packages in stages with proper error handling
 RUN R -e " \
-  # Most stable core infrastructure \
-  install.packages(c('cli', 'rlang', 'lifecycle', 'vctrs', 'digest', 'fastmap'), \
-    repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
-  # Essential data science stack \
-  install.packages(c('ggplot2', 'scales', 'dplyr', 'tidyr', 'readr', 'stringr', 'stringi', 'magrittr'), \
-    repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
-  # Graphics and visualization \
-  install.packages(c('Cairo', 'svglite', 'systemfonts', 'textshaping'), \
-    repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
+  # Set global options for installation \
+  options(repos = c('https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', 'https://cran.rstudio.com/')); \
+  options(Ncpus = parallel::detectCores()); \
+  \
+  # Helper function for robust package installation \
+  install_safe <- function(packages, description = '') { \
+    cat('Installing', description, 'packages:', paste(packages, collapse=', '), '\n'); \
+    for (pkg in packages) { \
+      tryCatch({ \
+        if (!require(pkg, character.only = TRUE, quietly = TRUE)) { \
+          install.packages(pkg, dependencies = TRUE, quiet = FALSE); \
+          cat('✓ Successfully installed:', pkg, '\n'); \
+        } else { \
+          cat('✓ Already available:', pkg, '\n'); \
+        } \
+      }, error = function(e) { \
+        cat('✗ Failed to install:', pkg, '- Error:', conditionMessage(e), '\n'); \
+      }); \
+    } \
+  }; \
+  \
+  # Core infrastructure packages (most stable) \
+  install_safe(c('cli', 'rlang', 'lifecycle', 'vctrs', 'digest', 'fastmap'), 'core infrastructure'); \
+  \
+  # Essential data science packages \
+  install_safe(c('magrittr', 'stringi', 'stringr'), 'string processing'); \
+  install_safe(c('dplyr', 'tidyr', 'readr'), 'data manipulation'); \
+  \
+  # Graphics system packages (install individually for better error handling) \
+  install_safe(c('Cairo'), 'Cairo graphics'); \
+  install_safe(c('systemfonts'), 'system fonts'); \
+  install_safe(c('textshaping'), 'text shaping'); \
+  install_safe(c('ragg'), 'graphics devices'); \
+  install_safe(c('svglite'), 'SVG output'); \
+  \
+  # Visualization packages \
+  install_safe(c('scales', 'ggplot2'), 'visualization'); \
+  \
   # System utilities and I/O \
-  install.packages(c('fs', 'processx', 'ps', 'callr', 'withr', 'yaml', 'jsonlite', 'optparse'), \
-    repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
+  install_safe(c('fs', 'processx', 'ps', 'callr', 'withr'), 'system utilities'); \
+  install_safe(c('yaml', 'jsonlite', 'xml2'), 'data formats'); \
+  install_safe(c('optparse', 'getopt'), 'command line'); \
+  \
   # Network and utility packages \
-  install.packages(c('curl', 'httr', 'mime', 'openssl', 'askpass', 'sys', 'base64enc', 'cachem', 'memoise', 'getopt', 'xml2'), \
-    repos='https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', dependencies=TRUE, Ncpus=parallel::detectCores()); \
+  install_safe(c('curl', 'httr', 'mime', 'openssl', 'askpass', 'sys'), 'network and security'); \
+  install_safe(c('base64enc', 'cachem', 'memoise'), 'utilities'); \
+  \
+  cat('R package installation completed.\n'); \
 "
 
 # ======================================================================
@@ -119,17 +182,26 @@ RUN R -e " \
 
 FROM rdeps AS fontdeps
 
-# Essential LaTeX fonts only (mermaid.ink API handles diagram rendering)
+# Enhanced font support for both LaTeX and R packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Essential fonts for LaTeX compilation
     fonts-liberation \
     fonts-dejavu-core \
     fonts-lmodern \
     fonts-texgyre \
-    # Font configuration
+    # Additional fonts for better rendering
+    fonts-dejavu \
+    fonts-liberation2 \
+    fonts-noto-core \
+    # Font configuration tools
     fontconfig \
+    fontconfig-config \
+    # Clean up
     && rm -rf /var/lib/apt/lists/* \
-    && fc-cache -fv
+    # Rebuild font cache with verbose output for debugging
+    && fc-cache -fv \
+    # Verify font configuration
+    && fc-list | head -10
 
 # Mermaid diagrams handled by mermaid.ink API - no local dependencies needed
 
