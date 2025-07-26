@@ -76,7 +76,7 @@ runs:
         # Platform-specific pytest configuration
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           # Windows-specific flags to reduce file contention
-          PYTEST_FLAGS="-n 1 --forked --cache-clear --disable-warnings"
+          PYTEST_FLAGS="-n 1 --cache-clear --disable-warnings"
         else
           # Unix-like systems can use parallel execution
           PYTEST_FLAGS="-n auto"
