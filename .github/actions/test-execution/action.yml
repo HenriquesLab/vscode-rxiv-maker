@@ -81,6 +81,7 @@ runs:
         exit ${TEST_EXIT_CODE:-0}
       env:
         PYTHONIOENCODING: utf-8
+        PYTHONUTF8: 1
         PYTEST_TIMEOUT: ${{ inputs.timeout }}
 
     - name: Run integration tests

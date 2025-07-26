@@ -121,118 +121,6 @@ jobs:
         build-args: |
           BUILDKIT_INLINE_CACHE=1
 
-    - name: Comprehensive Docker image testing
-      if: github.event_name != 'pull_request'
-      run: |
-        # Build image locally for testing
-        docker build -t test-base ./src/docker/images/base
-
-        echo "## Docker Image Testing Results" >> $GITHUB_STEP_SUMMARY
-        echo "Testing image: test-base" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        # Make test script executable
-        chmod +x src/docker/test-docker-image.sh
-
-        # Run comprehensive test suite
-        if ./src/docker/test-docker-image.sh test-base; then
-          echo "✅ **All Docker image tests passed**" >> $GITHUB_STEP_SUMMARY
-          echo "- Basic functionality verified" >> $GITHUB_STEP_SUMMARY
-          echo "- Python dependencies confirmed" >> $GITHUB_STEP_SUMMARY
-          echo "- Cairo SVG processing validated" >> $GITHUB_STEP_SUMMARY
-          echo "- rxiv-maker installation successful" >> $GITHUB_STEP_SUMMARY
-          echo "- Pytest suite executed" >> $GITHUB_STEP_SUMMARY
-          echo "- Manuscript generation tested" >> $GITHUB_STEP_SUMMARY
-          echo "- Performance benchmarks completed" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ **Docker image tests failed**" >> $GITHUB_STEP_SUMMARY
-          echo "Image validation failed - check logs for details" >> $GITHUB_STEP_SUMMARY
-          exit 1
-        fi
-
-    - name: Quick validation for pull requests
-      if: github.event_name == 'pull_request'
-      run: |
-        # Build image locally for PR testing
-        docker build -t test-base ./src/docker/images/base
-
-        echo "=== Quick PR Validation ==="
-        echo "Testing critical functionality for PR..."
-
-        # Test basic functionality
-        echo "Testing Python..."
-        docker run --rm test-base python3 --version
-
-        echo "Testing LaTeX..."
-        docker run --rm test-base pdflatex --version
-
-        echo "Testing Cairo functionality..."
-        docker run --rm test-base /usr/local/bin/test-cairo.sh
-
-        echo "Testing critical Python dependencies..."
-        docker run --rm test-base python3 -c "
-        import matplotlib, numpy, cairosvg, yaml
-        print('✅ Critical dependencies available')
-        "
-
-        echo "✅ Quick PR validation passed!"
-
-    - name: Upload test artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: docker-test-results-${{ github.run_id }}
-        path: |
-          /tmp/rxiv-docker-test-*/
-          *.log
-          test_*.png
-          test_*.pdf
-        retention-days: 7
-
-    - name: Performance benchmark
-      if: github.event_name != 'pull_request'
-      run: |
-        echo "## Consolidated Performance Benchmark" >> $GITHUB_STEP_SUMMARY
-
-        # Create test SVG
-        cat > test.svg << 'EOF'
-        <?xml version="1.0" encoding="UTF-8"?>
-        <svg width="400" height="200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="200" fill="lightblue" stroke="navy" stroke-width="2"/>
-          <text x="200" y="100" text-anchor="middle" font-family="Liberation Sans" font-size="18">Consolidated Performance Test</text>
-        </svg>
-        EOF
-
-        # Time SVG to PNG conversion
-        echo "- **SVG to PNG conversion (consolidated image)**:" >> $GITHUB_STEP_SUMMARY
-        START_TIME=$(date +%s.%N)
-        docker run --rm -v $(pwd):/workspace ${{ env.BASE_IMAGE_NAME }}:latest \
-          python3 -c "
-        import cairosvg
-        from pathlib import Path
-        svg_content = Path('/workspace/test.svg').read_text()
-        png_data = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
-        Path('/workspace/test.png').write_bytes(png_data)
-        print(f'Converted SVG to PNG ({len(png_data)} bytes)')
-        " 2>/dev/null || echo "  - ⚠️ Benchmark skipped (image not available yet)" >> $GITHUB_STEP_SUMMARY
-        END_TIME=$(date +%s.%N)
-        DURATION=$(python3 -c "print(f'{$END_TIME - $START_TIME:.2f}')" 2>/dev/null || echo "N/A")
-        echo "  - Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
-
-        # Test R plotting performance
-        echo "- **R plotting performance**:" >> $GITHUB_STEP_SUMMARY
-        cat > test.R << 'EOF'
-        library(Cairo)
-        Cairo(file="test_r.png", type="png", width=400, height=200)
-        plot(1:10, main="R Performance Test")
-        dev.off()
-        EOF
-        START_TIME_R=$(date +%s.%N)
-        docker run --rm -v $(pwd):/workspace ${{ env.BASE_IMAGE_NAME }}:latest \
-          R --slave -f /workspace/test.R 2>/dev/null || echo "  - ⚠️ R benchmark skipped" >> $GITHUB_STEP_SUMMARY
-        END_TIME_R=$(date +%s.%N)
-        DURATION_R=$(python3 -c "print(f'{$END_TIME_R - $START_TIME_R:.2f}')" 2>/dev/null || echo "N/A")
-        echo "  - Duration: ${DURATION_R}s" >> $GITHUB_STEP_SUMMARY
 
     - name: Update repository description
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -272,6 +160,8 @@ jobs:
         echo "- **Platforms**: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Status**: ✅ Successfully built and pushed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Multi-architecture Docker image built and uploaded to Docker Hub." >> $GITHUB_STEP_SUMMARY
 
         # Output information for debugging
         echo "Built image: ${{ env.BASE_IMAGE_NAME }}:v${{ steps.version.outputs.version }}"

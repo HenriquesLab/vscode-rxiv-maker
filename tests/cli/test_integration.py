@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from click.testing import CliRunner
 
@@ -206,8 +206,10 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test figures command
-            with patch("rxiv_maker.commands.generate_figures.main") as mock_figures:
-                mock_figures.return_value = None
+            with patch("rxiv_maker.commands.generate_figures.FigureGenerator") as mock_generator_class:
+                mock_generator = Mock()
+                mock_generator.generate_all_figures.return_value = None
+                mock_generator_class.return_value = mock_generator
 
                 result = self.runner.invoke(
                     main,
@@ -215,7 +217,8 @@ authors:
                     obj={"verbose": False, "engine": "local"},
                 )
 
-                mock_figures.assert_called_once()
+                # Verify the FigureGenerator class was instantiated
+                mock_generator_class.assert_called_once()
 
     def test_arxiv_command(self):
         """Test arxiv command."""

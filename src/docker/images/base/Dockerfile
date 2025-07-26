@@ -394,62 +394,57 @@ RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache /tmp/fontconfig-c
     && chmod -R 777 /tmp/fontconfig-cache
 
 # Create comprehensive Python dependency verification script
-RUN cat > /usr/local/bin/verify-python-deps.sh << 'EOF'
-#!/bin/bash
-echo "Verifying Python dependencies..."
-
-# Test cairosvg (most critical for figure generation)
-echo "Testing cairosvg import and functionality..."
-python3 -c "
-import sys
-import cairosvg
-import io
-from pathlib import Path
-
-print(f'Python path: {sys.executable}')
-print(f'Python version: {sys.version}')
-print(f'CairoSVG version: {cairosvg.__version__}')
-
-# Create test SVG
-svg_content = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<svg width=\"200\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\">
-  <rect width=\"200\" height=\"100\" fill=\"lightblue\" stroke=\"navy\" stroke-width=\"2\"/>
-  <text x=\"100\" y=\"50\" text-anchor=\"middle\" font-family=\"Liberation Sans\" font-size=\"16\">Cairo Test</text>
-</svg>'''
-
-# Convert to PNG
-png_data = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
-print(f'Successfully converted SVG to PNG ({len(png_data)} bytes)')
-
-# Convert to PDF
-pdf_data = cairosvg.svg2pdf(bytestring=svg_content.encode('utf-8'))
-print(f'Successfully converted SVG to PDF ({len(pdf_data)} bytes)')
-
-print('✅ CairoSVG functionality verified!')
-"
-
-# Test other critical dependencies
-echo "Testing other Python dependencies..."
-python3 -c "
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import yaml
-import subprocess
-print('✅ Core scientific libraries verified!')
-"
-
-echo "All Python dependencies verified successfully!"
-EOF
-RUN chmod +x /usr/local/bin/verify-python-deps.sh
+RUN printf '#!/bin/bash\n\
+echo "Verifying Python dependencies..."\n\
+\n\
+# Test cairosvg (most critical for figure generation)\n\
+echo "Testing cairosvg import and functionality..."\n\
+python3 -c "\n\
+import sys\n\
+import cairosvg\n\
+import io\n\
+from pathlib import Path\n\
+\n\
+print(f'"'"'Python path: {sys.executable}'"'"')\n\
+print(f'"'"'Python version: {sys.version}'"'"')\n\
+print(f'"'"'CairoSVG version: {cairosvg.__version__}'"'"')\n\
+\n\
+# Create test SVG\n\
+svg_content = '"'"''"'"''"'"'<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>\n\
+<svg width=\\"200\\" height=\\"100\\" xmlns=\\"http://www.w3.org/2000/svg\\">\n\
+  <rect width=\\"200\\" height=\\"100\\" fill=\\"lightblue\\" stroke=\\"navy\\" stroke-width=\\"2\\"/>\n\
+  <text x=\\"100\\" y=\\"50\\" text-anchor=\\"middle\\" font-family=\\"Liberation Sans\\" font-size=\\"16\\">Cairo Test</text>\n\
+</svg>'"'"''"'"''"'"'\n\
+\n\
+# Convert to PNG\n\
+png_data = cairosvg.svg2png(bytestring=svg_content.encode('"'"'utf-8'"'"'))\n\
+print(f'"'"'Successfully converted SVG to PNG ({len(png_data)} bytes)'"'"')\n\
+\n\
+# Convert to PDF\n\
+pdf_data = cairosvg.svg2pdf(bytestring=svg_content.encode('"'"'utf-8'"'"'))\n\
+print(f'"'"'Successfully converted SVG to PDF ({len(pdf_data)} bytes)'"'"')\n\
+\n\
+print('"'"'✅ CairoSVG functionality verified!'"'"')\n\
+"\n\
+\n\
+# Test other critical dependencies\n\
+echo "Testing other Python dependencies..."\n\
+python3 -c "\n\
+import matplotlib.pyplot as plt\n\
+import numpy as np\n\
+import pandas as pd\n\
+import seaborn as sns\n\
+import yaml\n\
+import subprocess\n\
+print('"'"'✅ Core scientific libraries verified!'"'"')\n\
+"\n\
+\n\
+echo "All Python dependencies verified successfully!"\n' > /usr/local/bin/verify-python-deps.sh \
+    && chmod +x /usr/local/bin/verify-python-deps.sh
 
 # Create Cairo test script for backward compatibility
-RUN cat > /usr/local/bin/test-cairo.sh << 'EOF'
-#!/bin/bash
-/usr/local/bin/verify-python-deps.sh
-EOF
-RUN chmod +x /usr/local/bin/test-cairo.sh
+RUN printf '#!/bin/bash\n/usr/local/bin/verify-python-deps.sh\n' > /usr/local/bin/test-cairo.sh \
+    && chmod +x /usr/local/bin/test-cairo.sh
 
 # Run dependency verification during build to catch issues early
 RUN /usr/local/bin/verify-python-deps.sh

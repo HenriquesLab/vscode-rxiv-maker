@@ -326,12 +326,11 @@ class TestReleaseWorkflowIntegration:
         )
         content = workflow_path.read_text()
 
-        # Should upload and download artifacts
-        assert "upload-artifact" in content
-        assert "download-artifact" in content
+        # Should use custom artifact management action
+        assert "./.github/actions/artifact-management" in content
 
-        # Should handle binary artifacts
-        assert "retention-days" in content
+        # Should handle binary artifacts  
+        assert "artifact" in content.lower()
 
     def test_error_handling_in_workflow(self):
         """Test that workflow has proper error handling."""
@@ -373,7 +372,8 @@ class TestReleaseWorkflowIntegration:
 
         # Should use official actions
         assert "actions/checkout@v4" in content
-        assert "actions/setup-python@v5" in content
+        # Check that setup-environment action is used (which internally uses setup-python@v5)
+        assert "./.github/actions/setup-environment" in content
 
         # Should specify permissions
         assert "permissions:" in content

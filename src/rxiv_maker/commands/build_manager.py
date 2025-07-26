@@ -246,7 +246,6 @@ class BuildManager:
                 str(manuscript_rel),
                 "--detailed",
                 "--check-latex",
-                "--enable-doi-validation",
             ]
 
             if self.verbose:
