@@ -237,7 +237,8 @@ Reference to undefined figure @fig:nonexistent.
         result = subprocess.run(
             [
                 "python",
-                "src/rxiv_maker/scripts/validate_manuscript.py",
+                "-m",
+                "rxiv_maker.scripts.validate_manuscript",
                 "--detailed",
                 self.manuscript_dir,
             ],
@@ -335,7 +336,8 @@ Reference to undefined figure @fig:nonexistent.
             result = subprocess.run(
                 [
                     "python",
-                    "src/rxiv_maker/scripts/validate_manuscript.py",
+                    "-m",
+                    "rxiv_maker.scripts.validate_manuscript",
                     self.manuscript_dir,
                 ],
                 cwd=project_root,

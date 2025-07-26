@@ -41,6 +41,24 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Windows-specific cleanup
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        # Force cleanup of any stale processes and files
+        Get-Process | Where-Object {$_.ProcessName -match "python|pytest|uv"} | Stop-Process -Force -ErrorAction SilentlyContinue
+
+        # Clean temp directory
+        $tempPath = [System.IO.Path]::GetTempPath()
+        Get-ChildItem -Path $tempPath -Filter "*rxiv*" -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path $tempPath -Filter "*pytest*" -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+        # Set Windows file handling options
+        [System.Environment]::SetEnvironmentVariable("PYTHONDONTWRITEBYTECODE", "1", "Process")
+        [System.Environment]::SetEnvironmentVariable("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1", "Process")
+
+        Write-Host "✅ Windows cleanup completed"
+
     - name: Run unit tests
       if: inputs.test-type == 'unit'
       id: run-tests
@@ -54,12 +72,22 @@ runs:
 
         # Run tests with detailed output and continue on failure for better debugging
         set +e  # Don't exit on failure to capture exit code
+
+        # Platform-specific pytest configuration
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          # Windows-specific flags to reduce file contention
+          PYTEST_FLAGS="-n 1 --forked --cache-clear --disable-warnings"
+        else
+          # Unix-like systems can use parallel execution
+          PYTEST_FLAGS="-n auto"
+        fi
+
         uv run pytest tests/ \
           --cov=rxiv_maker \
           --cov-report=xml \
           --cov-report=term-missing \
           --cov-report=html:htmlcov \
-          -n auto \
+          $PYTEST_FLAGS \
           --maxfail=${{ inputs.max-failures }} \
           --tb=line \
           -v \
@@ -88,6 +116,11 @@ runs:
         PYTHONIOENCODING: utf-8
         PYTHONUTF8: 1
         PYTEST_TIMEOUT: ${{ inputs.timeout }}
+        # Windows-specific environment for better file handling
+        PYTEST_CURRENT_TEST: 1
+        TMPDIR: ${{ runner.temp }}
+        TMP: ${{ runner.temp }}
+        TEMP: ${{ runner.temp }}
 
     - name: Run integration tests
       if: inputs.test-type == 'integration'

@@ -16,6 +16,13 @@ class TestConfigCommand:
         """Set up test environment."""
         self.runner = CliRunner()
 
+    def _strip_ansi_codes(self, text: str) -> str:
+        """Strip ANSI escape codes from text for reliable string matching."""
+        import re
+
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+        return ansi_escape.sub("", text)
+
     def test_config_help(self):
         """Test config command help."""
         result = self.runner.invoke(config_cmd, ["--help"])
@@ -83,9 +90,11 @@ class TestConfigCommand:
                     config_cmd, ["set", "general.verbose", "true"]
                 )
                 assert result.exit_code == 0
+                # Strip ANSI codes for reliable string matching in CI
+                clean_output = self._strip_ansi_codes(result.output)
                 # Check for success indicator (either emoji or ASCII fallback)
                 assert any(
-                    indicator in result.output
+                    indicator in clean_output
                     for indicator in [
                         "✅ Set general.verbose = True",
                         "[OK] Set general.verbose = True",
@@ -94,7 +103,8 @@ class TestConfigCommand:
 
                 # Verify the value was set
                 result = self.runner.invoke(config_cmd, ["get", "general.verbose"])
-                assert "general.verbose = True" in result.output
+                clean_output = self._strip_ansi_codes(result.output)
+                assert "general.verbose = True" in clean_output
 
     def test_config_set_integer_value(self):
         """Test config set with integer value."""
@@ -104,9 +114,11 @@ class TestConfigCommand:
                     config_cmd, ["set", "figures.default_dpi", "600"]
                 )
                 assert result.exit_code == 0
+                # Strip ANSI codes for reliable string matching in CI
+                clean_output = self._strip_ansi_codes(result.output)
                 # Check for success indicator (either emoji or ASCII fallback)
                 assert any(
-                    indicator in result.output
+                    indicator in clean_output
                     for indicator in [
                         "✅ Set figures.default_dpi = 600",
                         "[OK] Set figures.default_dpi = 600",
@@ -115,7 +127,8 @@ class TestConfigCommand:
 
                 # Verify the value was set
                 result = self.runner.invoke(config_cmd, ["get", "figures.default_dpi"])
-                assert "figures.default_dpi = 600" in result.output
+                clean_output = self._strip_ansi_codes(result.output)
+                assert "figures.default_dpi = 600" in clean_output
 
     def test_config_reset(self):
         """Test config reset command."""

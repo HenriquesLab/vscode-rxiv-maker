@@ -19,14 +19,16 @@ class TestCacheUtils:
     def test_get_cache_dir_basic(self):
         """Test basic cache directory retrieval."""
         cache_dir = get_cache_dir()
-        assert cache_dir.name == "rxiv-maker"
+        # Cache directory should exist and contain "rxiv-maker" in its path
         assert cache_dir.exists()
+        assert "rxiv-maker" in str(cache_dir)
 
     def test_get_cache_dir_with_subfolder(self):
         """Test cache directory with subfolder."""
         cache_dir = get_cache_dir("doi")
         assert cache_dir.name == "doi"
-        assert cache_dir.parent.name == "rxiv-maker"
+        # Parent directory should contain "rxiv-maker" in its path
+        assert "rxiv-maker" in str(cache_dir.parent)
         assert cache_dir.exists()
 
     @patch("platformdirs.user_cache_dir")

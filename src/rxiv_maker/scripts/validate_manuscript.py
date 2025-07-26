@@ -615,7 +615,8 @@ For LaTeX compilation errors after building, check the .log file in output/
 
             cmd = [
                 sys.executable,
-                "src/rxiv_maker/commands/validate.py",
+                "-m",
+                "rxiv_maker.commands.validate",
                 args.manuscript_path,
                 "--detailed",
                 "--verbose",
