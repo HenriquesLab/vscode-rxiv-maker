@@ -248,3 +248,4 @@ output.md
 .folder2md_ignore
 submodules/vscode-rxiv-maker/node_modules
 test-results
+plan_prompt.md

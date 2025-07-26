@@ -349,7 +349,7 @@ instituto = "instituto"  # Portuguese for "institute"
 tennant = "tennant"      # Proper surname
 # LaTeX formatting sequences
 ois = "ois"              # Part of LaTeX accent commands like {\c{c}}ois
-ure = "ure"              # As in "Figure" 
+ure = "ure"              # As in "Figure"
 # File extensions
 fot = "fot"              # LaTeX font outline file extension
 # Python/matplotlib functions

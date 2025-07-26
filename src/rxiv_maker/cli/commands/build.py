@@ -112,7 +112,10 @@ def build(
         try:
             docker_manager = get_docker_manager()
             if not docker_manager.check_docker_available():
-                logger.error("Docker is not available for build pipeline. Please ensure Docker is running.")
+                logger.error(
+                    "Docker is not available for build pipeline. "
+                    "Please ensure Docker is running."
+                )
                 logger.tip("Use --engine local to build without Docker")
                 sys.exit(1)
 
@@ -154,7 +157,9 @@ def build(
 
             if success:
                 progress.update(task, description="✅ PDF generated successfully!")
-                logger.success(f"PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf")
+                logger.success(
+                    f"PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf"
+                )
 
                 # Show additional info
                 if track_changes:
