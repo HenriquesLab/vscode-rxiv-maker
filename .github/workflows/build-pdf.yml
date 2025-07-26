@@ -418,21 +418,15 @@ jobs:
         # Enhanced PDF detection with multiple naming patterns
         MANUSCRIPT_BASENAME=$(basename "$MANUSCRIPT_PATH")
 
-        # Try multiple possible PDF names in order of preference
-        PDF_CANDIDATES=(
-          "output/${MANUSCRIPT_BASENAME}.pdf"
-          "output/MANUSCRIPT.pdf"
-          "output/${MANUSCRIPT_PATH}.pdf"
-          "$MANUSCRIPT_PATH/${MANUSCRIPT_BASENAME}.pdf"
-          "$MANUSCRIPT_PATH.pdf"
-        )
+        # Try multiple possible PDF names in order of preference (space-separated)
+        PDF_CANDIDATES="output/${MANUSCRIPT_BASENAME}.pdf output/MANUSCRIPT.pdf output/${MANUSCRIPT_PATH}.pdf ${MANUSCRIPT_PATH}/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}.pdf"
 
         echo "🔍 Looking for generated PDF files..."
         echo "  📂 Manuscript path: $MANUSCRIPT_PATH"
         echo "  📂 Manuscript basename: $MANUSCRIPT_BASENAME"
 
         PDF_PATH=""
-        for candidate in "${PDF_CANDIDATES[@]}"; do
+        for candidate in $PDF_CANDIDATES; do
           echo "  🔍 Checking: $candidate"
           if [ -f "$candidate" ]; then
             PDF_PATH="$candidate"
@@ -456,7 +450,7 @@ jobs:
         else
           echo "  ❌ ERROR: PDF not found at any expected locations"
           echo "  🔍 Searched locations:"
-          for candidate in "${PDF_CANDIDATES[@]}"; do
+          for candidate in $PDF_CANDIDATES; do
             echo "    - $candidate"
           done
 
