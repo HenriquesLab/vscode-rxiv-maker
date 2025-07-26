@@ -37,8 +37,10 @@ rxiv pdf [OPTIONS] [MANUSCRIPT_PATH]
 - `--force-figures`: Force regeneration of all figures
 - `--skip-validation`: Skip validation step (useful for debugging)
 - `--engine [local|docker]`: Use specified engine
-- `--verbose`: Show detailed output
-- `--output PATH`: Custom output directory
+- `--verbose, -v`: Show detailed output
+- `--quiet, -q`: Suppress non-essential output
+- `--debug, -d`: Enable debug output
+- `--output-dir PATH, -o PATH`: Custom output directory
 
 **Examples:**
 ```bash
@@ -62,9 +64,7 @@ rxiv validate [OPTIONS] [MANUSCRIPT_PATH]
 
 **Options:**
 - `--no-doi`: Skip DOI validation
-- `--detailed`: Show detailed validation report
-- `--engine [local|docker]`: Use specified engine
-- `--verbose`: Show detailed output
+- `--detailed, -d`: Show detailed validation report
 
 **Examples:**
 ```bash
@@ -326,6 +326,26 @@ rxiv check-installation [OPTIONS]
 rxiv check-installation           # Basic check
 rxiv check-installation --detailed # Full system report
 rxiv check-installation --fix     # Auto-fix issues
+```
+
+### `rxiv install-deps`
+
+Install system dependencies for rxiv-maker.
+
+```bash
+rxiv install-deps [OPTIONS]
+```
+
+**Options:**
+- `--mode [full|minimal|core]`: Installation mode
+- `--verbose`: Show detailed output
+- `--dry-run`: Show what would be installed without installing
+
+**Examples:**
+```bash
+rxiv install-deps                 # Full installation
+rxiv install-deps --mode minimal  # Essential dependencies only
+rxiv install-deps --dry-run       # Preview installation
 ```
 
 ### `rxiv version`

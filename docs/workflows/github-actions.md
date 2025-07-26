@@ -345,7 +345,7 @@ Perfect for research teams and collaborative writing:
    make validate MANUSCRIPT_PATH=MANUSCRIPT
    
    # Detailed validation with suggestions
-   python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT
+   python -m rxiv_maker.scripts.validate_manuscript --detailed MANUSCRIPT
    ```
 
 5. **Check file structure**:

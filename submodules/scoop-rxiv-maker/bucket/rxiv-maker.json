@@ -1,9 +1,9 @@
 {
-    "version": "1.4.8",
+    "version": "1.4.9",
     "description": "Automated LaTeX article generation with modern CLI and figure creation capabilities (Pre-compiled Binary)",
     "homepage": "https://github.com/henriqueslab/rxiv-maker",
     "license": "MIT",
-    "url": "https://github.com/henriqueslab/rxiv-maker/releases/download/v1.4.8/rxiv-maker-windows-x64.zip",
+    "url": "https://github.com/henriqueslab/rxiv-maker/releases/download/v1.4.9/rxiv-maker-windows-x64.zip",
     "hash": "sha256:8c7d5d35b1e1d1a1f7f5e7c4a0d6e5b5c1b4a5e4d2f1c3b3a2f8e6d1a1b2c3d4",
     "suggest": {
         "LaTeX distribution": [

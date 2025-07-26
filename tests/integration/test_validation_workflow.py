@@ -158,7 +158,7 @@ Reference to undefined figure @fig:nonexistent.
             f.write(bib_content)
 
     @pytest.mark.slow
-    def test_makefile_validation_valid_manuscript(self):
+    def test_makefile_validation_valid_manuscript(self, execution_engine):
         """Test validation through Makefile with valid manuscript."""
         self.create_valid_manuscript()
 
@@ -166,24 +166,29 @@ Reference to undefined figure @fig:nonexistent.
         project_root = Path(__file__).parent.parent.parent
 
         # Use CLI validation directly with --no-doi to skip slow DOI validation
-        result = subprocess.run(
-            [
-                "python",
-                "-m",
-                "rxiv_maker.cli",
-                "validate",
-                self.manuscript_dir,
-                "--no-doi",
-            ],
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-        )
+        if execution_engine.engine_type == "local":
+            result = execution_engine.run(
+                [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "validate",
+                    str(self.manuscript_dir),
+                    "--no-doi",
+                ],
+                cwd=project_root,
+            )
+        else:
+            # In container, use the installed rxiv command with workspace path
+            result = execution_engine.run(
+                ["rxiv", "validate", "/workspace", "--no-doi"],
+                cwd="/workspace",
+            )
 
         # Valid manuscript should pass validation
         assert result.returncode == 0, f"Validation failed: {result.stderr}"
 
-    def test_makefile_validation_invalid_manuscript(self):
+    def test_makefile_validation_invalid_manuscript(self, execution_engine):
         """Test validation through Makefile with invalid manuscript."""
         self.create_invalid_manuscript()
 
@@ -191,19 +196,26 @@ Reference to undefined figure @fig:nonexistent.
         project_root = Path(__file__).parent.parent.parent
 
         # Use CLI validation directly with --no-doi to skip slow DOI validation
-        result = subprocess.run(
-            [
-                "python",
-                "-m",
-                "rxiv_maker.cli",
-                "validate",
-                self.manuscript_dir,
-                "--no-doi",
-            ],
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-        )
+        if execution_engine.engine_type == "local":
+            result = execution_engine.run(
+                [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "validate",
+                    str(self.manuscript_dir),
+                    "--no-doi",
+                ],
+                cwd=project_root,
+                check=False,  # Don't raise exception on non-zero exit
+            )
+        else:
+            # In container, use the installed rxiv command with workspace path
+            result = execution_engine.run(
+                ["rxiv", "validate", "/workspace", "--no-doi"],
+                cwd="/workspace",
+                check=False,  # Don't raise exception on non-zero exit
+            )
 
         # Invalid manuscript should fail validation
         assert result.returncode != 0, (
@@ -225,7 +237,8 @@ Reference to undefined figure @fig:nonexistent.
         result = subprocess.run(
             [
                 "python",
-                "src/rxiv_maker/scripts/validate_manuscript.py",
+                "-m",
+                "rxiv_maker.scripts.validate_manuscript",
                 "--detailed",
                 self.manuscript_dir,
             ],
@@ -323,7 +336,8 @@ Reference to undefined figure @fig:nonexistent.
             result = subprocess.run(
                 [
                     "python",
-                    "src/rxiv_maker/scripts/validate_manuscript.py",
+                    "-m",
+                    "rxiv_maker.scripts.validate_manuscript",
                     self.manuscript_dir,
                 ],
                 cwd=project_root,

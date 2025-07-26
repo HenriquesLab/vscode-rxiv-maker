@@ -28,6 +28,9 @@ on:
         description: 'Whether the build was successful'
         value: ${{ jobs.build-pdf.outputs.success }}
 
+env:
+  PYTHONIOENCODING: utf-8
+
 jobs:
   # First job: Determine which manuscript directory to use and get version
   prepare:
@@ -163,33 +166,11 @@ jobs:
           echo "❌ Python not found in container"
         fi
 
-        if command -v mmdc >/dev/null 2>&1; then
-          echo "✅ Mermaid CLI detected"
-          mmdc --version || echo "Mermaid version check failed"
-
-          # Test Mermaid diagram generation capability
-          echo "🧪 Testing Mermaid diagram generation..."
-          cat > /tmp/test_diagram.mmd << 'EOF'
-        graph TD
-            A[Start] --> B{Is it working?}
-            B -->|Yes| C[Great!]
-            B -->|No| D[Fix it]
-            D --> B
-        EOF
-
-          if mmdc -i /tmp/test_diagram.mmd -o /tmp/test_diagram.svg >/dev/null 2>&1; then
-            echo "✅ Mermaid SVG generation successful"
-            if mmdc -i /tmp/test_diagram.mmd -o /tmp/test_diagram.png >/dev/null 2>&1; then
-              echo "✅ Mermaid PNG generation successful"
-            else
-              echo "⚠️ Mermaid PNG generation failed (Cairo-only mode)"
-            fi
-          else
-            echo "⚠️ Mermaid diagram generation failed - continuing with build"
-            echo "ℹ️ This may indicate Cairo dependencies need updating in Docker image"
-          fi
+        if python3 -c "import cairosvg" >/dev/null 2>&1; then
+          echo "✅ CairoSVG detected (replaces mermaid-cli for puppeteer-free operation)"
+          python3 -c "import cairosvg; print('CairoSVG version:', cairosvg.__version__)"
         else
-          echo "⚠️ Mermaid CLI not found in container"
+          echo "⚠️ CairoSVG not found in container"
         fi
 
     - name: Test Cairo functionality

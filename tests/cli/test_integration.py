@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from click.testing import CliRunner
 
@@ -22,7 +22,7 @@ class TestCLIIntegration:
             manuscript_dir = Path(tmpdir) / "TEST_PAPER"
 
             # Test init command
-            result = self.runner.invoke(
+            self.runner.invoke(
                 main,
                 ["init", str(manuscript_dir), "--template", "basic"],
                 obj={"verbose": False, "engine": "local"},
@@ -40,7 +40,7 @@ class TestCLIIntegration:
             with patch("rxiv_maker.commands.validate.main") as mock_validate:
                 mock_validate.return_value = None  # Success
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["validate", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
@@ -54,7 +54,7 @@ class TestCLIIntegration:
             ) as mock_build_manager:
                 mock_build_manager.return_value.run_full_build.return_value = True
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["pdf", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
@@ -106,7 +106,7 @@ authors:
             with patch("rxiv_maker.commands.add_bibliography.main") as mock_add:
                 mock_add.return_value = None
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["bibliography", "add", str(manuscript_dir), "10.1000/test.doi"],
                     obj={"verbose": False, "engine": "local"},
@@ -118,7 +118,7 @@ authors:
             with patch("rxiv_maker.commands.validate.main") as mock_validate:
                 mock_validate.return_value = None
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["bibliography", "validate", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
@@ -130,7 +130,7 @@ authors:
             with patch("rxiv_maker.commands.fix_bibliography.main") as mock_fix:
                 mock_fix.return_value = None
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["bibliography", "fix", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
@@ -158,7 +158,7 @@ authors:
             with patch("rxiv_maker.commands.cleanup.main") as mock_cleanup:
                 mock_cleanup.return_value = None
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["clean", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
@@ -170,7 +170,7 @@ authors:
             with patch("rxiv_maker.commands.cleanup.main") as mock_cleanup:
                 mock_cleanup.return_value = None
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["clean", str(manuscript_dir), "--figures-only"],
                     obj={"verbose": False, "engine": "local"},
@@ -206,16 +206,21 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test figures command
-            with patch("rxiv_maker.commands.generate_figures.main") as mock_figures:
-                mock_figures.return_value = None
+            with patch(
+                "rxiv_maker.commands.generate_figures.FigureGenerator"
+            ) as mock_generator_class:
+                mock_generator = Mock()
+                mock_generator.generate_all_figures.return_value = None
+                mock_generator_class.return_value = mock_generator
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["figures", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
                 )
 
-                mock_figures.assert_called_once()
+                # Verify the FigureGenerator class was instantiated
+                mock_generator_class.assert_called_once()
 
     def test_arxiv_command(self):
         """Test arxiv command."""
@@ -242,7 +247,7 @@ authors:
             with patch("rxiv_maker.commands.prepare_arxiv.main") as mock_arxiv:
                 mock_arxiv.return_value = None
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["arxiv", str(manuscript_dir), "--output-dir", str(output_dir)],
                     obj={"verbose": False, "engine": "local"},
@@ -255,7 +260,7 @@ authors:
         with patch("rxiv_maker.commands.setup_environment.main") as mock_setup:
             mock_setup.return_value = None
 
-            result = self.runner.invoke(
+            self.runner.invoke(
                 main, ["setup"], obj={"verbose": False, "engine": "local"}
             )
 
@@ -300,7 +305,7 @@ authors:
             with patch("rxiv_maker.commands.validate.main") as mock_validate:
                 mock_validate.return_value = None
 
-                result = self.runner.invoke(
+                self.runner.invoke(
                     main,
                     ["--verbose", "validate", str(manuscript_dir)],
                     obj={"verbose": True, "engine": "local"},

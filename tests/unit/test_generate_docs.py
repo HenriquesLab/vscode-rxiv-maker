@@ -124,6 +124,7 @@ class TestGenerateEnhancedIndex:
 class TestMainFunction:
     """Tests for the main function."""
 
+    @pytest.mark.fast
     def test_main_functionality(self, temp_docs_dir):
         """Test the main functionality with integration approach."""
         # Create a simple test module for documentation
@@ -178,6 +179,7 @@ class SampleClass:
             assert "## Commands Modules" in content
             assert "## Processors Modules" in content
 
+    @pytest.mark.fast
     def test_handling_incomplete_docstrings(self, temp_docs_dir):
         """Test handling of modules with incomplete or missing docstrings."""
         # Create a test module with incomplete docstrings

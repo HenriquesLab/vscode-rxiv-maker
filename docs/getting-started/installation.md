@@ -126,7 +126,7 @@ echo 'export RXIV_ENGINE=DOCKER' >> ~/.bashrc  # Linux/macOS
 - ✅ 5x faster than traditional dependency installation
 
 ### Complete Guide
-For detailed Docker information, see: [Docker Engine Mode Guide](../docker-engine-mode.md)
+For detailed Docker information, see: [Docker Engine Mode Guide](../workflows/docker-engine-mode.md)
 
 ---
 
@@ -342,7 +342,7 @@ For detailed platform-specific instructions and troubleshooting, see: [Local Dev
 - ✅ Works with private repositories
 
 ### Complete Guide
-For detailed GitHub Actions setup and workflows, see: [GitHub Actions Guide](../github-actions-guide.md)
+For detailed GitHub Actions setup and workflows, see: [GitHub Actions Guide](../workflows/github-actions.md)
 
 ---
 
@@ -384,10 +384,10 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 
 ## 🆘 Need Help?
 
-- **Quick Questions**: Check [User Guide](../user_guide.md)
-- **Installation Issues**: See [Troubleshooting](../troubleshooting-missing-figures.md) 
+- **Quick Questions**: Check [User Guide](user_guide.md)
+- **Installation Issues**: See [Troubleshooting](../troubleshooting/troubleshooting-missing-figures.md) 
 - **Platform Problems**: Visit [Local Development Guide](../platforms/LOCAL_DEVELOPMENT.md)
-- **Docker Issues**: Read [Docker Engine Mode Guide](../docker-engine-mode.md)
+- **Docker Issues**: Read [Docker Engine Mode Guide](../workflows/docker-engine-mode.md)
 - **Community Support**: [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
 
 ---

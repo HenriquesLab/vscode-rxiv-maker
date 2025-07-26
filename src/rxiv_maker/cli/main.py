@@ -159,7 +159,8 @@ class UpdateCheckGroup(click.Group):
     "--engine",
     type=click.Choice(["local", "docker"]),
     default=lambda: os.environ.get("RXIV_ENGINE", "local").lower(),
-    help="Engine to use for processing (local or docker). Can be set with RXIV_ENGINE environment variable.",
+    help="Engine to use for processing (local or docker). "
+    "Can be set with RXIV_ENGINE environment variable.",
 )
 @click.option(
     "--install-completion",
@@ -179,7 +180,8 @@ def main(
 ) -> None:
     """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs.
 
-    Automated figure generation, professional LaTeX typesetting, and bibliography management.
+    Automated figure generation, professional LaTeX typesetting, and bibliography
+    management.
 
     ## Examples
 
@@ -240,7 +242,8 @@ def main(
                 console.print("🐳 Checking Docker availability...", style="blue")
             if not docker_manager.check_docker_available():
                 console.print(
-                    "❌ Docker is not available or not running. Please start Docker and try again.",
+                    "❌ Docker is not available or not running. "
+                    "Please start Docker and try again.",
                     style="red",
                 )
                 console.print(

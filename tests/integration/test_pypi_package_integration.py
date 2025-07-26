@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from ..conftest import requires_latex
+
 
 class TestPyPIPackageIntegration:
     """Test that the PyPI package contains all necessary files for building PDFs."""
@@ -84,7 +86,8 @@ class TestPyPIPackageIntegration:
             f"No .cls style files found. Package path: {package_path}"
         )
 
-    def test_cli_init_and_build_workflow(self):
+    @requires_latex
+    def test_cli_init_and_build_workflow(self, execution_engine):
         """Test full CLI workflow: init -> validate -> build."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
@@ -96,42 +99,50 @@ class TestPyPIPackageIntegration:
 
             try:
                 # Test 1: Initialize manuscript
-                try:
-                    init_result = subprocess.run(
+                if execution_engine.engine_type == "local":
+                    try:
+                        init_result = execution_engine.run(
+                            [
+                                "uv",
+                                "run",
+                                "python",
+                                "-m",
+                                "rxiv_maker.cli",
+                                "init",
+                                str(manuscript_dir),
+                                "--template",
+                                "basic",
+                                "--no-interactive",
+                            ],
+                            cwd=original_cwd,  # Run from original directory
+                        )
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        # Fall back to direct python call
+                        init_result = execution_engine.run(
+                            [
+                                "python",
+                                "-m",
+                                "rxiv_maker.cli",
+                                "init",
+                                str(manuscript_dir),
+                                "--template",
+                                "basic",
+                                "--no-interactive",
+                            ],
+                            cwd=original_cwd,
+                        )
+                else:
+                    # In container, use the installed rxiv command
+                    init_result = execution_engine.run(
                         [
-                            "uv",
-                            "run",
-                            "python",
-                            "-m",
-                            "rxiv_maker.cli",
+                            "rxiv",
                             "init",
-                            str(manuscript_dir),
+                            "/workspace/TEST_MANUSCRIPT",
                             "--template",
                             "basic",
                             "--no-interactive",
                         ],
-                        text=True,
-                        capture_output=True,
-                        timeout=30,
-                        cwd=original_cwd,  # Run from original directory
-                    )
-                except FileNotFoundError:
-                    # Fall back to direct python call
-                    init_result = subprocess.run(
-                        [
-                            "python",
-                            "-m",
-                            "rxiv_maker.cli",
-                            "init",
-                            str(manuscript_dir),
-                            "--template",
-                            "basic",
-                            "--no-interactive",
-                        ],
-                        text=True,
-                        capture_output=True,
-                        timeout=30,
-                        cwd=original_cwd,
+                        cwd="/workspace",
                     )
 
                 print("Init STDOUT:", init_result.stdout)

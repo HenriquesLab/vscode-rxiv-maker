@@ -244,7 +244,7 @@ class DockerManager:
             if result.returncode == 0:
                 container_id = result.stdout.strip()
                 session = DockerSession(container_id, image, self.workspace_dir)
-                
+
                 # Initialize container with health checks
                 if self._initialize_container(session):
                     self._active_sessions[session_key] = session
@@ -258,90 +258,108 @@ class DockerManager:
         return None
 
     def _initialize_container(self, session: DockerSession) -> bool:
-        """Initialize a Docker container with health checks and dependency verification."""
+        """Initialize a Docker container with health checks and verification."""
         try:
             # Basic connectivity test
             exec_cmd = [
-                "docker", "exec", session.container_id,
-                "echo", "container_ready"
+                "docker",
+                "exec",
+                session.container_id,
+                "echo",
+                "container_ready",
             ]
             result = subprocess.run(
                 exec_cmd, capture_output=True, text=True, timeout=10
             )
             if result.returncode != 0:
                 return False
-            
+
             # Test Python availability and basic imports
             python_test = [
-                "docker", "exec", session.container_id,
-                "python3", "-c", 
-                "import sys, os; print(f'Python {sys.version_info.major}.{sys.version_info.minor} ready')"
+                "docker",
+                "exec",
+                session.container_id,
+                "python3",
+                "-c",
+                "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
             ]
             result = subprocess.run(
                 python_test, capture_output=True, text=True, timeout=15
             )
             if result.returncode != 0:
                 return False
-            
-            # Test critical Python dependencies (cairosvg, numpy, matplotlib)
+
+            # Test critical Python dependencies (numpy, matplotlib, requests)
             deps_test = [
-                "docker", "exec", session.container_id,
-                "python3", "-c",
+                "docker",
+                "exec",
+                session.container_id,
+                "python3",
+                "-c",
                 """
 try:
-    import cairosvg, numpy, matplotlib, yaml
+    import numpy, matplotlib, yaml, requests
     print('Critical dependencies verified')
 except ImportError as e:
     print(f'Dependency error: {e}')
     exit(1)
-"""
+""",
             ]
             result = subprocess.run(
                 deps_test, capture_output=True, text=True, timeout=20
             )
             if result.returncode != 0:
                 return False
-            
+
             # Test R availability if container supports it
             r_test = [
-                "docker", "exec", session.container_id,
-                "sh", "-c", "which Rscript && Rscript --version || echo 'R not available'"
+                "docker",
+                "exec",
+                session.container_id,
+                "sh",
+                "-c",
+                "which Rscript && Rscript --version || echo 'R not available'",
             ]
             subprocess.run(r_test, capture_output=True, text=True, timeout=10)
             # R test is non-blocking, we just log availability
-            
+
             # Test LaTeX availability
             latex_test = [
-                "docker", "exec", session.container_id,
-                "sh", "-c", "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'"
+                "docker",
+                "exec",
+                session.container_id,
+                "sh",
+                "-c",
+                "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'",
             ]
             subprocess.run(latex_test, capture_output=True, text=True, timeout=10)
             # LaTeX test is non-blocking
-            
+
             # Set up workspace permissions
             workspace_setup = [
-                "docker", "exec", session.container_id,
-                "sh", "-c", "chmod -R 755 /workspace && mkdir -p /workspace/output"
+                "docker",
+                "exec",
+                session.container_id,
+                "sh",
+                "-c",
+                "chmod -R 755 /workspace && mkdir -p /workspace/output",
             ]
             result = subprocess.run(
                 workspace_setup, capture_output=True, text=True, timeout=10
             )
-            if result.returncode != 0:
-                return False
-            
-            return True
-            
+            return result.returncode == 0
+
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
             return False
 
     def _cleanup_expired_sessions(self, force: bool = False) -> None:
         """Clean up expired or inactive Docker sessions."""
         current_time = time.time()
-        
+
         # Only run cleanup every 30 seconds unless forced
         if not force and current_time - self._last_cleanup < 30:
             return
-        
+
         self._last_cleanup = current_time
         expired_keys = []
 
@@ -355,12 +373,11 @@ except ImportError as e:
 
         for key in expired_keys:
             del self._active_sessions[key]
-        
+
         # If we have too many sessions, cleanup the oldest ones
         if len(self._active_sessions) > self._max_sessions:
             sorted_sessions = sorted(
-                self._active_sessions.items(), 
-                key=lambda x: x[1].created_at
+                self._active_sessions.items(), key=lambda x: x[1].created_at
             )
             excess_count = len(self._active_sessions) - self._max_sessions
             for key, session in sorted_sessions[:excess_count]:
@@ -456,7 +473,7 @@ except ImportError as e:
         except ValueError:
             # If input file is not within workspace, use absolute path resolution
             input_rel = Path(input_file.name)
-        
+
         try:
             output_rel = output_file.relative_to(self.workspace_dir)
         except ValueError:
@@ -543,41 +560,6 @@ if __name__ == "__main__":
 
         return self.run_command(command=cmd_parts, session_key="mermaid_generation")
 
-    def run_cairo_conversion(
-        self,
-        input_file: Path,
-        output_file: Path,
-        output_format: str,
-        dpi: int | None = 300,
-    ) -> subprocess.CompletedProcess:
-        """Convert SVG to other formats using CairoSVG with optimized execution."""
-        try:
-            input_rel = input_file.relative_to(self.workspace_dir)
-        except ValueError:
-            input_rel = Path(input_file.name)
-        
-        try:
-            output_rel = output_file.relative_to(self.workspace_dir)
-        except ValueError:
-            output_rel = Path("output") / output_file.name
-
-        # Build Python command for Cairo conversion
-        cairo_cmd = (
-            f"import cairosvg; "
-            f"cairosvg.svg2{output_format}("
-            f"url='/workspace/{input_rel}', "
-            f"write_to='/workspace/{output_rel}'"
-        )
-
-        if output_format == "png" and dpi is not None:
-            cairo_cmd += f", dpi={dpi}"
-
-        cairo_cmd += ")"
-
-        return self.run_command(
-            command=["python3", "-c", cairo_cmd], session_key="cairo_conversion"
-        )
-
     def run_python_script(
         self,
         script_file: Path,
@@ -589,7 +571,7 @@ if __name__ == "__main__":
             script_rel = script_file.relative_to(self.workspace_dir)
         except ValueError:
             script_rel = Path(script_file.name)
-        
+
         docker_working_dir = "/workspace"
 
         if working_dir:
@@ -617,7 +599,7 @@ if __name__ == "__main__":
             script_rel = script_file.relative_to(self.workspace_dir)
         except ValueError:
             script_rel = Path(script_file.name)
-        
+
         docker_working_dir = "/workspace"
 
         if working_dir:
@@ -642,7 +624,7 @@ if __name__ == "__main__":
             tex_rel = tex_file.relative_to(self.workspace_dir)
         except ValueError:
             tex_rel = Path(tex_file.name)
-        
+
         docker_working_dir = "/workspace"
 
         if working_dir:
@@ -668,7 +650,11 @@ if __name__ == "__main__":
                 # Check for bib file in the working directory
                 bib_file_name = "03_REFERENCES.bib"
                 bib_result = self.run_command(
-                    command=["sh", "-c", f"if [ -f {bib_file_name} ]; then bibtex {tex_rel.stem}; fi"],
+                    command=[
+                        "sh",
+                        "-c",
+                        f"if [ -f {bib_file_name} ]; then bibtex {tex_rel.stem}; fi",
+                    ],
                     working_dir=docker_working_dir,
                     session_key=session_key,
                 )
@@ -690,24 +676,25 @@ if __name__ == "__main__":
         ):
             return False
 
-    def pull_image(self, image: str | None = None) -> bool:
-        """Pull the Docker image if not already available."""
+    def pull_image(self, image: str | None = None, force_pull: bool = False) -> bool:
+        """Pull the Docker image if not already available or force_pull is True."""
         target_image = image or self.default_image
 
-        # First check if image is already available locally
-        try:
-            result = subprocess.run(
-                ["docker", "image", "inspect", target_image],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            if result.returncode == 0:
-                return True  # Image already available locally
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            pass  # Image not available locally, proceed with pull
+        # If force_pull is False, check if image is already available locally
+        if not force_pull:
+            try:
+                result = subprocess.run(
+                    ["docker", "image", "inspect", target_image],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    return True  # Image already available locally
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                pass  # Image not available locally, proceed with pull
 
-        # Image not available locally, try to pull it
+        # Pull the latest version of the image
         try:
             result = subprocess.run(
                 ["docker", "pull", target_image],
@@ -747,45 +734,43 @@ if __name__ == "__main__":
 
         return stats
 
-    def warmup_session(self, session_key: str, image: str | None = None) -> bool:
+    def warmup_session(
+        self, session_key: str, image: str | None = None, force_pull: bool = False
+    ) -> bool:
         """Pre-warm a Docker session for faster subsequent operations."""
         target_image = image or self.default_image
-        
-        # Ensure image is available
-        if not self.pull_image(target_image):
+
+        # Ensure image is available (force pull if requested)
+        if not self.pull_image(target_image, force_pull=force_pull):
             return False
-        
+
         # Create session if it doesn't exist
         session = self._get_or_create_session(session_key, target_image)
-        
+
         if session and session.is_active():
             # Run a simple health check to warm up the container
             try:
                 result = self.run_command(
-                    command=["echo", "warmup"], 
-                    session_key=session_key,
-                    timeout=10
+                    command=["echo", "warmup"], session_key=session_key, timeout=10
                 )
                 return result.returncode == 0
             except Exception:
                 return False
-        
+
         return False
-    
+
     def health_check_session(self, session_key: str) -> bool:
         """Check if a specific session is healthy and responsive."""
         if session_key not in self._active_sessions:
             return False
-        
+
         session = self._active_sessions[session_key]
         if not session.is_active():
             return False
-        
+
         try:
             result = self.run_command(
-                command=["echo", "health_check"], 
-                session_key=session_key,
-                timeout=5
+                command=["echo", "health_check"], session_key=session_key, timeout=5
             )
             return result.returncode == 0
         except Exception:
@@ -796,7 +781,6 @@ if __name__ == "__main__":
         common_sessions = {
             "validation": self.warmup_session("validation"),
             "mermaid_generation": self.warmup_session("mermaid_generation"),
-            "cairo_conversion": self.warmup_session("cairo_conversion"),
             "python_execution": self.warmup_session("python_execution"),
             "r_execution": self.warmup_session("r_execution"),
             "latex_compilation": self.warmup_session("latex_compilation"),
@@ -807,20 +791,25 @@ if __name__ == "__main__":
         """Get detailed information about a container session."""
         if session_key not in self._active_sessions:
             return None
-        
+
         session = self._active_sessions[session_key]
         try:
             # Get container details
             inspect_cmd = [
-                "docker", "container", "inspect", session.container_id,
-                "--format", "{{json .}}"
+                "docker",
+                "container",
+                "inspect",
+                session.container_id,
+                "--format",
+                "{{json .}}",
             ]
             result = subprocess.run(
                 inspect_cmd, capture_output=True, text=True, timeout=10
             )
-            
+
             if result.returncode == 0:
                 import json
+
                 container_info = json.loads(result.stdout)
                 return {
                     "id": session.container_id[:12],
@@ -831,7 +820,7 @@ if __name__ == "__main__":
                 }
         except Exception:
             pass
-        
+
         return None
 
     def enable_aggressive_cleanup(self, enabled: bool = True) -> None:

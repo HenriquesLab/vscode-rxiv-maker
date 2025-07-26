@@ -1,4 +1,4 @@
-name: Test Pipeline
+name: CI/Test Pipeline
 
 on:
   push:
@@ -51,6 +51,9 @@ concurrency:
 env:
   FORCE_COLOR: 1
   PIP_DISABLE_PIP_VERSION_CHECK: 1
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: 1
+  UV_CACHE_DIR: ~/.cache/uv
 
 jobs:
   setup:
@@ -208,6 +211,73 @@ jobs:
         uses: ./.github/actions/test-execution
         with:
           test-type: integration
+
+  multi-engine:
+    name: Multi-Engine Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [setup, test]
+    if: needs.setup.outputs.test-scope == 'comprehensive'
+    strategy:
+      matrix:
+        engine: [local, docker]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+        with:
+          python-version: '3.11'
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-latex-base \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-science \
+            texlive-plain-generic
+
+      - name: Setup Docker (if needed)
+        if: matrix.engine == 'docker'
+        run: |
+          # Ensure Docker is running
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+          # Pull the latest rxiv-maker base image
+          docker pull henriqueslab/rxiv-maker-base:latest || echo "Failed to pull image, will use local build"
+
+      - name: Run multi-engine integration tests
+        run: |
+          echo "Running multi-engine tests with engine: ${{ matrix.engine }}"
+
+          # Run engine-specific tests
+          uv run pytest tests/integration/test_example_manuscript.py::TestExampleManuscript::test_rxiv_pdf_example_manuscript_cli \
+            --engine=${{ matrix.engine }} -v -s
+
+          uv run pytest tests/integration/test_validation_workflow.py::TestValidationWorkflow::test_makefile_validation_valid_manuscript \
+            --engine=${{ matrix.engine }} -v -s
+
+          uv run pytest tests/integration/test_pypi_package_integration.py::TestPyPIPackageIntegration::test_cli_init_and_build_workflow \
+            --engine=${{ matrix.engine }} -v -s
+
+      - name: Upload multi-engine test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-engine-test-results-${{ matrix.engine }}
+          path: |
+            test-results/
+            logs/
+          retention-days: 7
 
   build:
     name: Build & Test Distribution
@@ -440,41 +510,30 @@ jobs:
 
       - name: Trigger Docker image build
         if: steps.check-version.outputs.changed == 'true'
-        run: |
-          echo "Triggering Docker image build for version ${{ steps.check-version.outputs.version }}"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log(`Triggering local Docker image build for version ${{ steps.check-version.outputs.version }}`);
 
-          # Use DOCKER_SYNC_TOKEN if available, otherwise fall back to GITHUB_TOKEN
-          if [ -n "${{ secrets.DOCKER_SYNC_TOKEN }}" ]; then
-            AUTH_TOKEN="${{ secrets.DOCKER_SYNC_TOKEN }}"
-          else
-            AUTH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          fi
+            try {
+              const result = await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'build-docker-base.yml',
+                ref: 'main',
+                inputs: {
+                  rxiv_version: '${{ steps.check-version.outputs.version }}',
+                  tag: 'v${{ steps.check-version.outputs.version }}',
+                  platforms: 'linux/amd64,linux/arm64'
+                }
+              });
 
-          RESPONSE=$(curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token $AUTH_TOKEN" \
-            -H "User-Agent: rxiv-maker-sync" \
-            -w "HTTP_CODE:%{http_code}" \
-            -s \
-            https://api.github.com/repos/HenriquesLab/docker-rxiv-maker/dispatches \
-            -d '{
-              "event_type": "build-docker-image",
-              "client_payload": {
-                "version": "${{ steps.check-version.outputs.version }}",
-                "source_repo": "${{ github.repository }}",
-                "source_commit": "${{ github.sha }}",
-                "trigger_type": "version_sync"
-              }
-            }' 2>&1)
-
-          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
-
-          if [ "$HTTP_CODE" = "204" ]; then
-            echo "✅ Successfully triggered Docker image build"
-          else
-            echo "⚠️ Docker sync response: HTTP $HTTP_CODE - $RESPONSE"
-            echo "Continuing with CI pipeline..."
-          fi
+              console.log('✅ Successfully triggered local Docker image build');
+              console.log(`Workflow dispatch ID: ${result.data.id || 'N/A'}`);
+            } catch (error) {
+              console.log('⚠️ Docker sync error:', error.message);
+              console.log('Continuing with CI pipeline...');
+            }
 
       - name: Docker sync notification
         if: steps.check-version.outputs.changed == 'true'
@@ -488,7 +547,7 @@ jobs:
     name: Test Summary
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [setup, test, integration, build, performance, security, ecosystem, docker-version-sync]
+    needs: [setup, test, integration, multi-engine, build, performance, security, ecosystem, docker-version-sync]
     if: always()
 
     steps:

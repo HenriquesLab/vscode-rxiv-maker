@@ -1,216 +1,285 @@
-"""Nox configuration for Rxiv-Maker testing."""
+"""Nox configuration for Rxiv-Maker testing using uv."""
 
 import nox
 
+ENGINES = ["local", "docker"]  # Add "podman" here when ready
+PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12"]
 
-@nox.session(python=["3.11", "3.12", "3.13"])
-def tests(session):
-    """Run the test suite."""
-    # Install dependencies with explicit versions to avoid conflicts
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("ruff>=0.8.0", "mypy>=1.0", "pytest-notebook>=0.10.0")
-    session.install("lazydocs>=0.4.8", "nbstripout>=0.7.1", "pre-commit>=4.0.0")
+# Set default sessions
+nox.options.sessions = ["lint", "tests"]
+
+
+@nox.session(python=PYTHON_VERSIONS)
+@nox.parametrize("engine", ENGINES)
+def tests(session, engine):
+    """Run the test suite against a specific Python version and engine.
+
+    Examples:
+        nox -s tests(python="3.11", engine="local")
+        nox -s tests(engine="docker")
+    """
+    # Install dependencies using uv
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run(
+        "uv",
+        "pip",
+        "install",
+        "pytest>=7.4.0",
+        "pytest-timeout>=2.4.0",
+        "pytest-xdist>=3.8.0",
+        external=True,
+    )
+
+    # Check if the engine command exists
+    if engine != "local":
+        try:
+            session.run(engine, "--version", external=True, silent=True)
+        except Exception:
+            session.skip(f"{engine.capitalize()} is not available on this system")
+
+    session.log(f"Running tests with engine: {engine}")
+
+    # Pass any extra arguments to pytest, e.g., for selecting specific tests
+    # nox -s tests -- -k "test_cli_version"
     session.run(
         "pytest",
-        "tests/",
+        f"--engine={engine}",
         "-v",
-        "--timeout=120",  # 2 minute timeout
+        "--timeout=120",
         "-m",
-        "not slow",  # Skip slow tests by default
+        "not slow",
+        "-n",
+        "auto",  # Enable parallel execution with pytest-xdist
+        "--dist=worksteal",  # Optimize work distribution
+        *session.posargs,
     )
 
 
-@nox.session(venv_backend="none")
-def tests_current(session):
-    """Run tests in current Python environment (no virtualenv)."""
-    session.run("pytest", "tests/", "-v")
+@nox.session(name="test-fast", python="3.11")
+def test_fast(session):
+    """Run tests with maximum parallelization and class-scoped fixtures."""
+    # Install dependencies using uv
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run(
+        "uv",
+        "pip",
+        "install",
+        "pytest>=7.4.0",
+        "pytest-timeout>=2.4.0",
+        "pytest-xdist>=3.8.0",
+        external=True,
+    )
+
+    session.log("Running optimized test suite with maximum parallelization")
+
+    # Run with maximum performance settings
+    session.run(
+        "pytest",
+        "--engine=local",
+        "-v",
+        "--timeout=120",
+        "-m",
+        "not slow",
+        "-n",
+        "auto",  # Auto-detect CPU cores
+        "--dist=worksteal",  # Optimize work distribution
+        "--tb=short",  # Shorter traceback for speed
+        "--no-cov",  # Disable coverage for speed
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11")
+@nox.parametrize("engine", ENGINES)
+def integration(session, engine):
+    """Run integration tests with specified engine (local or docker).
+
+    Examples:
+        nox -s integration(engine="docker")
+        nox -s integration
+    """
+    # Install with uv
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run(
+        "uv",
+        "pip",
+        "install",
+        "pytest>=7.4.0",
+        "pytest-timeout>=2.4.0",
+        "pytest-xdist>=3.8.0",
+        "pytest-notebook>=0.10.0",
+        external=True,
+    )
+
+    # Check engine availability
+    if engine != "local":
+        try:
+            session.run(engine, "--version", external=True, silent=True)
+        except Exception:
+            session.skip(f"{engine.capitalize()} is not available on this system")
+
+    session.log(f"Running integration tests with engine: {engine}")
+
+    session.run(
+        "pytest",
+        "tests/integration/",
+        f"--engine={engine}",
+        "-v",
+        "-s",
+        "--timeout=180",
+        "-m",
+        "not slow",
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11")
+@nox.parametrize("engine", ENGINES)
+def coverage(session, engine):
+    """Run tests with coverage reporting using specified engine.
+
+    Examples:
+        nox -s coverage(engine="local")
+        nox -s coverage(engine="docker")
+    """
+    # Install with uv
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run(
+        "uv",
+        "pip",
+        "install",
+        "pytest>=7.4.0",
+        "pytest-timeout>=2.4.0",
+        "pytest-xdist>=3.8.0",
+        "pytest-cov>=4.0",
+        "coverage[toml]>=7.0",
+        "pytest-notebook>=0.10.0",
+        external=True,
+    )
+
+    # Check engine availability
+    if engine != "local":
+        try:
+            session.run(engine, "--version", external=True, silent=True)
+        except Exception:
+            session.skip(f"{engine.capitalize()} is not available on this system")
+
+    session.log(f"Running coverage tests with engine: {engine}")
+
+    session.run(
+        "pytest",
+        "tests/",
+        f"--engine={engine}",
+        "--cov=src/rxiv_maker",
+        "--cov-report=html",
+        "--cov-report=term-missing",
+        "-v",
+        "-m",
+        "not slow",
+        *session.posargs,
+    )
 
 
 @nox.session(python="3.11")
 def lint(session):
-    """Run linting checks."""
-    session.install(".")
-    session.install("ruff>=0.8.0")
-    session.run("ruff", "check", "src/")
-
-
-@nox.session(python="3.11")
-def type_check(session):
-    """Run type checking."""
-    session.install(".")
-    session.install("mypy>=1.0", "types-PyYAML>=6.0.0")
-    session.run("mypy", "src/")
+    """Run linters."""
+    session.run("uv", "pip", "install", "ruff>=0.8.0", external=True)
+    session.run("ruff", "check", "src/", "tests/")
 
 
 @nox.session(python="3.11")
 def format(session):
     """Format code with ruff."""
-    session.install(".")
-    session.install("ruff>=0.8.0")
-    session.run("ruff", "format", "src/")
+    session.run("uv", "pip", "install", "ruff>=0.8.0", external=True)
+    session.run("ruff", "format", "src/", "tests/")
+    session.run("ruff", "check", "--fix", "src/", "tests/")
 
 
 @nox.session(python="3.11")
-def integration(session):
-    """Run integration tests that generate actual PDFs."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("pytest-notebook>=0.10.0")
+def type_check(session):
+    """Run type checking."""
+    session.run("uv", "pip", "install", "-e", ".", external=True)
     session.run(
-        "pytest",
-        "tests/integration/",
-        "-v",
-        "-s",
-        "--timeout=180",  # 3 minute timeout for integration tests
-        "-m",
-        "not slow",  # Skip slow integration tests
+        "uv",
+        "pip",
+        "install",
+        "mypy>=1.0",
+        "types-PyYAML>=6.0.0",
+        "types-requests",
+        external=True,
+    )
+    session.run("mypy", "src/")
+
+
+@nox.session(python=["3.11", "3.12"])
+def performance(session):
+    """Run performance benchmarks."""
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run(
+        "uv",
+        "pip",
+        "install",
+        "pytest>=7.4.0",
+        "pytest-benchmark>=4.0.0",
+        external=True,
     )
 
-
-@nox.session(python="3.11")
-def coverage(session):
-    """Run tests with coverage reporting."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
-    session.install("coverage[toml]>=7.0", "pytest-cov>=4.0")
-    session.install("pytest-notebook>=0.10.0")
     session.run(
-        "pytest",
-        "tests/",
-        "--cov=src/rxiv_maker",  # Fixed coverage path
-        "--cov-report=html",
-        "--cov-report=term-missing",
-        "-v",
-        "-m",
-        "not slow",  # Skip slow tests for coverage
+        "pytest", "tests/performance/", "-v", "--benchmark-only", *session.posargs
     )
 
 
 @nox.session(python="3.11")
-def install_tests(session):
-    """Run essential installation tests."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Run essential installation tests only
+def security(session):
+    """Run security checks."""
+    session.run("uv", "pip", "install", "-e", ".", external=True)
     session.run(
-        "pytest",
-        "tests/install/",
-        "-v",
-        "-s",
-        "--tb=short",
-        "--timeout=120",  # 2 minute timeout per test
-        "-m",
-        "not slow",  # Skip slow tests by default
-        "-k",
-        "not (performance or system_deps or resource_usage or docker or container)",  # Skip expensive tests and Docker tests
+        "uv", "pip", "install", "bandit[toml]>=1.7.0", "safety>=2.3.0", external=True
+    )
+
+    # Run bandit security linter
+    session.run("bandit", "-r", "src/", "-f", "json", "-o", "bandit-report.json")
+
+    # Check for known vulnerabilities
+    session.run("safety", "check", "--json", "--output", "safety-report.json")
+
+
+# Quick test sessions for development
+@nox.session(python="3.11", name="test-quick")
+def test_quick(session):
+    """Run a quick subset of tests for rapid development feedback."""
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run("uv", "pip", "install", "pytest>=7.4.0", external=True)
+
+    session.run(
+        "pytest", "tests/unit/", "-v", "--tb=short", "-k", "not slow", *session.posargs
     )
 
 
-@nox.session(python="3.11")
-def install_tests_full(session):
-    """Run complete installation tests including slow tests."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Run all installation tests including slow ones
+# Comprehensive test session that runs everything
+@nox.session(python="3.11", name="test-all")
+@nox.parametrize("engine", ENGINES)
+def test_all(session, engine):
+    """Run all tests including slow ones with specified engine."""
+    session.run("uv", "pip", "install", "-e", ".", external=True)
     session.run(
-        "pytest",
-        "tests/install/",
-        "-v",
-        "-s",
-        "--tb=short",
-        "--timeout=300",  # 5 minute timeout per test (reduced from 10)
-        "--cov=src/rxiv_maker/install",
-        "--cov-report=html:htmlcov/install",
-        "--cov-report=term-missing",
-        "-k",
-        "not (docker or container)",  # Skip Docker tests
+        "uv",
+        "pip",
+        "install",
+        "pytest>=7.4.0",
+        "pytest-timeout>=2.4.0",
+        "pytest-notebook>=0.10.0",
+        "pytest-xdist>=3.8.0",
+        external=True,
     )
 
+    # Check engine availability
+    if engine != "local":
+        try:
+            session.run(engine, "--version", external=True, silent=True)
+        except Exception:
+            session.skip(f"{engine.capitalize()} is not available on this system")
 
-@nox.session(python="3.11")
-def install_tests_basic(session):
-    """Run basic installation tests without Docker."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
+    session.log(f"Running all tests with engine: {engine}")
 
-    # Run only unit tests that don't require Docker
-    session.run(
-        "pytest",
-        "tests/install/",
-        "-v",
-        "-k",
-        "not docker and not container",
-        "--tb=short",
-        "--timeout=60",  # 1 minute timeout for basic tests
-    )
-
-
-@nox.session(python="3.11")
-def install_tests_fast(session):
-    """Run fast installation tests for CI."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0")
-    session.install("build>=0.10.0", "wheel>=0.40.0")
-
-    # Run only the most essential tests
-    session.run(
-        "pytest",
-        "tests/install/test_basic_installation.py",
-        "tests/install/test_dependency_installation.py",
-        "-v",
-        "-s",
-        "--tb=short",
-        "--timeout=90",  # 1.5 minute timeout for fast tests
-    )
-
-
-@nox.session(python="3.11")
-def docker_tests(session):
-    """Run Docker engine mode tests (requires Docker)."""
-    session.install(".")
-    session.install("pytest>=7.4,<8.0", "py>=1.11.0", "pytest-cov>=4.0")
-    session.install("pytest-timeout>=2.4.0", "pytest-xdist>=3.8.0")
-
-    # Set Docker engine mode
-    session.env["RXIV_ENGINE"] = "DOCKER"
-
-    # Run Docker-specific unit tests first
-    session.run(
-        "pytest",
-        "tests/unit/test_figure_generator.py",
-        "tests/cli/test_build.py",
-        "tests/cli/test_config.py",
-        "-v",
-        "-s",
-        "--tb=short",
-        "--timeout=300",  # 5 minute timeout for Docker tests
-        "-k",
-        "docker or engine",  # Only run Docker-related tests
-    )
-
-    # Run real Docker integration test with EXAMPLE_MANUSCRIPT
-    session.log("Running Docker integration test with EXAMPLE_MANUSCRIPT")
-
-    # Check if EXAMPLE_MANUSCRIPT exists
-    import os
-
-    if not os.path.exists("EXAMPLE_MANUSCRIPT"):
-        session.log("EXAMPLE_MANUSCRIPT not found, skipping integration test")
-        return
-
-    # Set environment and run rxiv pdf command with Docker engine
-    session.run(
-        "python",
-        "-m",
-        "rxiv_maker.cli.main",
-        "--engine",
-        "docker",
-        "pdf",
-        "EXAMPLE_MANUSCRIPT/",
-        external=False,
-    )
+    session.run("pytest", f"--engine={engine}", "-v", "--timeout=300", *session.posargs)

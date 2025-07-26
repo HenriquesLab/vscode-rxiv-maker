@@ -39,8 +39,8 @@ source ../../.venv/bin/activate
 python SFigure__arxiv_growth.py
 Rscript SFigure__preprint_trends.R
 
-# Generate Mermaid diagrams
-npx mmdc -i Figure__system_diagram.mmd -o Figure__system_diagram/Figure__system_diagram.svg
+# Generate Mermaid diagrams (automatically handled by rxiv)
+# Mermaid diagrams are now generated automatically via mermaid.ink API
 
 # Return to project root and test the build
 cd ../..
@@ -53,7 +53,7 @@ For more control, you can use the dedicated figure generation command:
 ```bash
 # Generate all figures automatically (Mermaid + Python)
 source .venv/bin/activate
-python src/py/commands/generate_figures.py --figures-dir MANUSCRIPT/FIGURES --verbose
+rxiv figures --figures-dir MANUSCRIPT/FIGURES --verbose
 
 # Force regenerate all figures even if they exist
 make pdf FORCE_FIGURES=true

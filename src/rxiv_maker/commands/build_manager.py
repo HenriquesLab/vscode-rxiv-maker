@@ -1,20 +1,16 @@
-"""Build manager for Rxiv-Maker.
-
-This script orchestrates the complete build process including:
-- Figure generation
-- File copying
-- LaTeX compilation
-- PDF output management
-"""
+"""Build manager for rxiv-maker PDF generation pipeline."""
 
 import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
 
+from ..core.logging_config import get_logger, set_log_directory
 from ..docker.manager import get_docker_manager
 from ..utils.figure_checksum import get_figure_checksum_manager
 from ..utils.platform import platform_detector
+
+logger = get_logger()
 
 
 # Import FigureGenerator dynamically to avoid import issues
@@ -90,20 +86,23 @@ class BuildManager:
         self.warnings_log = self.output_dir / "build_warnings.log"
         self.bibtex_log = self.output_dir / "bibtex_warnings.log"
 
+        # Configure centralized logging to write to output directory
+        set_log_directory(self.output_dir)
+
     def log(self, message: str, level: str = "INFO"):
         """Log a message with appropriate formatting."""
         if level == "INFO":
-            print(f"✅ {message}")
+            logger.success(message)
         elif level == "WARNING":
-            print(f"⚠️  {message}")
+            logger.warning(message)
             self._log_to_file(message, level)
         elif level == "ERROR":
-            print(f"❌ {message}")
+            logger.error(message)
             self._log_to_file(message, level)
         elif level == "STEP":
-            print(f"🔧 {message}")
+            logger.debug(message)
         else:
-            print(message)
+            logger.info(message)
 
     def _log_to_file(self, message: str, level: str):
         """Log warnings and errors to files."""
@@ -232,7 +231,7 @@ class BuildManager:
             # Convert to absolute path, then make relative to workspace directory
             manuscript_abs = manuscript_path.resolve()
             workspace_dir = self.docker_manager.workspace_dir
-            
+
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
@@ -246,7 +245,6 @@ class BuildManager:
                 str(manuscript_rel),
                 "--detailed",
                 "--check-latex",
-                "--enable-doi-validation",
             ]
 
             if self.verbose:
@@ -839,7 +837,7 @@ class BuildManager:
         try:
             # Convert paths to be relative to Docker workspace
             workspace_dir = self.docker_manager.workspace_dir
-            
+
             # Handle manuscript path
             manuscript_path = Path(self.manuscript_path)
             manuscript_abs = manuscript_path.resolve()
@@ -847,7 +845,7 @@ class BuildManager:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
                 manuscript_rel = manuscript_path.name
-            
+
             # Handle PDF path
             pdf_abs = self.output_pdf.resolve()
             try:

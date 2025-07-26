@@ -7,9 +7,16 @@ publication-ready output files. It supports:
 - .R files: R scripts (executes script and captures output figures)
 """
 
+import base64
 import os
+import re
 import sys
 from pathlib import Path
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
@@ -17,8 +24,17 @@ if __name__ == "__main__":
         0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
 
-from rxiv_maker.docker.manager import get_docker_manager
-from rxiv_maker.utils.platform import platform_detector
+# Import platform utilities and Docker manager
+try:
+    from ..docker.manager import get_docker_manager
+    from ..utils.platform import platform_detector
+except ImportError:
+    # Fallback for when running as script
+    import sys
+
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from rxiv_maker.docker.manager import get_docker_manager
+    from rxiv_maker.utils.platform import platform_detector
 
 
 class FigureGenerator:
@@ -67,7 +83,7 @@ class FigureGenerator:
 
     def generate_all_figures(self, parallel: bool = True, max_workers: int = 4):
         """Generate all figures found in the figures directory.
-        
+
         Args:
             parallel: Enable parallel processing of figures
             max_workers: Maximum number of worker threads for parallel processing
@@ -105,7 +121,9 @@ class FigureGenerator:
 
             # Process figures with optional parallelization
             if parallel and (len(mermaid_files) + len(python_files) + len(r_files)) > 1:
-                self._generate_figures_parallel(mermaid_files, python_files, r_files, max_workers)
+                self._generate_figures_parallel(
+                    mermaid_files, python_files, r_files, max_workers
+                )
             else:
                 self._generate_figures_sequential(mermaid_files, python_files, r_files)
 
@@ -153,68 +171,70 @@ class FigureGenerator:
                 except Exception as e:
                     print(f"  ✗ Failed: {r_file.name} - {e}")
 
-    def _generate_figures_parallel(self, mermaid_files, python_files, r_files, max_workers):
+    def _generate_figures_parallel(
+        self, mermaid_files, python_files, r_files, max_workers
+    ):
         """Generate figures in parallel using ThreadPoolExecutor."""
         import concurrent.futures
         import threading
-        
+
         print(f"Using parallel processing with {max_workers} workers")
-        
+
         # Create thread-safe print function
         print_lock = threading.Lock()
+
         def safe_print(*args, **kwargs):
             with print_lock:
                 print(*args, **kwargs)
-        
+
         def process_figure(file_info):
             """Process a single figure file."""
             file_path, file_type = file_info
             try:
                 safe_print(f"  [Parallel] Processing: {file_path.name}")
-                
+
                 if file_type == "mermaid":
                     self.generate_mermaid_figure(file_path)
                 elif file_type == "python":
                     self.generate_python_figure(file_path)
                 elif file_type == "r":
                     self.generate_r_figure(file_path)
-                
+
                 safe_print(f"  [Parallel] ✓ Completed: {file_path.name}")
                 return True, file_path.name, None
             except Exception as e:
                 safe_print(f"  [Parallel] ✗ Failed: {file_path.name} - {e}")
                 return False, file_path.name, str(e)
-        
+
         # Prepare work items
         work_items = []
-        
+
         if mermaid_files and not self.r_only:
             work_items.extend([(f, "mermaid") for f in mermaid_files])
-        
+
         if python_files and not self.r_only:
             work_items.extend([(f, "python") for f in python_files])
-        
+
         if r_files:
             work_items.extend([(f, "r") for f in r_files])
-        
+
         if not work_items:
             print("No figures to process")
             return
-        
+
         safe_print(f"Processing {len(work_items)} figures in parallel...")
-        
+
         # Process figures in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all tasks
             future_to_file = {
-                executor.submit(process_figure, item): item[0] 
-                for item in work_items
+                executor.submit(process_figure, item): item[0] for item in work_items
             }
-            
+
             # Collect results
             completed = 0
             failed = 0
-            
+
             for future in concurrent.futures.as_completed(future_to_file):
                 file_path = future_to_file[future]
                 try:
@@ -226,21 +246,26 @@ class FigureGenerator:
                 except Exception as exc:
                     safe_print(f"  [Parallel] ✗ Exception for {file_path.name}: {exc}")
                     failed += 1
-            
-            safe_print(f"Parallel processing completed: {completed} successful, {failed} failed")
+
+            safe_print(
+                f"Parallel processing completed: {completed} successful, {failed} failed"
+            )
 
     def generate_mermaid_figure(self, mmd_file):
-        """Generate figure from Mermaid diagram file using two-step SVG process."""
+        """Generate figure from Mermaid diagram file using mermaid.ink API."""
         try:
             # Create subdirectory for this figure
             figure_dir = self.output_dir / mmd_file.stem
             figure_dir.mkdir(parents=True, exist_ok=True)
 
-            # --- Step 1: Generate SVG using Mermaid CLI ---
+            # --- Step 1: Generate SVG using mermaid.ink API ---
             svg_output_file = figure_dir / f"{mmd_file.stem}.svg"
             print(
-                f"  🎨 Generating intermediate SVG: {figure_dir.name}/{svg_output_file.name}..."
+                f"  🎨 Generating SVG using mermaid.ink API: {figure_dir.name}/{svg_output_file.name}..."
             )
+
+            # Read the mermaid diagram content
+            mermaid_content = mmd_file.read_text(encoding="utf-8")
 
             if self.engine == "docker":
                 # Use Docker for Mermaid processing
@@ -249,192 +274,171 @@ class FigureGenerator:
                     output_file=svg_output_file.resolve(),
                     background_color="transparent",
                 )
+
+                if result.returncode != 0:
+                    print(f"  ❌ Docker mermaid generation failed for {mmd_file.name}:")
+                    print(f"     {result.stderr}")
+
+                    # Generate a placeholder SVG to prevent build failures
+                    print(f"  🔄 Creating placeholder SVG for {mmd_file.name}...")
+                    self._create_placeholder_svg(
+                        svg_output_file, mmd_file.name, result.stderr
+                    )
+                    return
             else:
-                # Check if mmdc (Mermaid CLI) is available locally
-                if not self._check_mermaid_cli():
-                    print(f"  ⚠️  Skipping {mmd_file.name}: Mermaid CLI not available")
-                    print("     Install with: npm install -g @mermaid-js/mermaid-cli")
+                # Use mermaid.ink API approach
+                success = self._generate_mermaid_with_api(
+                    mermaid_content, svg_output_file, mmd_file.name
+                )
+
+                if not success:
+                    print(f"  🔄 Creating placeholder SVG for {mmd_file.name}...")
+                    self._create_placeholder_svg(
+                        svg_output_file,
+                        mmd_file.name,
+                        "mermaid.ink API approach failed - falling back to placeholder",
+                    )
                     return
 
-                cmd_parts = [
-                    "mmdc",
-                    "-i",
-                    str(mmd_file),
-                    "-o",
-                    str(svg_output_file),
-                    "--backgroundColor",
-                    "transparent",
-                ]
-
-                cmd = " ".join(cmd_parts)
-                result = self.platform.run_command(cmd, capture_output=True, text=True)
-
-            if result.returncode != 0:
-                print(f"  ❌ Error generating SVG for {mmd_file.name}:")
-                print(f"     {result.stderr}")
-                return
-
-            print(
-                f"  ✅ Successfully generated {figure_dir.name}/{svg_output_file.name}"
-            )
-
-            # --- Step 2: Convert SVG to PNG and PDF using CairoSVG ---
-            if self.engine == "docker":
-                # Use Docker for CairoSVG conversion (Docker image has CairoSVG pre-installed)
-                cairosvg_available = True
-                cairo_error = None
-            else:
-                # Check CairoSVG availability for local execution
-                cairosvg_available, cairo_error = self._check_cairosvg_availability()
-
-            if not cairosvg_available:
-                print(
-                    f"  ⚠️  CairoSVG not available for {mmd_file.name} - using SVG only"
-                )
-                print(f"     Reason: {cairo_error}")
-                self._print_cairo_installation_help()
-                print(
-                    f"     SVG file generated: {figure_dir.name}/{svg_output_file.name}"
-                )
-                print("     LaTeX can use SVG files directly for PDF compilation")
-                return
-
-            # Convert SVG to raster formats
-            formats_to_generate = ["png", "pdf"]
-            generated_files = [f"{figure_dir.name}/{svg_output_file.name}"]
-
-            if self.engine == "docker":
-                # Use Docker for CairoSVG conversion
-                for format_type in formats_to_generate:
-                    output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
-                    print(
-                        f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}..."
-                    )
-                    try:
-                        result = self.docker_manager.run_cairo_conversion(
-                            input_file=svg_output_file.resolve(),
-                            output_file=output_file.resolve(),
-                            output_format=format_type,
-                            dpi=300 if format_type == "png" else None,
-                        )
-
-                        if result.returncode != 0:
-                            print(
-                                f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
-                            )
-                            print(f"     {result.stderr}")
-                            continue
-
-                        print(
-                            f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}"
-                        )
-                        generated_files.append(f"{figure_dir.name}/{output_file.name}")
-                    except Exception as e:
-                        print(
-                            f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
-                        )
-                        print(f"     {str(e)}")
-            else:
-                # Use local CairoSVG
-                import cairosvg
-
-                for format_type in formats_to_generate:
-                    output_file = figure_dir / f"{mmd_file.stem}.{format_type}"
-                    print(
-                        f"  🎨 Converting SVG to {format_type.upper()}: {figure_dir.name}/{output_file.name}..."
-                    )
-                    try:
-                        if format_type == "png":
-                            cairosvg.svg2png(
-                                url=str(svg_output_file),
-                                write_to=str(output_file),
-                                dpi=300,
-                            )
-                        elif format_type == "pdf":
-                            cairosvg.svg2pdf(
-                                url=str(svg_output_file), write_to=str(output_file)
-                            )
-
-                        print(
-                            f"  ✅ Successfully generated {figure_dir.name}/{output_file.name}"
-                        )
-                        generated_files.append(f"{figure_dir.name}/{output_file.name}")
-                    except Exception:
-                        print(
-                            f"  ❌ Error converting SVG to {format_type.upper()} for {mmd_file.name}:"
-                        )
-                    print(f"     {e}")
-                    if "cairo" in str(e).lower():
-                        self._print_cairo_troubleshooting()
-
-            if generated_files:
-                print(f"     Total files generated: {', '.join(generated_files)}")
+            # All formats are generated directly by _generate_mermaid_with_api()
 
         except Exception as e:
             print(f"  ❌ Error processing {mmd_file.name}: {e}")
 
-    def _check_cairosvg_availability(self):
-        """Check if CairoSVG is available and working."""
-        try:
-            import cairosvg
-
-            # Test basic functionality
-            cairosvg.svg2png(bytestring=b'<svg><rect width="10" height="10"/></svg>')
-            return True, None
-        except ImportError:
-            return False, "CairoSVG package not installed"
-        except Exception as e:
-            error_msg = str(e)
-            if "cairo" in error_msg.lower():
-                return False, f"Cairo system libraries not available: {error_msg}"
+    def _parse_mermaid_file(self, mermaid_content):
+        """Parse mermaid file content, extracting config and diagram content."""
+        # Check for YAML frontmatter
+        if mermaid_content.strip().startswith("---"):
+            parts = mermaid_content.split("---", 2)
+            if len(parts) >= 3:
+                # Has frontmatter - extract diagram content only
+                diagram_content = parts[2].strip()
             else:
-                return False, f"CairoSVG error: {error_msg}"
-
-    def _print_cairo_installation_help(self):
-        """Print platform-specific Cairo installation instructions."""
-        import platform
-
-        system = platform.system().lower()
-
-        print("     💡 To enable PNG/PDF conversion, install Cairo libraries:")
-        if system == "darwin":  # macOS
-            print("     - macOS: brew install cairo pango pkg-config")
-            print("     - Then restart your terminal to update environment variables")
-        elif system == "linux":
-            print(
-                "     - Ubuntu/Debian: sudo apt-get install libcairo2-dev libpango1.0-dev"
-            )
-            print("     - RHEL/CentOS: sudo yum install cairo-devel pango-devel")
-            print("     - Arch: sudo pacman -S cairo pango")
-        elif system == "windows":
-            print(
-                "     - Windows: Install GTK libraries via msys2 or winget install GTK"
-            )
+                # Malformed frontmatter - use entire content
+                diagram_content = mermaid_content
         else:
-            print(
-                "     - Install Cairo and Pango development libraries for your system"
-            )
-        print("     - Then reinstall: pip install --force-reinstall cairosvg")
+            # No frontmatter - use entire content
+            diagram_content = mermaid_content
 
-    def _print_cairo_troubleshooting(self):
-        """Print Cairo-specific troubleshooting tips."""
-        import platform
+        return diagram_content
 
-        system = platform.system().lower()
+    def _fix_svg_dimensions(self, svg_content):
+        """Fix SVG dimensions from mermaid.ink for CairoSVG compatibility.
 
-        print("     🔧 Cairo troubleshooting:")
-        if system == "darwin":  # macOS
-            print(
-                "     - Try: export PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
+        Mermaid.ink returns SVGs with width="100%" which CairoSVG can't handle.
+        Extract dimensions from viewBox and set explicit width/height.
+        """
+        try:
+            # Extract viewBox dimensions using regex
+            viewbox_match = re.search(r'viewBox="([^"]*)"', svg_content)
+            if viewbox_match:
+                viewbox = viewbox_match.group(1).split()
+                if len(viewbox) >= 4:
+                    width = float(viewbox[2])
+                    height = float(viewbox[3])
+
+                    # Replace width="100%" with explicit dimensions
+                    svg_content = re.sub(
+                        r'width="100%"', f'width="{width}px"', svg_content
+                    )
+
+                    # Add height if missing
+                    if "height=" not in svg_content:
+                        svg_content = re.sub(
+                            r'(<svg[^>]*width="[^"]*")',
+                            r'\1 height="' + f'{height}px"',
+                            svg_content,
+                        )
+
+            return svg_content
+
+        except Exception as e:
+            print(f"     Warning: Could not fix SVG dimensions: {e}")
+            return svg_content
+
+    def _generate_mermaid_with_api(
+        self, mermaid_content, svg_output_file, diagram_name
+    ):
+        """Generate mermaid diagram in all formats using mermaid.ink API."""
+        try:
+            if requests is None:
+                print("  ⚠️  requests library not available")
+                print(f"     Creating placeholder SVG for: {diagram_name}")
+                self._create_placeholder_svg(
+                    svg_output_file,
+                    diagram_name,
+                    "requests library not available for mermaid.ink API",
+                )
+                return True
+
+            print(f"  🌐 Generating all formats using mermaid.ink API: {diagram_name}")
+
+            # Parse mermaid file content
+            diagram_content = self._parse_mermaid_file(mermaid_content)
+
+            # Encode the mermaid content for the API
+            diagram_bytes = diagram_content.encode("utf-8")
+            base64_string = base64.urlsafe_b64encode(diagram_bytes).decode("ascii")
+
+            # Prepare output paths
+            figure_dir = svg_output_file.parent
+            stem_name = svg_output_file.stem
+
+            # Define format endpoints
+            formats = {
+                "svg": f"https://mermaid.ink/svg/{base64_string}",
+                "png": f"https://mermaid.ink/img/{base64_string}?type=png",
+                "pdf": f"https://mermaid.ink/pdf/{base64_string}?fit",
+            }
+
+            generated_files = []
+
+            # Generate each format
+            for format_type, api_url in formats.items():
+                output_file = figure_dir / f"{stem_name}.{format_type}"
+
+                print(f"     Requesting {format_type.upper()} from mermaid.ink...")
+
+                try:
+                    response = requests.get(api_url, timeout=30)
+                    response.raise_for_status()
+
+                    # Write the content
+                    if format_type == "svg":
+                        # For SVG, we can still apply dimension fixes if needed
+                        content = self._fix_svg_dimensions(response.text)
+                        with open(output_file, "w", encoding="utf-8") as f:
+                            f.write(content)
+                    else:
+                        # For PNG and PDF, write binary content directly
+                        with open(output_file, "wb") as f:
+                            f.write(response.content)
+
+                    print(f"  ✅ Created {format_type.upper()}: {output_file}")
+                    generated_files.append(f"{figure_dir.name}/{output_file.name}")
+
+                except requests.exceptions.RequestException as e:
+                    print(f"  ❌ Failed to generate {format_type.upper()}: {e}")
+                    # Continue with other formats
+                    continue
+
+            if generated_files:
+                print(f"     Total files generated: {', '.join(generated_files)}")
+                return True
+            else:
+                print(f"  ❌ Failed to generate any formats for {diagram_name}")
+                # Create placeholder SVG as fallback
+                self._create_placeholder_svg(
+                    svg_output_file, diagram_name, "All mermaid.ink API requests failed"
+                )
+                return False
+
+        except Exception as e:
+            print(f"  ❌ Error in mermaid.ink API generation: {e}")
+            self._create_placeholder_svg(
+                svg_output_file, diagram_name, f"Error generating mermaid diagram: {e}"
             )
-            print(
-                "     - Try: export DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH"
-            )
-            print("     - Run: rxiv setup --reinstall to reconfigure environment")
-        else:
-            print("     - Ensure Cairo libraries are in your system's library path")
-            print("     - Try reinstalling: pip install --force-reinstall cairosvg")
-        print("     - Alternative: Use SVG files directly (LaTeX supports SVG)")
+            return False
 
     def generate_python_figure(self, py_file):
         """Generate figure from Python script."""
@@ -648,10 +652,6 @@ class FigureGenerator:
         except Exception as e:
             print(f"  ❌ Error executing {r_file.name}: {e}")
 
-    def _check_mermaid_cli(self):
-        """Check if Mermaid CLI (mmdc) is available."""
-        return self.platform.check_command_exists("mmdc")
-
     def _import_matplotlib(self):
         """Safely import matplotlib."""
         try:
@@ -698,6 +698,74 @@ class FigureGenerator:
         """Check if Rscript is available."""
         return self.platform.check_command_exists("Rscript")
 
+    def _create_placeholder_svg(self, svg_path, diagram_name, error_message):
+        """Create a placeholder SVG when mermaid generation fails."""
+        # Truncate long error messages for readability
+        if len(error_message) > 200:
+            error_message = error_message[:200] + "..."
+
+        # Escape XML special characters
+        error_message = (
+            error_message.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&apos;")
+        )
+
+        placeholder_svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <style>
+            .title-text {{ font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #d32f2f; }}
+            .error-text {{ font-family: monospace; font-size: 10px; fill: #666; }}
+            .note-text {{ font-family: Arial, sans-serif; font-size: 12px; fill: #1976d2; }}
+            .border {{ fill: none; stroke: #d32f2f; stroke-width: 2; stroke-dasharray: 5,5; }}
+        </style>
+    </defs>
+
+    <!-- Border -->
+    <rect x="10" y="10" width="380" height="280" class="border"/>
+
+    <!-- Title -->
+    <text x="200" y="40" text-anchor="middle" class="title-text">
+        ⚠️ Mermaid Diagram Error
+    </text>
+
+    <!-- Diagram name -->
+    <text x="200" y="65" text-anchor="middle" class="note-text">
+        Diagram: {diagram_name}
+    </text>
+
+    <!-- Error message -->
+    <text x="30" y="100" class="error-text">Error:</text>
+    <text x="30" y="115" class="error-text">{error_message}</text>
+
+    <!-- Instructions -->
+    <text x="200" y="160" text-anchor="middle" class="note-text">
+        This placeholder was generated because mermaid
+    </text>
+    <text x="200" y="180" text-anchor="middle" class="note-text">
+        diagram rendering failed. To fix this:
+    </text>
+    <text x="200" y="210" text-anchor="middle" class="note-text">
+        1. Install Chromium: apt-get install chromium-browser
+    </text>
+    <text x="200" y="230" text-anchor="middle" class="note-text">
+        2. Or use alternative mermaid renderer
+    </text>
+    <text x="200" y="250" text-anchor="middle" class="note-text">
+        3. Or convert diagram to static image
+    </text>
+</svg>"""
+
+        try:
+            svg_path.parent.mkdir(parents=True, exist_ok=True)
+            svg_path.write_text(placeholder_svg, encoding="utf-8")
+            print(f"  ✅ Created placeholder SVG: {svg_path.relative_to(Path.cwd())}")
+        except Exception as e:
+            print(f"  ❌ Failed to create placeholder SVG: {e}")
+
 
 # CLI integration
 def main():
@@ -716,13 +784,19 @@ def main():
     parser.add_argument("--r-only", action="store_true", help="Process only R files")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument(
-        "--parallel", action="store_true", default=True, help="Enable parallel processing (default: True)"
+        "--parallel",
+        action="store_true",
+        default=True,
+        help="Enable parallel processing (default: True)",
     )
     parser.add_argument(
         "--no-parallel", action="store_true", help="Disable parallel processing"
     )
     parser.add_argument(
-        "--max-workers", type=int, default=4, help="Maximum number of parallel workers (default: 4)"
+        "--max-workers",
+        type=int,
+        default=4,
+        help="Maximum number of parallel workers (default: 4)",
     )
     parser.add_argument(
         "--engine",

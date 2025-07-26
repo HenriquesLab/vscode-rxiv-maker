@@ -11,9 +11,9 @@ Rxiv-Maker converts Markdown manuscripts into publication-ready PDFs through a m
 
 ## Key Components
 
-- **Converters** (`src/py/converters/`) - Markdown element processors with content protection
-- **Processors** (`src/py/processors/`) - High-level document processing
-- **Commands** (`src/py/commands/`) - CLI entry points and utilities
+- **Converters** (`src/rxiv_maker/converters/`) - Markdown element processors with content protection
+- **Processors** (`src/rxiv_maker/processors/`) - High-level document processing
+- **Commands** (`src/rxiv_maker/commands/`) - CLI entry points and utilities
 
 ## Content Protection System
 

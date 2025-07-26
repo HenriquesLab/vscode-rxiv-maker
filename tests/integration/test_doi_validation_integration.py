@@ -346,7 +346,7 @@ This concludes our test manuscript.
             enable_doi_validation=True,
         )
 
-        validation_passed = validator.validate_all()
+        validator.validate_all()
 
         # Should still pass overall (warnings, not errors)
         # but should have warnings about metadata mismatches
@@ -382,7 +382,7 @@ This concludes our test manuscript.
             enable_doi_validation=True,
         )
 
-        validation_passed = validator.validate_all()
+        validator.validate_all()
 
         # Should still pass overall validation (API failures are warnings)
 
@@ -407,7 +407,7 @@ This concludes our test manuscript.
             enable_doi_validation=True,
         )
 
-        validation_passed = validator.validate_all()
+        validator.validate_all()
 
         # Get citation validation results
         citation_result = validator.validation_results.get("Citations")

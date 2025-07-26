@@ -123,9 +123,9 @@ class TestCITestingMatrix:
 
         content = test_workflow_path.read_text()
 
-        # Should install and test dependencies
-        assert "install" in content.lower()
-        assert "dependencies" in content.lower() or "requirements" in content.lower()
+        # Should use setup-environment action which handles dependencies
+        assert "./.github/actions/setup-environment" in content
+        assert "./.github/actions/test-execution" in content
 
     def test_test_categorization(self):
         """Test that different test categories are properly configured."""

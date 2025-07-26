@@ -320,54 +320,6 @@ graph TD
         self.assertIn("graph TD", content)
         self.assertIn("-->", content)
 
-    @patch("subprocess.run")
-    def test_mermaid_cli_execution_simulation(self, mock_run):
-        """Test Mermaid CLI execution simulation."""
-        mock_run.return_value = Mock(
-            returncode=0, stdout="Diagram generated successfully"
-        )
-
-        # Simulate mmdc command for SVG generation
-        result = mock_run.return_value
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "Diagram generated successfully")
-
-    @patch("subprocess.run")
-    def test_mermaid_docker_fallback(self, mock_run):
-        """Test Mermaid generation fallback to Docker when CLI is unavailable."""
-        # First call (checking mmdc availability) fails
-        # Second call (Docker fallback) succeeds
-        mock_run.side_effect = [
-            Mock(returncode=1, stderr="mmdc: command not found"),  # Local CLI not found
-            Mock(
-                returncode=0, stdout="Docker diagram generated"
-            ),  # Docker fallback works
-        ]
-
-        # Try local first
-        local_result = subprocess.run(["which", "mmdc"], capture_output=True)
-        self.assertEqual(local_result.returncode, 1)
-
-        # Fallback to Docker
-        docker_result = subprocess.run(
-            [
-                "docker",
-                "run",
-                "--rm",
-                "-v",
-                f"{self.temp_dir}:/workspace",
-                "minlag/mermaid-cli:latest",
-                "-i",
-                "/workspace/test_diagram.mmd",
-                "-o",
-                "/workspace/test_diagram.svg",
-            ],
-            capture_output=True,
-            text=True,
-        )
-
-        self.assertEqual(docker_result.returncode, 0)
-
     def test_mermaid_output_formats(self):
         """Test Mermaid diagram output format support."""
         supported_formats = [".svg", ".png", ".pdf"]

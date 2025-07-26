@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.9] - 2025-07-26
+
+### Fixed
+- **Critical CI/CD Pipeline Issues**: Comprehensive fixes to improve build reliability and stability
+  - Resolve Docker build shell escaping failures in Dockerfile with proper command formatting
+  - Improve cross-platform Windows dependency handling in setup-environment GitHub Action
+  - Enhance test execution error handling and exit code capture for better failure detection
+  - Add UTF-8 encoding consistency across all GitHub workflows to prevent encoding issues
+  - Disable Docker provenance/SBOM generation to prevent cache conflicts and build failures
+  - Optimize multi-architecture build performance with streamlined Docker configurations
+  - Fixed Docker base image build failures by adding missing system dependencies
+  - Resolved package conflicts in Docker build by replacing libmariadb-dev with proper dependencies
+  - Address root causes of workflow failures that were impacting CI/CD pipeline stability
+
+### Changed
+- **Project Optimization and Cleanup**: Comprehensive codebase organization and maintenance improvements
+  - Removed obsolete test files and temporary artifacts (14 deleted files)
+  - Optimized Docker base image with streamlined dependency management and reduced layer count
+  - Updated figure generation pipeline with improved error handling and API integration
+  - Enhanced package management scripts with better validation and error handling
+  - Consolidated testing framework with removal of deprecated Docker Cairo integration tests
+  - Updated submodule configurations for package managers (Homebrew, Scoop, VSCode extension)
+  - Improved GitHub Actions workflows with better organization and efficiency
+  - Updated documentation and CLI reference materials
+  - Cleaned up file permissions and standardized project structure
+
 ## [v1.4.5] - 2025-07-19
 
 ### Fixed
@@ -94,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 🏗️ Docker Engine Mode Infrastructure
 - **Complete Containerization**: RXIV_ENGINE=DOCKER mode for all operations requiring only Docker and Make
-- **Docker Image Management**: Comprehensive build system in `submodules/docker-rxiv-maker/` with automated image building
+- **Docker Image Management**: Comprehensive build system in `src/docker/` with automated image building
 - **GitHub Actions Acceleration**: 5x faster CI/CD workflows using pre-compiled Docker images
 - **Platform Detection**: Automatic AMD64/ARM64 architecture compatibility with performance optimizations
 - **Safe Build Wrapper**: Resource monitoring, timeout management, and system protection via `build-safe.sh`

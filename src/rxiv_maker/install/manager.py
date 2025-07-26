@@ -123,11 +123,10 @@ class InstallManager:
         self.logger.info("Running pre-installation checks...")
 
         # Check for admin privileges if needed
-        if self.platform_name == "Windows":
-            if not self._has_admin_privileges():
-                self.logger.warning(
-                    "Administrator privileges may be required for system installations"
-                )
+        if self.platform_name == "Windows" and not self._has_admin_privileges():
+            self.logger.warning(
+                "Administrator privileges may be required for system installations"
+            )
 
         # Check available disk space
         if not self._check_disk_space():

@@ -13,6 +13,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 
+import pytest
+
 
 class TestNetworkErrorHandling(unittest.TestCase):
     """Test network error handling scenarios."""
@@ -166,9 +168,8 @@ author: "Test Author
         try:
             import yaml
 
-            with self.assertRaises(yaml.YAMLError):
-                with open(yaml_file) as file:
-                    yaml.safe_load(file)
+            with self.assertRaises(yaml.YAMLError), open(yaml_file) as file:
+                yaml.safe_load(file)
         finally:
             yaml_file.unlink(missing_ok=True)
 
@@ -282,6 +283,7 @@ class TestResourceExhaustionScenarios(unittest.TestCase):
         minimum_required_gb = 2.0
         self.assertLess(free_gb, minimum_required_gb)
 
+    @pytest.mark.fast
     def test_memory_exhaustion(self):
         """Test handling of memory exhaustion."""
         try:
@@ -435,14 +437,6 @@ class TestExternalDependencyFailures(unittest.TestCase):
             subprocess.run(["Rscript", "--version"], capture_output=True)
 
     @patch("subprocess.run")
-    def test_mermaid_cli_not_installed(self, mock_run):
-        """Test handling when Mermaid CLI is not installed."""
-        mock_run.side_effect = FileNotFoundError("mmdc: command not found")
-
-        with self.assertRaises(FileNotFoundError):
-            subprocess.run(["mmdc", "--version"], capture_output=True)
-
-    @patch("subprocess.run")
     def test_docker_not_available(self, mock_run):
         """Test handling when Docker is not available."""
         mock_run.side_effect = FileNotFoundError("docker: command not found")
@@ -489,7 +483,7 @@ class TestDataIntegrityAndCorruption(unittest.TestCase):
             # Attempt to read as text (should handle encoding errors)
             try:
                 with open(corrupted_file, encoding="utf-8") as file:
-                    content = file.read()
+                    file.read()
                 # If we get here, the file wasn't actually corrupted enough
             except UnicodeDecodeError:
                 # This is expected for binary data
@@ -552,17 +546,14 @@ class TestGracefulDegradationScenarios(unittest.TestCase):
         docker_available = False
 
         # Test fallback logic
-        if docker_available:
-            execution_mode = "docker"
-        else:
-            execution_mode = "local"
+        execution_mode = "docker" if docker_available else "local"
 
         self.assertEqual(execution_mode, "local")
 
     def test_skip_optional_features_when_dependencies_missing(self):
         """Test skipping optional features when dependencies are missing."""
         optional_features = {
-            "mermaid_diagrams": False,  # mmdc not available
+            "mermaid_diagrams": True,  # Always available via mermaid.ink API
             "r_figures": False,  # R not available
             "advanced_pdf_features": True,  # LaTeX available
         }
@@ -571,7 +562,8 @@ class TestGracefulDegradationScenarios(unittest.TestCase):
             name for name, available in optional_features.items() if available
         ]
         self.assertIn("advanced_pdf_features", enabled_features)
-        self.assertNotIn("mermaid_diagrams", enabled_features)
+        self.assertIn("mermaid_diagrams", enabled_features)
+        self.assertNotIn("r_figures", enabled_features)
 
     def test_continue_with_warnings_for_non_critical_failures(self):
         """Test continuing execution with warnings for non-critical failures."""
@@ -597,10 +589,8 @@ class TestGracefulDegradationScenarios(unittest.TestCase):
         self.assertFalse(can_continue)  # Has errors in this case
 
         # Test case with only warnings
-        warnings_only = [issue for issue, severity in issues if severity == "warning"]
-        can_continue_warnings = (
-            len([issue for issue, severity in issues if severity == "error"]) == 0
-        )
+        [issue for issue, severity in issues if severity == "warning"]
+        (len([issue for issue, severity in issues if severity == "error"]) == 0)
         # Remove the error for this test
         test_issues = [i for i in issues if i[1] != "error"]
         test_can_continue = (

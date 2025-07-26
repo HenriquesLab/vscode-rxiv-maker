@@ -69,6 +69,7 @@ class TestStandaloneScripts:
             "setup_environment.py",
         ],
     )
+    @pytest.mark.fast
     def test_command_scripts_imports(self, src_path, script_name):
         """Test that command scripts can be executed without import errors."""
         script_path = src_path / "rxiv_maker" / "commands" / script_name
@@ -80,6 +81,7 @@ class TestStandaloneScripts:
 
         assert success, f"Script {script_name} has import errors: {error}"
 
+    @pytest.mark.fast
     def test_pdf_validator_imports(self, src_path):
         """Test that pdf_validator.py can be imported."""
         script_path = src_path / "rxiv_maker" / "validators" / "pdf_validator.py"

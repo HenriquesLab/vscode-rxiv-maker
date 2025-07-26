@@ -67,8 +67,7 @@ def test_full_documentation_generation():
             result = subprocess.run(
                 ["uv", "add", "lazydocs"],
                 check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
             )
         except (subprocess.CalledProcessError, FileNotFoundError):
             try:
