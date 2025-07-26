@@ -58,11 +58,11 @@ class TestDockerCairoFunctionality(unittest.TestCase):
         # Test that Docker engine can be configured
         docker_generator = FigureGenerator(engine="docker")
         self.assertEqual(docker_generator.engine, "docker")
-        
+
         # The docker_manager is created when engine="docker"
         # If Docker is not available, the system will fall back to local execution
         # This is expected and correct behavior
-        
+
         # Test that the generator handles Docker/local fallback gracefully
         test_py_file = Path(self.test_dir) / "test_figure.py"
         test_py_file.write_text(
@@ -182,10 +182,10 @@ class TestDockerCairoFunctionality(unittest.TestCase):
         # Test that FigureGenerator can be created with Docker engine
         docker_generator = FigureGenerator(engine="docker")
         self.assertEqual(docker_generator.engine, "docker")
-        
+
         # Test that Docker manager is initialized (if Docker is available)
         # If not available, the system will fall back gracefully
-        
+
         # Create a simple test case
         test_file = Path(self.test_dir) / "test.py"
         test_file.write_text("print('test')")

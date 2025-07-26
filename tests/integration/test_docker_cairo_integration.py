@@ -102,13 +102,16 @@ cat("R figure generated successfully with Cairo backend\\n")
         try:
             # Test Python figure generation
             self.figure_generator.generate_python_figure(python_script)
-            
+
             # If this completes without error, the Docker/local system is working
             self.assertTrue(True, "Figure generation system integration test passed")
-            
+
         except Exception as e:
             # Only fail for unexpected errors, not Docker unavailability
-            if "docker" not in str(e).lower() and "command not found" not in str(e).lower():
+            if (
+                "docker" not in str(e).lower()
+                and "command not found" not in str(e).lower()
+            ):
                 self.fail(f"Unexpected integration test failure: {e}")
             else:
                 # Docker unavailability is acceptable - the system falls back gracefully

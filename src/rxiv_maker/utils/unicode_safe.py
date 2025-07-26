@@ -24,18 +24,18 @@ def supports_unicode() -> bool:
         return True
     if os.environ.get("PYTHONUTF8") == "1":
         return True
-    
+
     # Check if we're on Windows with legacy console
     if os.name == "nt":
         try:
             # Try to encode a test emoji - use checkmark specifically since that's what fails
             test_chars = ["✅", "📦", "❌"]
             stdout_encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
-            
+
             # If encoding is cp1252 or similar, assume no Unicode support
             if stdout_encoding.lower() in ("cp1252", "cp1251", "cp1250", "ascii"):
                 return False
-                
+
             for char in test_chars:
                 char.encode(stdout_encoding)
             return True

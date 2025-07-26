@@ -208,7 +208,7 @@ jobs:
               a.scripts,
               a.binaries,
               a.zipfiles,
-              a.datas,
+              a.data,
               [],
               name='${{ matrix.binary_name }}',
               debug=False,

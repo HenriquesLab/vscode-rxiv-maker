@@ -74,7 +74,7 @@ exe = EXE(
     a.scripts,
     a.binaries,
     a.zipfiles,
-    a.datas,
+    a.data,
     [],
     name='rxiv',
     debug=False,

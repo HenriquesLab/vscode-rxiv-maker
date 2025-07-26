@@ -168,12 +168,7 @@ def save_figure(fig, output_path=None):
     # Use environment variable if set, otherwise current working directory
     if output_path is None:
         env_output_dir = os.environ.get("RXIV_FIGURE_OUTPUT_DIR")
-        if env_output_dir:
-            output_path = Path(env_output_dir)
-        else:
-            # Fallback to current working directory (which is the figure subdirectory
-            # when called by generate_figures.py)
-            output_path = Path.cwd()
+        output_path = Path(env_output_dir) if env_output_dir else Path.cwd()
     else:
         output_path = Path(output_path)
 

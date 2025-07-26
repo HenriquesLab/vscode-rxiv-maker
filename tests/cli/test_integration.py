@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from click.testing import CliRunner
 
@@ -206,7 +206,9 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test figures command
-            with patch("rxiv_maker.commands.generate_figures.FigureGenerator") as mock_generator_class:
+            with patch(
+                "rxiv_maker.commands.generate_figures.FigureGenerator"
+            ) as mock_generator_class:
                 mock_generator = Mock()
                 mock_generator.generate_all_figures.return_value = None
                 mock_generator_class.return_value = mock_generator

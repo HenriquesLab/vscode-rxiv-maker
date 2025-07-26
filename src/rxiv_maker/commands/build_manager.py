@@ -232,7 +232,7 @@ class BuildManager:
             # Convert to absolute path, then make relative to workspace directory
             manuscript_abs = manuscript_path.resolve()
             workspace_dir = self.docker_manager.workspace_dir
-            
+
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
@@ -838,7 +838,7 @@ class BuildManager:
         try:
             # Convert paths to be relative to Docker workspace
             workspace_dir = self.docker_manager.workspace_dir
-            
+
             # Handle manuscript path
             manuscript_path = Path(self.manuscript_path)
             manuscript_abs = manuscript_path.resolve()
@@ -846,7 +846,7 @@ class BuildManager:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
                 manuscript_rel = manuscript_path.name
-            
+
             # Handle PDF path
             pdf_abs = self.output_pdf.resolve()
             try:

@@ -329,7 +329,7 @@ class TestReleaseWorkflowIntegration:
         # Should use custom artifact management action
         assert "./.github/actions/artifact-management" in content
 
-        # Should handle binary artifacts  
+        # Should handle binary artifacts
         assert "artifact" in content.lower()
 
     def test_error_handling_in_workflow(self):

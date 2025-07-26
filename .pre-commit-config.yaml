@@ -12,7 +12,7 @@ repos:
       - id: check-toml
         exclude: ^git_submodules/.*$
       - id: check-json
-        exclude: ^git_submodules/.*$
+        exclude: ^(git_submodules/.*|submodules/.*)$
       - id: check-merge-conflict
         exclude: ^git_submodules/.*$
       - id: check-added-large-files
