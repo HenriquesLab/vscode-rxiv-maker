@@ -105,19 +105,17 @@ runs:
       shell: bash
       run: |
         # Install Python dependencies and package in development mode
-        # Retry on failure to handle transient network issues
-        for i in {1..3}; do
-          if uv sync --cache-clear; then
-            echo "✅ Dependencies synced successfully on attempt $i"
-            break
-          else
-            echo "⚠️ Sync attempt $i failed, retrying..."
-            sleep 5
-          fi
-        done
-        
-        # Install package in development mode
-        uv pip install -e . --force-reinstall
+        # Try sync first, fallback to manual install on persistent failures
+        if uv sync; then
+          echo "✅ Dependencies synced successfully"
+        else
+          echo "⚠️ Sync failed, attempting manual installation..."
+          # Fallback to manual dependency installation
+          uv pip install -e . || {
+            echo "❌ Manual installation failed, trying with --force-reinstall"
+            uv pip install -e . --force-reinstall
+          }
+        fi
 
     - name: Verify CLI installation
       if: inputs.install-python-deps == 'true'
