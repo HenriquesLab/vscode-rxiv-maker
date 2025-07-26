@@ -419,7 +419,7 @@ jobs:
         MANUSCRIPT_BASENAME=$(basename "$MANUSCRIPT_PATH")
 
         # Try multiple possible PDF names in order of preference (space-separated)
-        PDF_CANDIDATES="output/${MANUSCRIPT_BASENAME}.pdf output/MANUSCRIPT.pdf output/${MANUSCRIPT_PATH}.pdf ${MANUSCRIPT_PATH}/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}.pdf"
+        PDF_CANDIDATES="output/${MANUSCRIPT_BASENAME}.pdf output/MANUSCRIPT.pdf output/${MANUSCRIPT_PATH}.pdf ${MANUSCRIPT_PATH}/output/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}.pdf"
 
         echo "🔍 Looking for generated PDF files..."
         echo "  📂 Manuscript path: $MANUSCRIPT_PATH"
