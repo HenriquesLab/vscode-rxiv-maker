@@ -70,8 +70,20 @@ def migrate_cache_file(legacy_path: Path, new_path: Path, force: bool = False) -
     # Ensure target directory exists
     new_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Move the file
-    legacy_path.rename(new_path)
+    # Move the file (handle Windows behavior)
+    try:
+        # If forced and target exists, remove it first
+        if force and new_path.exists():
+            new_path.unlink()
+        legacy_path.rename(new_path)
+    except OSError:
+        # On Windows, rename may fail even if we checked exists()
+        # Use a more robust approach
+        import shutil
+
+        if force and new_path.exists():
+            new_path.unlink()
+        shutil.move(str(legacy_path), str(new_path))
 
     return True
 
@@ -81,9 +93,8 @@ def cleanup_legacy_cache_dir() -> None:
     legacy_dir = get_legacy_cache_dir()
 
     if legacy_dir.exists() and legacy_dir.is_dir():
-        try:
+        import contextlib
+
+        with contextlib.suppress(OSError):
             # Only remove if empty
             legacy_dir.rmdir()
-        except OSError:
-            # Directory not empty, leave it alone
-            pass

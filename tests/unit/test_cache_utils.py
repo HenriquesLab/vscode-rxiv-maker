@@ -37,7 +37,8 @@ class TestCacheUtils:
         cache_dir = get_cache_dir()
 
         mock_user_cache_dir.assert_called_once_with("rxiv-maker")
-        assert str(cache_dir) == "/tmp/test-cache"
+        # Use Path to handle platform-specific path separators
+        assert cache_dir == Path("/tmp/test-cache")
 
     def test_get_legacy_cache_dir(self):
         """Test legacy cache directory."""

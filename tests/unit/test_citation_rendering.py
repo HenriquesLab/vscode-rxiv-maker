@@ -1,14 +1,28 @@
 """Unit tests for citation rendering in PDF output."""
 
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
 
+def has_latex():
+    """Check if LaTeX is available."""
+    try:
+        result = subprocess.run(["pdflatex", "--version"], capture_output=True)
+        return result.returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+requires_latex = pytest.mark.skipif(not has_latex(), reason="LaTeX not installed")
+
+
 class TestCitationRendering:
     """Test that citations are properly rendered in the final PDF."""
 
+    @requires_latex
     def test_bibtex_processing(self, tmp_path):
         """Test that BibTeX processing works correctly."""
         # Create a minimal manuscript with citations
@@ -198,8 +212,9 @@ class TestCitationProcessingIntegration:
                 f"Citation {citation} appears incomplete in bibliography"
             )
 
+    @requires_latex
     def test_build_process_resolves_citations(self, tmp_path):
-        """Test that the full build process properly resolves citations without question marks."""
+        """Test that the full build process properly resolves citations."""
         # Create a test manuscript
         manuscript_dir = tmp_path / "test_manuscript"
         manuscript_dir.mkdir()
@@ -221,14 +236,15 @@ abstract: "Testing citation resolution."
         # Create main document with problematic citations that were showing as ?
         main_content = """# Introduction
 
-Modern scientific research relies on preprint servers such as arXiv, bioRxiv, and medRxiv for rapid dissemination [@beck2020;@levchenk2024;@Fraser2020].
+Modern scientific research relies on preprint servers such as arXiv, bioRxiv,
+and medRxiv for rapid dissemination [@beck2020;@levchenk2024;@Fraser2020].
 This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
 """
         (manuscript_dir / "01_MAIN.md").write_text(main_content)
 
         # Create bibliography with the problematic citations
         bib_content = """@misc{beck2020,
-    title = {Building trust in preprints: recommendations for servers and other stakeholders},
+    title = {Building trust in preprints: recommendations for servers},
     author = {Beck, Jeffrey and others},
     year = {2020}
 }
@@ -306,5 +322,6 @@ This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
             log_content = log_path.read_text()
             undefined_citations = re.findall(r"Citation.*undefined", log_content)
             assert len(undefined_citations) == 0, (
-                f"Found undefined citations in log: {undefined_citations} - these appear as ? in PDF"
+                f"Found undefined citations in log: {undefined_citations} - "
+                f"these appear as ? in PDF"
             )

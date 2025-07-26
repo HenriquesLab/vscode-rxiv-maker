@@ -45,6 +45,12 @@ class TestDockerCairoIntegration(unittest.TestCase):
 
     def test_cairo_docker_image_integration(self):
         """Test that Cairo Docker integration works end-to-end."""
+        # Check if matplotlib is available
+        try:
+            import matplotlib  # noqa: F401
+        except ImportError:
+            self.skipTest("matplotlib not available - skipping figure generation test")
+
         # Create a simple Python figure script
         python_script = self.python_figures_dir / "test_figure.py"
         python_script.write_text("""
@@ -100,37 +106,52 @@ cat("R figure generated successfully with Cairo backend\\n")
         # Test Docker/local fallback integration
         # The system should work regardless of Docker availability
         try:
+            # Set the output directory for the figure generator
+            self.figure_generator.output_dir = self.figures_dir
+
             # Test Python figure generation
-            output_dir = python_script.parent / python_script.stem
             self.figure_generator.generate_python_figure(python_script)
 
-            # Check if output files were created
+            # Check if output files were created in the expected location
+            # The figure generator creates a subdirectory with the script name
+            output_dir = self.figures_dir / python_script.stem
             png_file = output_dir / f"{python_script.stem}.png"
             pdf_file = output_dir / f"{python_script.stem}.pdf"
 
             # The figure generator should create the output directory and files
+            # In CI environments, figure generation might not work due to
+            # missing dependencies
             if output_dir.exists() and (png_file.exists() or pdf_file.exists()):
-                self.assertTrue(
-                    True, "Figure generation system integration test passed"
+                # Test passed - figures were generated
+                self.assertTrue(True, "Figure generation test passed")
+            else:
+                # No output - skip the test as dependencies are likely missing
+                self.skipTest(
+                    "Figure generation did not produce output - "
+                    "likely missing dependencies in CI"
                 )
-            else:
-                # If no output files were created, the test should skip or pass
-                # This could happen if matplotlib is not available
-                self.skipTest("Figure generation did not produce output files")
 
+        except ImportError as e:
+            # Missing dependencies are acceptable in CI
+            self.skipTest(f"Missing dependencies: {e}")
         except Exception as e:
-            # Only fail for unexpected errors, not Docker unavailability
+            # Check if this is an expected error
             error_msg = str(e).lower()
-            if (
-                "docker" not in error_msg
-                and "command not found" not in error_msg
-                and "no module named" not in error_msg
-                and "matplotlib" not in error_msg
+            if any(
+                expected in error_msg
+                for expected in [
+                    "docker",
+                    "command not found",
+                    "no module named",
+                    "matplotlib",
+                    "importerror",
+                    "modulenotfound",
+                ]
             ):
-                self.fail(f"Unexpected integration test failure: {e}")
+                self.skipTest(f"Expected dependency issue: {e}")
             else:
-                # Docker unavailability or missing dependencies are acceptable
-                self.skipTest(f"Docker or dependencies not available: {e}")
+                # This is an unexpected error - let it propagate
+                raise
 
     @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_mermaid_cairo_integration(self, mock_run):
@@ -297,7 +318,8 @@ This is a test manuscript for Cairo Docker integration.
 
         # Test relative path resolution
         rel_python_dir = self.python_figures_dir.relative_to(self.manuscript_dir)
-        self.assertEqual(str(rel_python_dir), "FIGURES/PYTHON")
+        # Use as_posix() to ensure forward slashes on all platforms
+        self.assertEqual(rel_python_dir.as_posix(), "FIGURES/PYTHON")
 
     @patch("rxiv_maker.utils.platform.platform_detector.run_command")
     def test_multi_format_output_cairo(self, mock_run):
