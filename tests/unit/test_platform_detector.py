@@ -566,7 +566,7 @@ class TestUnicodeEncoding(unittest.TestCase):
             None,
         ]
 
-        with patch("builtins.print") as mock_print:
+        with patch("builtins.print"):
             safe_console_print(mock_console, "✅ Test message", style="green")
 
             # Should try Rich console with ASCII first

@@ -316,10 +316,7 @@ class MacOSInstaller:
 
     def _configure_cairo_environment(self):
         """Configure environment variables for Cairo library discovery."""
-        if self.is_apple_silicon:
-            homebrew_prefix = "/opt/homebrew"
-        else:
-            homebrew_prefix = "/usr/local"
+        homebrew_prefix = "/opt/homebrew" if self.is_apple_silicon else "/usr/local"
 
         # Set up environment variables for CairoSVG
         env_vars = {
@@ -614,26 +611,8 @@ class MacOSInstaller:
 
     def _install_npm_packages(self) -> bool:
         """Install required npm packages."""
-        self.logger.info("Installing npm packages...")
+        self.logger.info("No npm packages required - mermaid-cli dependency removed")
 
-        packages = ["@mermaid-js/mermaid-cli"]
-
-        success = True
-        for package in packages:
-            try:
-                self.logger.debug(f"Installing npm package: {package}")
-                result = subprocess.run(
-                    ["npm", "install", "-g", package],
-                    capture_output=True,
-                    text=True,
-                    timeout=300,
-                )
-
-                if result.returncode != 0:
-                    self.logger.debug(f"Failed to install {package}: {result.stderr}")
-                    success = False
-            except Exception as e:
-                self.logger.debug(f"Error installing {package}: {e}")
-                success = False
-
-        return success
+        # Mermaid diagrams are now handled via Python-based solutions (cairosvg)
+        # No need for puppeteer-based mermaid-cli
+        return True

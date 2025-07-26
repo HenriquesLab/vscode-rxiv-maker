@@ -107,12 +107,12 @@ image-test: image-local
 	@docker run --rm $(DOCKER_HUB_REPO):test pdflatex --version | head -1
 	@echo "📋 Testing R installation..."
 	@docker run --rm $(DOCKER_HUB_REPO):test R --version | head -1
-	@echo "📋 Testing Mermaid CLI..."
-	@docker run --rm $(DOCKER_HUB_REPO):test mmdc --version
+	@echo "📋 Testing mermaid.ink API support..."
+	@docker run --rm $(DOCKER_HUB_REPO):test python -c "import requests; print('✅ Mermaid.ink API ready')"
 	@echo "✅ All Docker image tests passed!"
 
 # Architecture support: AMD64 and ARM64
-# CairoSVG-based approach works on all platforms without browser dependencies
+# Mermaid.ink API approach works on all platforms without browser or Node.js dependencies
 
 # Docker Hub login helper
 .PHONY: login

@@ -449,7 +449,7 @@ class TestDistributionCompliance:
             / "workflows"
             / "release.yml"
         )
-        content = workflow_path.read_text()
+        workflow_path.read_text()
 
         # Should mention license or include it in releases
         # (This is handled by GitHub automatically for tagged releases)

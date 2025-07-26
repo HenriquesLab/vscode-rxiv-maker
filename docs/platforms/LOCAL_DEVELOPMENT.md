@@ -4,7 +4,7 @@ This guide covers setting up Rxiv-Maker for local development across different p
 
 ## 🐳 Quick Start with Docker (Recommended)
 
-**If you prefer to avoid installing LaTeX, Python, R, and Node.js locally, you can use Docker to run everything in containers.**
+**If you prefer to avoid installing LaTeX, Python, and R locally, you can use Docker to run everything in containers.**
 
 ### Prerequisites
 - Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
@@ -31,7 +31,7 @@ make pdf  # Now runs in Docker automatically
 ```
 
 ### Benefits of Docker Mode
-- **No dependency installation**: Skip LaTeX, Python, R, Node.js installation
+- **No dependency installation**: Skip LaTeX, Python, R installation
 - **Cross-platform consistency**: Identical environment on Windows, macOS, Linux
 - **No version conflicts**: Isolated from your local installations
 - **Faster CI/CD**: Same pre-compiled images used in GitHub Actions

@@ -221,7 +221,7 @@ class TestWorkflowStepSimulation(unittest.TestCase):
             ["git", "config", "user.email", "github-actions@github.com"],
         ]
 
-        for cmd in commands:
+        for _cmd in commands:
             result = mock_run.return_value
             self.assertEqual(result.returncode, 0)
 
@@ -311,7 +311,7 @@ class TestArtifactHandling(unittest.TestCase):
             "figures": "output/Figures/**/*",
         }
 
-        for artifact_type, path_pattern in base_paths.items():
+        for _artifact_type, path_pattern in base_paths.items():
             self.assertIsInstance(path_pattern, str)
             self.assertIn("output/", path_pattern)
 
@@ -458,7 +458,7 @@ class TestContainerizedBuildOptimizations(unittest.TestCase):
             "user": "root",
         }
 
-        for key, value in build_inputs.items():
+        for _key, value in build_inputs.items():
             self.assertIsInstance(value, str)
             self.assertTrue(len(value) > 0)
 

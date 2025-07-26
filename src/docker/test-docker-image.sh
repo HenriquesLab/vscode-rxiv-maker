@@ -70,10 +70,9 @@ test_basic_functionality() {
     log_info "Testing LaTeX installation..."
     docker run --rm "$DOCKER_IMAGE" pdflatex --version | head -1
 
-    # Test Node.js and Mermaid
-    log_info "Testing Node.js and Mermaid..."
-    docker run --rm "$DOCKER_IMAGE" node --version
-    docker run --rm "$DOCKER_IMAGE" mmdc --version
+    # Test Python requests (for mermaid.ink API)
+    log_info "Testing Python requests (for mermaid.ink API)..."
+    docker run --rm "$DOCKER_IMAGE" python -c "import requests; print('✅ Mermaid.ink API ready')"
 
     # Test R
     log_info "Testing R installation..."

@@ -289,7 +289,7 @@ class DockerManager:
             if result.returncode != 0:
                 return False
 
-            # Test critical Python dependencies (cairosvg, numpy, matplotlib)
+            # Test critical Python dependencies (numpy, matplotlib, requests)
             deps_test = [
                 "docker",
                 "exec",
@@ -298,7 +298,7 @@ class DockerManager:
                 "-c",
                 """
 try:
-    import cairosvg, numpy, matplotlib, yaml
+    import numpy, matplotlib, yaml, requests
     print('Critical dependencies verified')
 except ImportError as e:
     print(f'Dependency error: {e}')
@@ -560,48 +560,6 @@ if __name__ == "__main__":
 
         return self.run_command(command=cmd_parts, session_key="mermaid_generation")
 
-    def run_cairo_conversion(
-        self,
-        input_file: Path,
-        output_file: Path,
-        output_format: str,
-        dpi: int | None = 300,
-    ) -> subprocess.CompletedProcess:
-        """Convert SVG to other formats using CairoSVG with optimized execution."""
-        try:
-            input_rel = input_file.relative_to(self.workspace_dir)
-        except ValueError:
-            input_rel = Path(input_file.name)
-
-        try:
-            output_rel = output_file.relative_to(self.workspace_dir)
-        except ValueError:
-            output_rel = Path("output") / output_file.name
-
-        # Build Python command for Cairo conversion with dynamic dependency installation
-        cairo_cmd = f"""
-try:
-    import cairosvg
-except ImportError:
-    import subprocess
-    import sys
-    print("Installing cairosvg...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "cairosvg"])
-    import cairosvg
-
-cairosvg.svg2{output_format}(
-    url='/workspace/{input_rel}',
-    write_to='/workspace/{output_rel}'"""
-
-        if output_format == "png" and dpi is not None:
-            cairo_cmd += f", dpi={dpi}"
-
-        cairo_cmd += ")"
-
-        return self.run_command(
-            command=["python3", "-c", cairo_cmd], session_key="cairo_conversion"
-        )
-
     def run_python_script(
         self,
         script_file: Path,
@@ -823,7 +781,6 @@ cairosvg.svg2{output_format}(
         common_sessions = {
             "validation": self.warmup_session("validation"),
             "mermaid_generation": self.warmup_session("mermaid_generation"),
-            "cairo_conversion": self.warmup_session("cairo_conversion"),
             "python_execution": self.warmup_session("python_execution"),
             "r_execution": self.warmup_session("r_execution"),
             "latex_compilation": self.warmup_session("latex_compilation"),

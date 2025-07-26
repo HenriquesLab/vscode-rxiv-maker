@@ -89,7 +89,8 @@ def track_changes(
                     task, description="✅ Change-tracked PDF generated successfully!"
                 )
                 console.print(
-                    f"📄 PDF with change tracking generated: {output_dir}/{Path(manuscript_path).name}.pdf",
+                    f"📄 PDF with change tracking generated: "
+                    f"{output_dir}/{Path(manuscript_path).name}.pdf",
                     style="green",
                 )
                 console.print(

@@ -16,7 +16,7 @@ class TestTemplateProcessor:
     def test_get_template_path(self):
         """Test getting the template path."""
         template_path = get_template_path()
-        assert isinstance(template_path, (str, Path))
+        assert isinstance(template_path, str | Path)
         assert "template.tex" in str(template_path)
 
     def test_generate_keywords(self):

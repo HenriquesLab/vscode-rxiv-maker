@@ -237,6 +237,11 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Auto-generated API documentation
+docs/api/*.md
+!docs/api/README.md
+!docs/api/index.md
+
 # Git submodules are tracked by .gitmodules
 # Individual submodule contents are managed by git submodule commands
 
@@ -249,3 +254,4 @@ output.md
 submodules/vscode-rxiv-maker/node_modules
 test-results
 plan_prompt.md
+.gha-logs

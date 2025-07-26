@@ -206,10 +206,7 @@ exe = EXE(
         """Test that binary names are platform-specific."""
         import platform
 
-        if platform.system() == "Windows":
-            expected_ext = ".exe"
-        else:
-            expected_ext = ""
+        expected_ext = ".exe" if platform.system() == "Windows" else ""
 
         binary_name = "rxiv" + expected_ext
 

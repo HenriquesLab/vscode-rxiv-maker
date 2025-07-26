@@ -23,7 +23,7 @@ readonly NC='\033[0m' # No Color
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly GITHUB_API_BASE="https://api.github.com"
-readonly LOG_DIR="$PROJECT_ROOT/gha-logs"
+readonly LOG_DIR="$PROJECT_ROOT/.gha-logs"
 
 # Repository configurations
 REPO_CONFIGS=(

@@ -110,28 +110,43 @@ def process_directory(dir_path, output_dir, base_package=""):
             )
 
             try:
-                # Import the module
-                spec = importlib.util.spec_from_file_location(full_module_name, path)
-                if spec is None:
-                    print(f"Failed to load spec for {path}")
-                    continue
+                # Try to import using the regular import system first
+                try:
+                    module = importlib.import_module(f"rxiv_maker.{full_module_name}")
+                    print(f"Generated documentation for rxiv_maker.{full_module_name}")
+                except ImportError:
+                    # Fallback to spec-based loading
+                    spec = importlib.util.spec_from_file_location(
+                        f"rxiv_maker.{full_module_name}", path
+                    )
+                    if spec is None:
+                        print(f"Failed to load spec for {path}")
+                        continue
 
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
+                    module = importlib.util.module_from_spec(spec)
+                    # Add to sys.modules to help with relative imports
+                    sys.modules[f"rxiv_maker.{full_module_name}"] = module
+                    spec.loader.exec_module(module)
+                    print(
+                        f"Generated documentation for rxiv_maker.{full_module_name} (fallback)"
+                    )
 
-                # Generate documentation
-                generate_markdown_doc(module_name, module, output_dir)
-                print(f"Generated documentation for {full_module_name}")
+                # Generate documentation with clean module name
+                clean_name = full_module_name.replace(".", "_")
+                generate_markdown_doc(clean_name, module, output_dir)
+
             except Exception as e:
-                print(f"Failed to generate docs for {full_module_name}: {e}")
+                print(f"Failed to generate docs for rxiv_maker.{full_module_name}: {e}")
 
 
 def main():
     """Main entry point for the documentation generator."""
-    # Ensure we can import modules from the current directory
-    sys.path.insert(0, os.path.abspath("."))
+    # Ensure we can import modules from the src directory
+    project_root = os.path.abspath(".")
+    src_path = os.path.join(project_root, "src")
+    sys.path.insert(0, src_path)
 
-    src_dir = "src/py"
+    src_dir = "src/rxiv_maker"
     output_dir = "docs/api"
 
     # Process the main directory

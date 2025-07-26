@@ -106,17 +106,7 @@ class NodeJSHandler:
     def verify_mermaid(self) -> bool:
         """Verify Mermaid CLI installation.
 
-        Note: Mermaid CLI is still needed for SVG generation, but it's no longer
-        a Node.js essential package since we use CairoSVG for raster conversion.
+        Note: Mermaid CLI dependency has been removed in favor of Python-based solutions.
+        This always returns False to indicate mermaid CLI is not required.
         """
-        try:
-            result = subprocess.run(
-                ["mmdc", "--version"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=10,
-            )
-            return result.returncode == 0
-        except:
-            return False
+        return False  # No longer using mermaid CLI (puppeteer dependency removed)

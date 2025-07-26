@@ -25,6 +25,7 @@ if __name__ == "__main__":
 try:
     from crossref_commons.retrieval import get_publication_as_json
 except ImportError:
+    get_publication_as_json = None
     print("Error: crossref_commons not available")
     print("Install with: pip install crossref-commons")
     sys.exit(1)

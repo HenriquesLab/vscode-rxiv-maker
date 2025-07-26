@@ -31,7 +31,7 @@ This guide covers everything from getting started to advanced workflows, practic
 **Prerequisites:** 
 - Python 3.11+ (check with `python --version`)
 - LaTeX distribution (TeX Live, MacTeX, or MiKTeX) - or use Docker mode
-- Make (typically pre-installed on macOS/Linux, see [platform guide](platforms/LOCAL_DEVELOPMENT.md) for Windows)
+- Make (typically pre-installed on macOS/Linux, see [platform guide](../platforms/LOCAL_DEVELOPMENT.md) for Windows)
 
 **Quick Start with Modern CLI:**
 ```bash
@@ -81,7 +81,7 @@ make pdf  # Legacy command
 **Prerequisites:** 
 - AMD64/x86_64 system (Intel/AMD processors only)
 - Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
-- Install Make (typically pre-installed on macOS/Linux, see [platform guide](platforms/LOCAL_DEVELOPMENT.md) for Windows)
+- Install Make (typically pre-installed on macOS/Linux, see [platform guide](../platforms/LOCAL_DEVELOPMENT.md) for Windows)
 
 ```bash
 # Clone and use immediately with Docker
@@ -106,8 +106,8 @@ make validate RXIV_ENGINE=DOCKER   # Validate in container
 
 **No local installation required**
 
-- **🌐 Google Colab**: [Tutorial](tutorials/google_colab.md) - Browser-based, perfect for trying Rxiv-Maker
-- **⚡ GitHub Actions**: [Setup Guide](../github-actions-guide.md) - Automated builds on every commit
+- **🌐 Google Colab**: [Tutorial](../tutorials/google_colab.md) - Browser-based, perfect for trying Rxiv-Maker
+- **⚡ GitHub Actions**: [Setup Guide](../workflows/github-actions.md) - Automated builds on every commit
 
 </details>
 
@@ -242,7 +242,7 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
 - **Continuous Integration (CI):**
   - GitHub Actions builds PDFs via manual trigger or git tags
   - Accelerated with pre-compiled Docker images (~2 min vs. ~10 min builds)
-  - See [GitHub Actions Guide](github-actions-guide.md) for step-by-step instructions
+  - See [GitHub Actions Guide](../workflows/github-actions.md) for step-by-step instructions
   - Customize workflows in `.github/workflows/`
 - **Environment Variables:**
   - Use a `.env` file for persistent settings
@@ -319,7 +319,7 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
   - Use `[@cite1;@cite2]` in Markdown
 - **CI/CD Automation:**
   - GitHub Actions builds PDFs on manual trigger or tags
-  - See [GitHub Actions Guide](github-actions-guide.md) for complete instructions
+  - See [GitHub Actions Guide](../workflows/github-actions.md) for complete instructions
 
 ---
 
@@ -348,7 +348,7 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
   - Check: Are all dependencies listed in `pyproject.toml`?
   - Check: Does the manuscript have required files (`00_CONFIG.yml`, `01_MAIN.md`)?
   - Solution: Review workflow logs in Actions tab → Click failed run → Click "build-pdf" job
-  - See [GitHub Actions Guide](github-actions-guide.md) for detailed troubleshooting
+  - See [GitHub Actions Guide](../workflows/github-actions.md) for detailed troubleshooting
 - **Debugging Tips:**
   - Always start with `rxiv validate` to catch issues early
   - Use `rxiv pdf --verbose` for more output

@@ -499,7 +499,7 @@ affiliations:
 
     def test_filename_generation(self):
         """Test proper filename generation for diff files."""
-        manager = TrackChangesManager(
+        TrackChangesManager(
             manuscript_path=str(self.manuscript_path),
             output_dir=str(self.output_dir),
             git_tag="v1.0.0",

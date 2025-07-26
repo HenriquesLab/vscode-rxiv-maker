@@ -146,33 +146,6 @@ class DependencyChecker:
             description=description,
         )
 
-    def check_nodejs(self) -> DependencyInfo:
-        """Check for Node.js (required for Mermaid diagrams)."""
-        self.log("Checking Node.js...")
-
-        found, version, path = self.check_command_version("node")
-
-        # Platform-specific installation commands
-        install_commands = {
-            "Windows": "choco install -y nodejs",
-            "macOS": "brew install node@20",
-            "Linux": "sudo apt install -y nodejs npm",
-        }
-
-        description = "JavaScript runtime (required for Mermaid diagram generation)"
-        alternative = "Skip Mermaid diagrams or use Docker mode"
-
-        return DependencyInfo(
-            name="Node.js",
-            required=False,  # Optional, only needed for Mermaid
-            found=found,
-            version=version,
-            path=path,
-            install_commands=install_commands,
-            description=description,
-            alternative=alternative,
-        )
-
     def check_r(self) -> DependencyInfo:
         """Check for R (optional, for R figure scripts)."""
         self.log("Checking R...")
@@ -257,7 +230,6 @@ class DependencyChecker:
             self.check_python(),
             self.check_make(),
             self.check_latex(),
-            self.check_nodejs(),
             self.check_r(),
             self.check_git(),
         ]

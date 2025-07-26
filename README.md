@@ -60,7 +60,6 @@ rich>=13.0.0         # Beautiful terminal output
 
 ### Optional Dependencies (Local Development Only Without Docker)
 - **LaTeX**: For PDF generation (TeX Live, MacTeX, or MikTeX)
-- **Node.js**: For Mermaid diagram generation (specifically `mmdc` CLI tool for SVG generation)
 - **R**: For R-based figure scripts
 
 ### Platform-Specific Setup
@@ -264,7 +263,6 @@ rxiv check-installation
 **What gets installed:**
 - Python packages (matplotlib, numpy, etc.)
 - LaTeX distribution (for PDF generation)
-- Node.js + Mermaid CLI (`mmdc` command for diagram SVG generation)
 - R language (optional, for statistical figures)
 - System libraries (automatically detected)
 

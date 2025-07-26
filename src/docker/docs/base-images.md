@@ -101,10 +101,6 @@ The `build.sh` script supports various options:
 - pip, setuptools, wheel (latest versions)
 - Virtual environment support
 
-### Node.js Tools
-- Node.js 18 LTS
-- npm (latest)
-- @mermaid-js/mermaid-cli (global)
 
 ### R Environment
 - R base and R development packages
@@ -199,7 +195,7 @@ docker run -it rxivmaker/base:latest bash
 docker run rxivmaker/base:latest python3 --version
 docker run rxivmaker/base:latest node --version
 docker run rxivmaker/base:latest pdflatex --version
-docker run rxivmaker/base:latest mmdc --version
+docker run rxivmaker/base:latest python3 -c "import requests; print('Mermaid.ink API ready')"
 docker run rxivmaker/base:latest R --version
 ```
 

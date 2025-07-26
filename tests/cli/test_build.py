@@ -193,7 +193,7 @@ authors:
             (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
 
             with patch(
-                "rxiv_maker.commands.build_manager.BuildManager"
+                "rxiv_maker.cli.commands.build.BuildManager"
             ) as mock_build_manager:
                 mock_build_manager.return_value.run_full_build.return_value = False
 
@@ -226,7 +226,7 @@ authors:
             (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
 
             with patch(
-                "rxiv_maker.commands.build_manager.BuildManager"
+                "rxiv_maker.cli.commands.build.BuildManager"
             ) as mock_build_manager:
                 mock_build_manager.return_value.run_full_build.side_effect = (
                     KeyboardInterrupt()
@@ -261,7 +261,7 @@ authors:
             (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
 
             with patch(
-                "rxiv_maker.commands.build_manager.BuildManager"
+                "rxiv_maker.cli.commands.build.BuildManager"
             ) as mock_build_manager:
                 mock_build_manager.return_value.run_full_build.side_effect = Exception(
                     "Test error"
