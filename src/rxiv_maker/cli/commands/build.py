@@ -182,3 +182,7 @@ def build(
         if verbose:
             logger.console.print_exception()
         sys.exit(1)
+    finally:
+        # Ensure logging cleanup for Windows compatibility
+        from ..core.logging_config import cleanup
+        cleanup()

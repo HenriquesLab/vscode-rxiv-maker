@@ -117,6 +117,9 @@ runs:
           }
         fi
 
+        # Also install in system Python for subprocess calls in integration tests
+        python -m pip install -e . || echo "⚠️ System Python installation failed (might be expected)"
+
     - name: Verify CLI installation
       if: inputs.install-python-deps == 'true'
       shell: bash
@@ -124,3 +127,5 @@ runs:
         # Test that rxiv command is available
         which rxiv || echo "rxiv not in PATH"
         uv run rxiv --version || echo "rxiv command failed"
+        # Also test system Python access
+        python -c "import rxiv_maker; print('✅ System Python can import rxiv_maker')" || echo "⚠️ System Python import failed"
