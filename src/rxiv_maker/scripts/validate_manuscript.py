@@ -354,7 +354,9 @@ class ManuscriptValidator:
 
         # Run LaTeX error parsing (if log file exists)
         try:
-            latex_parser = LaTeXErrorParser(manuscript_str)
+            latex_parser = LaTeXErrorParser(
+                manuscript_str, None
+            )  # Let it auto-find the log file
             latex_result = latex_parser.validate()
             enhanced_validation_passed &= self._process_validation_result(latex_result)
         except Exception as e:

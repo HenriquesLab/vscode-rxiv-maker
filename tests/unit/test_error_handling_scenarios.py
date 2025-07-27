@@ -581,15 +581,17 @@ class TestGracefulDegradationScenarios(unittest.TestCase):
             else:
                 errors.append(issue)
 
-        # Should continue if only warnings
+        # Should NOT continue if there are errors
         can_continue = len(errors) == 0
         self.assertFalse(can_continue)  # Has errors in this case
 
         # Test case with only warnings
-        [issue for issue, severity in issues if severity == "warning"]
-        assert len([issue for issue, severity in issues if severity == "error"]) == 0
         # Remove the error for this test
         test_issues = [i for i in issues if i[1] != "error"]
+        # Now verify test_issues only has warnings
+        assert (
+            len([issue for issue, severity in test_issues if severity == "error"]) == 0
+        )
         test_can_continue = (
             len([issue for issue, severity in test_issues if severity == "error"]) == 0
         )
