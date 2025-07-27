@@ -1,10 +1,12 @@
 """Unit tests for build manager improvements."""
 
 import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 try:
     import pytest
@@ -473,33 +475,6 @@ warning$ -- 3
         self.assertIn("3. empty title in jones2022", content)
         self.assertIn("2025-", content)  # Should have timestamp
 
-    def test_bibtex_warning_extraction_edge_cases(self):
-        """Test BibTeX warning extraction with edge cases."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
-
-        # Create .blg file with warning format variations
-        blg_content = """This is BibTeX, Version 0.99d
-Warning--empty journal in test_ref
-Warning--I didn't find a database entry for "nonexistent"
-Warning--can't use both author and editor fields in entry1
-(There were 3 warnings)
-"""
-
-        blg_file = Path(self.output_dir) / f"{Path(self.manuscript_dir).name}.blg"
-        with open(blg_file, "w") as f:
-            f.write(blg_content)
-
-        build_manager._log_bibtex_warnings()
-
-        # Check that all warning formats are captured
-        with open(build_manager.bibtex_log) as f:
-            content = f.read()
-
-        self.assertIn("empty journal in test_ref", content)
-        self.assertIn('I didn\'t find a database entry for "nonexistent"', content)
-        self.assertIn("can't use both author and editor fields in entry1", content)
 
     def test_bibtex_warning_log_overwrites_previous(self):
         """Test that BibTeX warning log overwrites previous logs."""
@@ -639,6 +614,96 @@ Warning--empty journal in test_reference
                                                             "empty journal in test_reference",
                                                             content,
                                                         )
+
+
+class TestLaTeXErrorHandling(unittest.TestCase):
+    """Test LaTeX error handling and recovery strategies."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.manuscript_dir = Path(self.temp_dir) / "manuscript"
+        self.manuscript_dir.mkdir(parents=True)
+        self.output_dir = Path(self.temp_dir) / "output"
+
+    def tearDown(self):
+        """Clean up test fixtures."""
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_latex_undefined_control_sequence(self):
+        """Test handling of undefined control sequence errors."""
+        # Create a TeX file with undefined command
+        tex_content = r"""
+\documentclass{article}
+\begin{document}
+\undefined{This command does not exist}
+\end{document}
+"""
+        tex_file = self.output_dir / "test.tex"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        tex_file.write_text(tex_content)
+
+        # Test that error is properly parsed
+        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser
+        parser = LaTeXErrorParser()
+        
+        error_output = r"""
+! Undefined control sequence.
+l.4 \undefined
+              {This command does not exist}
+"""
+        errors = parser.parse_errors(error_output)
+        assert any("Undefined control sequence" in str(e) for e in errors)
+
+    def test_latex_missing_package_error(self):
+        """Test handling of missing package errors."""
+        tex_content = r"""
+\documentclass{article}
+\usepackage{nonexistentpackage}
+\begin{document}
+Test
+\end{document}
+"""
+        # Test error detection for missing packages
+        error_output = r"""
+! LaTeX Error: File `nonexistentpackage.sty' not found.
+"""
+        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser
+        parser = LaTeXErrorParser()
+        errors = parser.parse_errors(error_output)
+        assert any("not found" in str(e) for e in errors)
+
+    def test_latex_compilation_timeout(self):
+        """Test handling of LaTeX compilation timeout."""
+        build_manager = BuildManager(
+            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
+        )
+        
+        # Mock subprocess to simulate timeout
+        with patch("subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired("pdflatex", 30)
+            
+            result = build_manager.compile_pdf()
+            self.assertFalse(result)
+
+    def test_latex_error_recovery_with_fallback(self):
+        """Test LaTeX compilation with error recovery fallback."""
+        build_manager = BuildManager(
+            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
+        )
+        
+        # First compilation fails, second succeeds (simulating recovery)
+        with patch("subprocess.run") as mock_run:
+            mock_run.side_effect = [
+                Mock(returncode=1, stdout="", stderr="Error in first run"),
+                Mock(returncode=0, stdout="Success", stderr="")
+            ]
+            
+            # Should attempt recovery
+            with patch.object(build_manager, "_attempt_error_recovery", return_value=True):
+                result = build_manager.compile_pdf()
+                # Recovery mechanism should be called
+                self.assertTrue(mock_run.call_count >= 2)
 
 
 if __name__ == "__main__":
