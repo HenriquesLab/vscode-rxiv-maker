@@ -101,7 +101,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     libsqlite3-dev \
     # Additional graphics and system libraries
-    libcairo2-dev \
     libxt-dev \
     libx11-dev \
     libxmu-dev \
@@ -111,7 +110,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     r-cran-scales \
     r-cran-readr \
     r-cran-tidyr \
-    r-cran-cairo \
     r-cran-svglite \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
@@ -119,7 +117,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Configure R for optimal performance with multiple repository fallbacks
 RUN echo 'options(repos = c(CRAN = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", RSPM = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", RStudio = "https://cran.rstudio.com/", CRAN_Mirror = "https://cloud.r-project.org/"))' >> /usr/lib/R/etc/Rprofile.site \
     && echo 'options(Ncpus = parallel::detectCores())' >> /usr/lib/R/etc/Rprofile.site \
-    && echo 'options(bitmapType = "cairo")' >> /usr/lib/R/etc/Rprofile.site \
     && echo 'options(download.file.method = "auto")' >> /usr/lib/R/etc/Rprofile.site \
     && echo 'options(timeout = 300)' >> /usr/lib/R/etc/Rprofile.site
 
@@ -155,7 +152,6 @@ RUN R -e " \
   install_safe(c('dplyr', 'tidyr', 'readr'), 'data manipulation'); \
   \
   # Graphics system packages (install individually for better error handling) \
-  install_safe(c('Cairo'), 'Cairo graphics'); \
   install_safe(c('systemfonts'), 'system fonts'); \
   install_safe(c('textshaping'), 'text shaping'); \
   install_safe(c('ragg'), 'graphics devices'); \

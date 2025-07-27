@@ -1,6 +1,7 @@
 """Unit tests for the utils module."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -634,3 +635,76 @@ This research presents breakthrough findings.
 
         # Should return None for missing PDF
         assert result is None
+
+
+class TestMultiLanguageUnicode:
+    """Test Unicode handling for multiple languages and scripts."""
+
+    def test_unicode_support_detection(self):
+        """Test Unicode support detection."""
+        from rxiv_maker.utils.unicode_safe import supports_unicode
+
+        # Should return a boolean
+        result = supports_unicode()
+        assert isinstance(result, bool)
+
+    def test_safe_print_with_various_languages(self):
+        """Test safe_print with various language texts."""
+        from unittest.mock import patch
+
+        from rxiv_maker.utils.unicode_safe import safe_print
+
+        texts = {
+            "English": "Hello, World!",
+            "Spanish": "¡Hola, Mundo! ñáéíóú",
+            "French": "Bonjour, Monde! àâçèéêëîïôùûü",
+            "German": "Hallo, Welt! äöüßÄÖÜ",
+            "Chinese": "你好，世界！",
+            "Japanese": "こんにちは、世界！",
+            "Russian": "Привет, мир!",
+            "Greek": "Γεια σου κόσμε!",
+        }
+
+        # Test that safe_print handles all languages without crashing
+        with patch("builtins.print") as mock_print:
+            for _, text in texts.items():
+                safe_print(text)
+                # Should have been called
+                assert mock_print.called
+
+    def test_get_safe_icon(self):
+        """Test get_safe_icon function."""
+        from rxiv_maker.utils.unicode_safe import get_safe_icon
+
+        # Test with Unicode support
+        with patch("rxiv_maker.utils.unicode_safe.supports_unicode", return_value=True):
+            icon = get_safe_icon("✅", "[OK]")
+            assert icon == "✅"
+
+        # Test without Unicode support
+        with patch(
+            "rxiv_maker.utils.unicode_safe.supports_unicode", return_value=False
+        ):
+            icon = get_safe_icon("✅", "[OK]")
+            assert icon == "[OK]"
+
+    def test_safe_print_fallback(self):
+        """Test safe_print fallback for non-Unicode environments."""
+        from unittest.mock import patch
+
+        from rxiv_maker.utils.unicode_safe import safe_print
+
+        # Test normal print works
+        with patch("builtins.print") as mock_print:
+            safe_print("Test with emoji ✅")
+            mock_print.assert_called_with("Test with emoji ✅")
+
+        # Test fallback on UnicodeEncodeError
+        with patch("builtins.print") as mock_print:
+            mock_print.side_effect = [
+                UnicodeEncodeError("utf-8", "✅", 0, 1, "test"),
+                None,
+            ]
+            safe_print("Test with emoji ✅")
+            # Should have tried twice - first with original, then with ASCII
+            assert mock_print.call_count == 2

@@ -90,6 +90,8 @@ class DockerManager:
         default_image: str = "henriqueslab/rxiv-maker-base:latest",
         workspace_dir: Path | None = None,
         enable_session_reuse: bool = True,
+        memory_limit: str = "2g",
+        cpu_limit: str = "2.0",
     ):
         """Initialize Docker manager.
 
@@ -97,11 +99,15 @@ class DockerManager:
             default_image: Default Docker image to use
             workspace_dir: Workspace directory (defaults to current working directory)
             enable_session_reuse: Whether to reuse Docker containers across operations
+            memory_limit: Memory limit for Docker containers (e.g., "2g", "512m")
+            cpu_limit: CPU limit for Docker containers (e.g., "2.0" for 2 cores)
         """
         self.default_image = default_image
         self.workspace_dir = workspace_dir or Path.cwd().resolve()
         self.enable_session_reuse = enable_session_reuse
         self.platform = platform_detector
+        self.memory_limit = memory_limit
+        self.cpu_limit = cpu_limit
 
         # Session management
         self._active_sessions: dict[str, DockerSession] = {}
@@ -113,6 +119,10 @@ class DockerManager:
         self._docker_platform = self._detect_docker_platform()
         self._base_volumes = self._get_base_volumes()
         self._base_env = self._get_base_environment()
+        
+        # Resource monitoring
+        self._resource_warnings = 0
+        self._last_resource_check = time.time()
 
     def _detect_docker_platform(self) -> str:
         """Detect the optimal Docker platform for the current architecture."""
@@ -174,6 +184,10 @@ class DockerManager:
 
         # Platform specification
         docker_cmd.extend(["--platform", self._docker_platform])
+        
+        # Resource limits
+        docker_cmd.extend(["--memory", self.memory_limit])
+        docker_cmd.extend(["--cpus", self.cpu_limit])
 
         # Volume mounts
         all_volumes = self._base_volumes.copy()
@@ -466,7 +480,7 @@ except ImportError as e:
         background_color: str = "transparent",
         config_file: Path | None = None,
     ) -> subprocess.CompletedProcess:
-        """Generate SVG from Mermaid diagram using Cairo-only approach."""
+        """Generate SVG from Mermaid diagram using mermaid.ink API."""
         # Build relative paths for Docker with proper error handling
         try:
             input_rel = input_file.relative_to(self.workspace_dir)
@@ -480,7 +494,7 @@ except ImportError as e:
             # If output file is not within workspace, use absolute path resolution
             output_rel = Path("output") / output_file.name
 
-        # Use Cairo-only Mermaid rendering via online Kroki service
+        # Use Mermaid rendering via online service
         # This eliminates the need for local Puppeteer/Chromium dependencies
         python_script = f'''
 import sys
@@ -491,7 +505,7 @@ import zlib
 from pathlib import Path
 
 def generate_mermaid_svg():
-    """Generate SVG from Mermaid using Kroki service (Cairo-compatible)."""
+    """Generate SVG from Mermaid using Kroki service."""
     try:
         # Read the Mermaid file
         with open("/workspace/{input_rel}", "r") as f:
@@ -516,7 +530,7 @@ def generate_mermaid_svg():
                     with open("/workspace/{output_rel}", "w") as f:
                         f.write(svg_content)
 
-                    print("Generated SVG using Kroki service (Cairo-compatible)")
+                    print("Generated SVG using Kroki service")
                     return 0
                 else:
                     raise Exception(
@@ -570,7 +584,11 @@ if __name__ == "__main__":
         try:
             script_rel = script_file.relative_to(self.workspace_dir)
         except ValueError:
-            script_rel = Path(script_file.name)
+            # Script is outside workspace (e.g., in temp directory during tests)
+            # Check if it's accessible through a mounted volume at /workspace
+            # Try to find the script in the workspace
+            # Use the script name but with a fallback to copy/read approach
+            pass
 
         docker_working_dir = "/workspace"
 
@@ -581,12 +599,25 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
-        return self.run_command(
-            command=["python", f"/workspace/{script_rel}"],
-            working_dir=docker_working_dir,
-            environment=environment,
-            session_key="python_execution",
-        )
+        # If script is not in workspace, we need to copy it or execute it differently
+        try:
+            script_rel = script_file.relative_to(self.workspace_dir)
+            # Script is in workspace, use direct path
+            return self.run_command(
+                command=["python", f"/workspace/{script_rel}"],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="python_execution",
+            )
+        except ValueError:
+            # Script is outside workspace, execute by reading content
+            script_content = script_file.read_text(encoding="utf-8")
+            return self.run_command(
+                command=["python", "-c", script_content],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="python_execution",
+            )
 
     def run_r_script(
         self,
@@ -595,11 +626,6 @@ if __name__ == "__main__":
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess:
         """Execute an R script with optimized Docker execution."""
-        try:
-            script_rel = script_file.relative_to(self.workspace_dir)
-        except ValueError:
-            script_rel = Path(script_file.name)
-
         docker_working_dir = "/workspace"
 
         if working_dir:
@@ -609,12 +635,35 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
-        return self.run_command(
-            command=["Rscript", f"/workspace/{script_rel}"],
-            working_dir=docker_working_dir,
-            environment=environment,
-            session_key="r_execution",
-        )
+        # If script is not in workspace, we need to copy it or execute it differently
+        try:
+            script_rel = script_file.relative_to(self.workspace_dir)
+            # Script is in workspace, use direct path
+            return self.run_command(
+                command=["Rscript", f"/workspace/{script_rel}"],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="r_execution",
+            )
+        except ValueError:
+            # Script is outside workspace, execute by reading content
+            script_content = script_file.read_text(encoding="utf-8")
+            # Create a temporary file in the container and execute it
+            temp_script = f"/tmp/{script_file.name}"
+            # First write the script content to a temp file, then execute it
+            import shlex
+
+            escaped_content = shlex.quote(script_content)
+            return self.run_command(
+                command=[
+                    "sh",
+                    "-c",
+                    f"echo {escaped_content} > {temp_script} && Rscript {temp_script}",
+                ],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="r_execution",
+            )
 
     def run_latex_compilation(
         self, tex_file: Path, working_dir: Path | None = None, passes: int = 3
@@ -833,6 +882,82 @@ if __name__ == "__main__":
             self._session_timeout = 600  # 10 minutes default
             self._max_sessions = 5  # Normal concurrent sessions
             self.enable_session_reuse = True
+            
+    def get_resource_usage(self) -> dict[str, Any]:
+        """Get Docker resource usage statistics."""
+        stats = {
+            "containers": {},
+            "total_memory_mb": 0,
+            "total_cpu_percent": 0.0,
+            "warnings": []
+        }
+        
+        for key, session in self._active_sessions.items():
+            if session.is_active():
+                try:
+                    # Get container stats
+                    result = subprocess.run(
+                        ["docker", "stats", session.container_id, "--no-stream", "--format", 
+                         "{{json .}}"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    
+                    if result.returncode == 0 and result.stdout:
+                        import json
+                        container_stats = json.loads(result.stdout.strip())
+                        
+                        # Parse memory usage
+                        mem_usage = container_stats.get("MemUsage", "0MiB / 0MiB")
+                        mem_parts = mem_usage.split(" / ")
+                        if len(mem_parts) >= 1:
+                            mem_current = self._parse_memory_str(mem_parts[0])
+                            stats["total_memory_mb"] += mem_current
+                            
+                        # Parse CPU usage
+                        cpu_percent = container_stats.get("CPUPerc", "0%").rstrip("%")
+                        try:
+                            cpu_float = float(cpu_percent)
+                            stats["total_cpu_percent"] += cpu_float
+                        except ValueError:
+                            pass
+                            
+                        stats["containers"][key] = {
+                            "memory_mb": mem_current,
+                            "cpu_percent": cpu_float,
+                            "container_id": session.container_id[:12]
+                        }
+                        
+                except Exception as e:
+                    stats["warnings"].append(f"Failed to get stats for {key}: {e}")
+                    
+        # Check for resource warnings
+        if stats["total_memory_mb"] > 3072:  # Over 3GB
+            stats["warnings"].append("High memory usage detected (>3GB)")
+            self._resource_warnings += 1
+            
+        if stats["total_cpu_percent"] > 150:  # Over 150% CPU
+            stats["warnings"].append("High CPU usage detected (>150%)")
+            self._resource_warnings += 1
+            
+        # Auto-cleanup if too many warnings
+        if self._resource_warnings > 5:
+            self.enable_aggressive_cleanup(True)
+            stats["warnings"].append("Enabled aggressive cleanup due to resource pressure")
+            
+        return stats
+        
+    def _parse_memory_str(self, mem_str: str) -> float:
+        """Parse memory string like '512MiB' to MB float."""
+        mem_str = mem_str.strip()
+        if mem_str.endswith("GiB"):
+            return float(mem_str[:-3]) * 1024
+        elif mem_str.endswith("MiB"):
+            return float(mem_str[:-3])
+        elif mem_str.endswith("KiB"):
+            return float(mem_str[:-3]) / 1024
+        return 0.0
 
     def __del__(self):
         """Cleanup when manager is destroyed."""
@@ -851,8 +976,19 @@ def get_docker_manager(
     workspace_dir: Path | None = None,
     enable_session_reuse: bool = True,
     force_new: bool = False,
+    memory_limit: str | None = None,
+    cpu_limit: str | None = None,
 ) -> DockerManager:
-    """Get or create the global Docker manager instance."""
+    """Get or create the global Docker manager instance.
+    
+    Args:
+        image: Docker image to use
+        workspace_dir: Workspace directory
+        enable_session_reuse: Whether to reuse Docker sessions
+        force_new: Force creation of new manager
+        memory_limit: Memory limit for containers (e.g., "2g")
+        cpu_limit: CPU limit for containers (e.g., "2.0")
+    """
     global _docker_manager
 
     if _docker_manager is None or force_new:
@@ -861,10 +997,17 @@ def get_docker_manager(
             _docker_manager.cleanup_all_sessions()
 
         default_image = image or "henriqueslab/rxiv-maker-base:latest"
+        
+        # Get resource limits from environment or defaults
+        memory = memory_limit or os.environ.get("RXIV_DOCKER_MEMORY", "2g")
+        cpu = cpu_limit or os.environ.get("RXIV_DOCKER_CPU", "2.0")
+        
         _docker_manager = DockerManager(
             default_image=default_image,
             workspace_dir=workspace_dir,
             enable_session_reuse=enable_session_reuse,
+            memory_limit=memory,
+            cpu_limit=cpu,
         )
 
     return _docker_manager

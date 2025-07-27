@@ -1,10 +1,10 @@
 # Docker Infrastructure for Rxiv-Maker
 
-Docker images and build infrastructure for rxiv-maker with Cairo-only SVG processing.
+Docker images and build infrastructure for rxiv-maker with mermaid.ink API integration.
 
 ## Overview
 
-This directory contains Docker image definitions and build infrastructure for rxiv-maker. All images use Cairo-only SVG processing for improved performance and cross-platform compatibility.
+This directory contains Docker image definitions and build infrastructure for rxiv-maker. All images use the mermaid.ink API for diagram generation, eliminating browser dependencies.
 
 ## Directory Structure
 
@@ -19,7 +19,6 @@ src/docker/
 └── docs/                         # Documentation
     ├── architecture.md           # How images are structured
     ├── base-images.md           # Base image documentation
-    ├── cairo-migration.md       # Cairo approach benefits
     └── local-testing.md         # Local testing guide
 ```
 
@@ -29,8 +28,8 @@ src/docker/
 - **Repository**: `henriqueslab/rxiv-maker-base`
 - **Tags**: `latest`, `v1.x`
 - **Architecture**: AMD64, ARM64 (native performance)
-- **Purpose**: Production-ready Cairo-only images with complete LaTeX, Python, Node.js, and R environments
-- **Features**: Enhanced SVG processing, no browser dependencies, optimized image size
+- **Purpose**: Production-ready images with complete LaTeX, Python, Node.js, and R environments
+- **Features**: Mermaid.ink API integration, no browser dependencies, optimized image size
 
 ## Quick Start
 
@@ -57,10 +56,10 @@ cd src/docker/images/base
 Base images include:
 - **Ubuntu 22.04** LTS base
 - **Complete LaTeX distribution** (texlive-full)
-- **Python 3.11** with scientific libraries (NumPy, Matplotlib, CairoSVG, etc.)
-- **Node.js 18 LTS** with Mermaid CLI
-- **R base** with common packages and Cairo graphics support
-- **Enhanced Cairo/SVG processing libraries**
+- **Python 3.11** with scientific libraries (NumPy, Matplotlib, etc.)
+- **Node.js 18 LTS** (no mermaid-cli needed)
+- **R base** with common packages and graphics support
+- **SVG processing libraries**
 - **Extended font collection** for better rendering
 - **System dependencies** for graphics and multimedia processing
 

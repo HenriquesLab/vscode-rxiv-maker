@@ -2,7 +2,7 @@
 
 Docker Engine Mode provides a **minimal dependency** approach to using Rxiv-Maker by running all operations inside pre-configured containers. This eliminates the need to install LaTeX, R, Node.js, or Python packages locally while ensuring reproducible builds across all platforms. Only Docker and Make are required on the host system.
 
-**✅ CROSS-PLATFORM:** Docker Engine Mode now supports **both AMD64 and ARM64 architectures** with native performance. As of v1.8+, we've transitioned to Cairo-only SVG processing, eliminating browser dependencies and enabling full cross-platform compatibility.
+**✅ CROSS-PLATFORM:** Docker Engine Mode now supports **both AMD64 and ARM64 architectures** with native performance. As of v1.8+, we use the mermaid.ink API for diagram generation, eliminating browser dependencies and enabling full cross-platform compatibility.
 
 ## Table of Contents
 - [Architecture Requirements](#architecture-requirements)
@@ -23,22 +23,22 @@ Docker Engine Mode provides a **minimal dependency** approach to using Rxiv-Make
 - **✅ AMD64/x86_64**: Native support with optimal performance  
 - **✅ ARM64/aarch64**: Native support with optimal performance (Apple Silicon, etc.)
 
-### Technical Background: Cairo-Only SVG Processing
+### Technical Background: Mermaid.ink API Processing
 
-Docker Engine Mode uses Cairo-based SVG processing for all diagram generation (`.mmd` files):
+Docker Engine Mode uses the mermaid.ink API for all diagram generation (`.mmd` files):
 
-1. **Mermaid CLI SVG Generation**: Creates SVG diagrams from `.mmd` files
-2. **Cairo SVG-to-PNG Conversion**: Converts SVG output to PNG/PDF using Cairo libraries
-3. **Enhanced Font Support**: Extended font collection for better rendering quality
+1. **Mermaid.ink API**: Cloud-based diagram generation from `.mmd` files
+2. **Direct PNG/SVG Output**: No local conversion needed
+3. **Enhanced Font Support**: Consistent rendering across all platforms
 
 **Architecture Support:**
-1. **AMD64 systems**: Native Cairo performance with multi-architecture Docker images
-2. **Apple Silicon Macs**: Native ARM64 Cairo performance (no emulation needed)
-3. **ARM64 Linux**: Native ARM64 Cairo performance with full feature parity
+1. **AMD64 systems**: Native performance with multi-architecture Docker images
+2. **Apple Silicon Macs**: Native ARM64 performance (no emulation needed)
+3. **ARM64 Linux**: Native ARM64 performance with full feature parity
 
 ### Performance Considerations
 
-- **Cairo-Only Processing**: Optimal performance on all architectures with consistent results
+- **Cloud-Based Processing**: Mermaid.ink API provides consistent results across all architectures
 - **No Browser Overhead**: Eliminated Chrome/Chromium dependencies reduce memory usage and startup time
 - **Multi-Platform Builds**: Native Docker images for both AMD64 and ARM64 architectures
 
@@ -56,7 +56,7 @@ make setup && make pdf
 **Key Benefits of Docker Mode:**
 - **Consistent Results**: Same output across all platforms and environments
 - **Minimal Dependencies**: Only Docker required (no LaTeX, R, Node.js installation)
-- **Cairo Performance**: Native rendering performance on all architectures
+- **API Performance**: Fast diagram generation via mermaid.ink API
 - **No Emulation**: ARM64 images run natively on Apple Silicon and ARM64 Linux
 
 ---
@@ -68,19 +68,19 @@ make setup && make pdf
 Docker Engine Mode (`RXIV_ENGINE=DOCKER`) runs Rxiv-Maker commands inside containers that include all necessary dependencies:
 
 - **LaTeX** - Complete TeX Live distribution with all packages
-- **Python** - Python 3.11 with enhanced Cairo libraries (CairoSVG, pycairo, matplotlib, numpy, pandas, etc.)
-- **R** - R base with Cairo graphics support (ggplot2, Cairo, svglite, etc.)
-- **Node.js** - Node.js 18 with Mermaid CLI for SVG diagram generation
-- **System tools** - Enhanced Cairo libraries, fonts, and SVG processing tools
+- **Python** - Python 3.11 with scientific libraries (matplotlib, numpy, pandas, etc.)
+- **R** - R base with graphics support (ggplot2, svglite, etc.)
+- **Node.js** - Node.js 18 (mermaid-cli not needed with mermaid.ink API)
+- **System tools** - Fonts and SVG processing tools
 
 ### Key Advantages
 
 - ✅ **Minimal local dependencies** - Only Docker and Make required (no LaTeX, R, or Python installation needed)
-- ✅ **Cross-platform consistency** - Identical Cairo-based output on all architectures
-- ✅ **Reproducible builds** - Guaranteed dependency versions with Cairo optimization
+- ✅ **Cross-platform consistency** - Identical output on all architectures via mermaid.ink API
+- ✅ **Reproducible builds** - Guaranteed dependency versions
 - ✅ **No conflicts** - Isolated from local installations, no browser dependencies
-- ✅ **Fast CI/CD** - Pre-compiled Cairo-enhanced images accelerate workflows by ~5x
-- ✅ **Enhanced performance** - Cairo-only processing reduces memory usage and startup time
+- ✅ **Fast CI/CD** - Pre-compiled images accelerate workflows by ~5x
+- ✅ **Enhanced performance** - Cloud-based processing reduces local resource usage
 
 ---
 

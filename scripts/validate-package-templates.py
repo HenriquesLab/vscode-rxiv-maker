@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package Template Validation Script
+"""Package Template Validation Script.
 
 This script validates both package manager templates and their generated files
 to ensure they meet the required standards and contain all necessary placeholders.

@@ -108,7 +108,7 @@ jobs:
           type=raw,value=v${{ steps.version.outputs.version }},enable=${{ steps.version.outputs.version != 'latest' }}
         labels: |
           org.opencontainers.image.title=rxiv-maker-base
-          org.opencontainers.image.description=Ubuntu-based image with LaTeX, Python, R, and mermaid.ink API integration (no browser dependencies)
+          org.opencontainers.image.description=Ubuntu-based image with LaTeX, Python, R, and mermaid.ink API integration
           org.opencontainers.image.version=${{ steps.version.outputs.version }}
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
           rxiv-maker.version=${{ steps.version.outputs.version }}

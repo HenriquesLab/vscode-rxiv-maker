@@ -61,7 +61,7 @@ jobs:
           echo "Detected rxiv-maker version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Check if version-specific Docker image exists (Cairo-only images)
+          # Check if version-specific Docker image exists
           VERSIONED_IMAGE="henriqueslab/rxiv-maker-base:v$VERSION"
           FALLBACK_IMAGE="henriqueslab/rxiv-maker-base:latest"
 
@@ -85,12 +85,12 @@ jobs:
             fi
           }
 
-          # Priority order: versioned -> latest (both are Cairo-only)
+          # Priority order: versioned -> latest
           if check_image_exists "henriqueslab/rxiv-maker-base/tags/v$VERSION"; then
-            echo "✅ Version-specific Cairo-only image available: $VERSIONED_IMAGE"
+            echo "✅ Version-specific image available: $VERSIONED_IMAGE"
             DOCKER_IMAGE="$VERSIONED_IMAGE"
           elif check_image_exists "henriqueslab/rxiv-maker-base/tags/latest"; then
-            echo "✅ Using latest Cairo-only base image: $FALLBACK_IMAGE"
+            echo "✅ Using latest base image: $FALLBACK_IMAGE"
             echo "ℹ️ Version-specific image not available, using latest"
             DOCKER_IMAGE="$FALLBACK_IMAGE"
           else
@@ -115,8 +115,9 @@ jobs:
 
           # Determine manuscript path based on trigger type
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Manual trigger: use user-provided path
-            MANUSCRIPT_PATH="${{ github.event.inputs.manuscript_path }}"
+            # Manual trigger: use user-provided path or fallback to default
+            INPUT_PATH="${{ github.event.inputs.manuscript_path }}"
+            MANUSCRIPT_PATH="${INPUT_PATH:-MANUSCRIPT}"
           else
             # Tag trigger: use .env file value or fallback to EXAMPLE_MANUSCRIPT
             MANUSCRIPT_PATH="${MANUSCRIPT_PATH:-EXAMPLE_MANUSCRIPT}"
@@ -166,29 +167,23 @@ jobs:
           echo "❌ Python not found in container"
         fi
 
-        if python3 -c "import cairosvg" >/dev/null 2>&1; then
-          echo "✅ CairoSVG detected (replaces mermaid-cli for puppeteer-free operation)"
-          python3 -c "import cairosvg; print('CairoSVG version:', cairosvg.__version__)"
+        # Check for mermaid.ink API configuration
+        if [ -n "$(python3 -c 'import os; print(os.environ.get("MERMAID_INK_API", ""))' 2>/dev/null)" ]; then
+          echo "✅ Mermaid.ink API configured for diagram generation"
         else
-          echo "⚠️ CairoSVG not found in container"
+          echo "ℹ️ Using default mermaid diagram rendering"
         fi
 
-    - name: Test Cairo functionality
+    - name: Test environment functionality
       run: |
-        echo "🎨 Testing Cairo SVG processing capabilities..."
+        echo "🔍 Testing environment capabilities..."
 
-        # Test Cairo Python libraries
-        if python3 -c "import cairosvg, pycairo; print('✅ Cairo libraries available')" 2>/dev/null; then
-          echo "✅ Cairo Python libraries detected"
-
-          # Test Cairo SVG to PNG conversion
-          echo "🧪 Testing Cairo SVG to PNG conversion..."
-          python3 -c "import cairosvg; svg='<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"50\"><rect width=\"100\" height=\"50\" fill=\"blue\"/></svg>'; png=cairosvg.svg2png(bytestring=svg.encode()); print('✅ Cairo SVG conversion works ({} bytes)'.format(len(png)) if png else '❌ Failed')"
-        else
-          echo "⚠️ Cairo libraries not available in container image"
-          echo "ℹ️ This may indicate the Docker image needs updating to include Cairo support"
-          echo "ℹ️ Continuing with build - figures may fall back to alternative rendering"
-        fi
+        # Test Python environment
+        echo "🐍 Testing Python environment..."
+        python3 --version
+        python3 -c "import matplotlib; print('✅ Matplotlib available:', matplotlib.__version__)"
+        python3 -c "import pandas; print('✅ Pandas available:', pandas.__version__)"
+        python3 -c "import numpy; print('✅ NumPy available:', numpy.__version__)"
 
         # Test enhanced font availability
         echo "🔤 Testing enhanced font collection..."
@@ -198,20 +193,21 @@ jobs:
           echo "⚠️ Limited font collection detected"
         fi
 
-        # Test Cairo test script if available
-        if [ -f "/usr/local/bin/test-cairo.sh" ]; then
-          echo "🔧 Running Cairo test script..."
-          /usr/local/bin/test-cairo.sh
+        # Test R environment if available
+        if command -v R >/dev/null 2>&1; then
+          echo "📊 Testing R environment..."
+          R --version | head -1
+          echo "✅ R environment available"
         else
-          echo "ℹ️ Cairo test script not found (expected in Cairo-only images)"
+          echo "ℹ️ R not available in this image"
         fi
 
-        # Verify no browser dependencies
-        echo "🚫 Verifying no browser dependencies..."
-        if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1 && ! command -v chrome >/dev/null 2>&1; then
-          echo "✅ No browser dependencies found (Cairo-only confirmed)"
+        # Verify LaTeX is available
+        echo "📄 Verifying LaTeX installation..."
+        if command -v pdflatex >/dev/null 2>&1; then
+          echo "✅ LaTeX (pdflatex) available"
         else
-          echo "⚠️ Browser dependencies detected (transition may be incomplete)"
+          echo "❌ LaTeX not found!"
         fi
 
     - name: Checkout repository
@@ -255,8 +251,9 @@ jobs:
           ~/.cache/pip
           ~/.cache/uv
           .venv
-        key: ${{ runner.os }}-python-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
+        key: ${{ runner.os }}-python-pdf-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
         restore-keys: |
+          ${{ runner.os }}-python-pdf-
           ${{ runner.os }}-python-
 
     # Install Python dependencies only (system dependencies pre-installed in Docker image)
@@ -418,21 +415,15 @@ jobs:
         # Enhanced PDF detection with multiple naming patterns
         MANUSCRIPT_BASENAME=$(basename "$MANUSCRIPT_PATH")
 
-        # Try multiple possible PDF names in order of preference
-        PDF_CANDIDATES=(
-          "output/${MANUSCRIPT_BASENAME}.pdf"
-          "output/MANUSCRIPT.pdf"
-          "output/${MANUSCRIPT_PATH}.pdf"
-          "$MANUSCRIPT_PATH/${MANUSCRIPT_BASENAME}.pdf"
-          "$MANUSCRIPT_PATH.pdf"
-        )
+        # Try multiple possible PDF names in order of preference (space-separated)
+        PDF_CANDIDATES="output/${MANUSCRIPT_BASENAME}.pdf output/manuscript.pdf output/MANUSCRIPT.pdf output/${MANUSCRIPT_PATH}.pdf ${MANUSCRIPT_PATH}/output/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}.pdf output/preprint.pdf"
 
         echo "🔍 Looking for generated PDF files..."
         echo "  📂 Manuscript path: $MANUSCRIPT_PATH"
         echo "  📂 Manuscript basename: $MANUSCRIPT_BASENAME"
 
         PDF_PATH=""
-        for candidate in "${PDF_CANDIDATES[@]}"; do
+        for candidate in $PDF_CANDIDATES; do
           echo "  🔍 Checking: $candidate"
           if [ -f "$candidate" ]; then
             PDF_PATH="$candidate"
@@ -456,7 +447,7 @@ jobs:
         else
           echo "  ❌ ERROR: PDF not found at any expected locations"
           echo "  🔍 Searched locations:"
-          for candidate in "${PDF_CANDIDATES[@]}"; do
+          for candidate in $PDF_CANDIDATES; do
             echo "    - $candidate"
           done
 
@@ -589,6 +580,9 @@ jobs:
         echo "PDF_NAME=${PDF_NAME}" >> $GITHUB_OUTPUT
         echo "PDF_FILENAME=${PDF_NAME}" >> $GITHUB_ENV
 
+        # Set build date for use in release description and build info
+        echo "BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
+
         # Create build info
         cat > release/build_info.txt << EOF
         Build Information:
@@ -596,7 +590,7 @@ jobs:
         - Branch: ${{ github.ref_name }}
         - Commit: ${{ github.sha }}
         - Manuscript Path: ${{ needs.prepare.outputs.manuscript_path }}
-        - Build Date: $(date)
+        - Build Date: ${{ env.BUILD_DATE }}
         - Workflow: ${{ github.workflow }}
         - Run ID: ${{ github.run_id }}
         EOF
@@ -714,7 +708,7 @@ jobs:
           **Manuscript:** `${{ needs.prepare.outputs.manuscript_path }}`
           **Branch:** `${{ github.ref_name }}`
           **Commit:** `${{ github.sha }}`
-          **Build Date:** $(date)
+          **Build Date:** ${{ env.BUILD_DATE }}
 
           ### 📥 Download Links
           - **PDF:** [${{ steps.prepare-release.outputs.PDF_NAME }}](https://github.com/${{ github.repository }}/releases/download/${{ env.MOST_RECENT_TAG }}/${{ steps.prepare-release.outputs.PDF_NAME }})

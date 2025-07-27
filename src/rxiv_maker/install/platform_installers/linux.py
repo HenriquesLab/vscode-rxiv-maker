@@ -69,8 +69,7 @@ class LinuxInstaller:
                 "libjpeg-dev",
                 "zlib1g-dev",
                 "pkg-config",
-                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
-                "libcairo2-dev",
+                # Pango for text rendering
                 "libpango1.0-dev",
             ],
             "apt-get": [
@@ -81,8 +80,7 @@ class LinuxInstaller:
                 "libjpeg-dev",
                 "zlib1g-dev",
                 "pkg-config",
-                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
-                "libcairo2-dev",
+                # Pango for text rendering
                 "libpango1.0-dev",
             ],
             "dnf": [
@@ -94,8 +92,7 @@ class LinuxInstaller:
                 "libjpeg-turbo-devel",
                 "zlib-devel",
                 "pkgconfig",
-                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
-                "cairo-devel",
+                # Pango for text rendering
                 "pango-devel",
             ],
             "yum": [
@@ -107,8 +104,7 @@ class LinuxInstaller:
                 "libjpeg-turbo-devel",
                 "zlib-devel",
                 "pkgconfig",
-                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
-                "cairo-devel",
+                # Pango for text rendering
                 "pango-devel",
             ],
             "pacman": [
@@ -119,8 +115,7 @@ class LinuxInstaller:
                 "libjpeg-turbo",
                 "zlib",
                 "pkg-config",
-                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
-                "cairo",
+                # Pango for text rendering
                 "pango",
             ],
             "apk": [
@@ -131,8 +126,7 @@ class LinuxInstaller:
                 "jpeg-dev",
                 "zlib-dev",
                 "pkgconfig",
-                # Cairo and Pango for CairoSVG (Mermaid diagram conversion)
-                "cairo-dev",
+                # Pango for text rendering
                 "pango-dev",
             ],
         }
@@ -386,6 +380,6 @@ class LinuxInstaller:
         """Install required npm packages."""
         self.logger.info("No npm packages required - mermaid-cli dependency removed")
 
-        # Mermaid diagrams are now handled via Python-based solutions (cairosvg)
-        # No need for puppeteer-based mermaid-cli
+        # Mermaid diagrams are now handled via mermaid.ink API
+        # No need for local mermaid-cli installation
         return True

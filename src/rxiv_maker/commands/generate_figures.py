@@ -248,7 +248,8 @@ class FigureGenerator:
                     failed += 1
 
             safe_print(
-                f"Parallel processing completed: {completed} successful, {failed} failed"
+                f"Parallel processing completed: {completed} successful, "
+                f"{failed} failed"
             )
 
     def generate_mermaid_figure(self, mmd_file):
@@ -261,7 +262,8 @@ class FigureGenerator:
             # --- Step 1: Generate SVG using mermaid.ink API ---
             svg_output_file = figure_dir / f"{mmd_file.stem}.svg"
             print(
-                f"  🎨 Generating SVG using mermaid.ink API: {figure_dir.name}/{svg_output_file.name}..."
+                f"  🎨 Generating SVG using mermaid.ink API: "
+                f"{figure_dir.name}/{svg_output_file.name}..."
             )
 
             # Read the mermaid diagram content
@@ -323,9 +325,9 @@ class FigureGenerator:
         return diagram_content
 
     def _fix_svg_dimensions(self, svg_content):
-        """Fix SVG dimensions from mermaid.ink for CairoSVG compatibility.
+        """Fix SVG dimensions from mermaid.ink for better compatibility.
 
-        Mermaid.ink returns SVGs with width="100%" which CairoSVG can't handle.
+        Mermaid.ink returns SVGs with width="100%" which some processors can't handle.
         Extract dimensions from viewBox and set explicit width/height.
         """
         try:
@@ -762,7 +764,13 @@ class FigureGenerator:
         try:
             svg_path.parent.mkdir(parents=True, exist_ok=True)
             svg_path.write_text(placeholder_svg, encoding="utf-8")
-            print(f"  ✅ Created placeholder SVG: {svg_path.relative_to(Path.cwd())}")
+            # Use a safe path display that handles temporary directories
+            try:
+                relative_path = svg_path.relative_to(Path.cwd())
+                print(f"  ✅ Created placeholder SVG: {relative_path}")
+            except ValueError:
+                # Path is not relative to cwd (e.g., in temp directory)
+                print(f"  ✅ Created placeholder SVG: {svg_path}")
         except Exception as e:
             print(f"  ❌ Failed to create placeholder SVG: {e}")
 

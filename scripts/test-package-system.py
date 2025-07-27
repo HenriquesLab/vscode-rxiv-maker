@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package System Testing Script
+"""Package System Testing Script.
 
 This script provides comprehensive testing for the package management system:
 - Template validation

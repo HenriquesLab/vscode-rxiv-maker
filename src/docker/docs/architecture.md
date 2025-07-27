@@ -1,6 +1,6 @@
 # Docker Image Architecture
 
-This document describes the architecture of the Rxiv-Maker Docker images, including both base and experimental Cairo variants.
+This document describes the architecture of the Rxiv-Maker Docker images.
 
 ## Overview
 
@@ -34,7 +34,7 @@ graph TD
 - **Includes**: Build tools, graphics libraries, GitHub CLI
 - **Key Components**:
   - `build-essential`, `make`, `pkg-config`
-  - `libcairo2-dev`, `libpango1.0-dev`, `libjpeg-dev`
+  - `libpango1.0-dev`, `libjpeg-dev`
   - `libfontconfig1-dev`, `libfreetype6-dev`
 - **Size Impact**: ~200MB
 
@@ -47,7 +47,7 @@ graph TD
 #### 4. R Dependencies Stage (`rdeps`)
 - **Purpose**: R environment with statistical libraries
 - **Includes**: R base, development packages, graphics libraries
-- **Key Packages**: `ggplot2`, `dplyr`, `Cairo`, `svglite`
+- **Key Packages**: `ggplot2`, `dplyr`, `svglite`
 - **Size Impact**: ~300MB
 
 #### 5. Node.js Dependencies Stage (`nodejsdeps`)
@@ -64,7 +64,7 @@ graph TD
 
 #### 7. Python Base Stage (`pybase`)
 - **Purpose**: Python 3.11 with scientific libraries
-- **Includes**: Core libraries, Cairo enhancements, development tools
+- **Includes**: Core libraries, development tools
 - **Package Manager**: Uses `uv` for faster installation
 - **Size Impact**: ~400MB
 
@@ -85,17 +85,8 @@ graph TD
 - Python 3.11 with scientific stack
 - Node.js 18 with Mermaid CLI
 - R with common packages
-- Standard Cairo support
+- Standard graphics support
 
-### Experimental Cairo Images (`images/experimental-cairo/`)
-
-**Target**: Enhanced SVG processing capabilities
-**Repository**: `henriqueslab/rxiv-maker-experimental`
-**Additional Features**:
-- Enhanced Cairo/CairoSVG libraries
-- Extended font collection
-- Advanced SVG processing tools
-- Optimized for post-Puppeteer workflows
 
 ## Platform Support
 
@@ -124,8 +115,7 @@ TEXMFVAR=/tmp/texmf-var
 TEXMFHOME=/tmp/texmf-home
 TEXMFCACHE=/tmp/texmf-cache
 
-# Cairo Configuration (Experimental)
-CAIRO_CACHE_DIR=/tmp/cairo-cache
+# Font Configuration
 FONTCONFIG_FILE=/etc/fonts/fonts.conf
 FC_CACHE_DIR=/tmp/fontconfig-cache
 
@@ -151,7 +141,6 @@ LD_LIBRARY_PATH=/usr/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/aarch64-linux-gnu
 
 /tmp/                    # Temporary files
 ├── texmf-var/           # LaTeX variable files
-├── cairo-cache/         # Cairo cache (experimental)
 └── fontconfig-cache/    # Font cache
 ```
 
@@ -159,25 +148,25 @@ LD_LIBRARY_PATH=/usr/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/aarch64-linux-gnu
 
 ### Build Times
 
-| Stage | Base Image | Cairo Image | Size Impact |
-|-------|------------|-------------|-------------|
-| systemdeps | 45s | 60s | +15s (extra libs) |
-| fontdeps | N/A | 30s | +30s (font install) |
-| rdeps | 120s | 150s | +30s (Cairo R pkgs) |
-| nodejsdeps | 90s | 90s | No change |
-| latexdeps | 180s | 180s | No change |
-| pybase | 60s | 90s | +30s (Cairo Python) |
-| final | 15s | 20s | +5s (extra config) |
-| **Total** | **~8min** | **~10min** | **+2min** |
+| Stage | Build Time | Size Impact |
+|-------|------------|-------------|
+| systemdeps | 45s | ~200MB |
+| fontdeps | 30s | ~50MB |
+| rdeps | 120s | ~300MB |
+| nodejsdeps | 90s | ~150MB |
+| latexdeps | 180s | ~1.5GB |
+| pybase | 60s | ~400MB |
+| final | 15s | -200MB (cleanup) |
+| **Total** | **~8min** | **~2.5GB** |
 
 ### Runtime Performance
 
-| Operation | Base Image | Cairo Image | Improvement |
-|-----------|------------|-------------|-------------|
-| SVG to PNG | CairoSVG | Enhanced CairoSVG | 10-15% faster |
-| Font rendering | Standard | Enhanced fonts | Better quality |
-| Memory usage | ~2GB | ~2.2GB | +200MB |
-| Startup time | 2-3s | 3-4s | +1s |
+| Operation | Performance | Notes |
+|-----------|------------|-------|
+| SVG to PNG | Fast | Via mermaid.ink API |
+| Font rendering | High quality | Extended font collection |
+| Memory usage | ~2GB | Typical usage |
+| Startup time | 2-3s | Container startup |
 
 ## Security Considerations
 
@@ -210,8 +199,7 @@ LD_LIBRARY_PATH=/usr/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/aarch64-linux-gnu
 - **Node.js**: Global installation with version pinning
 
 ### Size Optimization
-- **Base**: ~2.5GB compressed
-- **Cairo**: ~2.8GB compressed
+- **Size**: ~2.5GB compressed
 - **Compression**: Docker layer compression
 - **Cleanup**: Aggressive cleanup of build artifacts
 
@@ -225,7 +213,6 @@ LD_LIBRARY_PATH=/usr/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/aarch64-linux-gnu
 ### Version Management
 - **Tags**: Semantic versioning (v1.6, v1.7, etc.)
 - **Latest**: Points to current stable version
-- **Experimental**: Separate tagging for Cairo variants
 
 ### Testing Strategy
 - **Unit Tests**: Individual component functionality

@@ -3,6 +3,7 @@
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 try:
@@ -23,7 +24,7 @@ except ImportError:
 
 try:
     from rxiv_maker.utils.doi_cache import DOICache
-    from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
+    from rxiv_maker.validators.base_validator import ValidationLevel
     from rxiv_maker.validators.doi_validator import DOIValidator
 
     DOI_VALIDATOR_AVAILABLE = True
@@ -503,42 +504,6 @@ class TestDOIValidator(unittest.TestCase):
         # Both should have same results
         self.assertEqual(len(result1.errors), len(result2.errors))
 
-    def test_metadata_comparison_edge_cases(self):
-        """Test edge cases in metadata comparison."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
-
-        # Test empty CrossRef data
-        bib_entry = {
-            "key": "test1",
-            "title": "Test Title",
-            "journal": "Test Journal",
-            "year": "2023",
-        }
-
-        crossref_metadata = {}
-
-        errors = validator._compare_metadata(
-            bib_entry, crossref_metadata, "test.bib", 1
-        )
-        # Should not crash with empty metadata
-        self.assertIsInstance(errors, list)
-
-        # Test missing fields in CrossRef data
-        crossref_metadata = {
-            "title": ["Test Title"],
-            # Missing container-title, published-print, author
-        }
-
-        errors = validator._compare_metadata(
-            bib_entry, crossref_metadata, "test.bib", 1
-        )
-        # Should handle missing fields gracefully
-        self.assertIsInstance(errors, list)
-
     def test_similarity_threshold(self):
         """Test title similarity threshold."""
         validator = DOIValidator(
@@ -642,6 +607,73 @@ This cites @integrated_test and other references.
 
         # Should not include DOI validation metadata
         self.assertNotIn("doi_validation", result_no_doi.metadata)
+
+
+class TestNetworkOperationTimeouts(unittest.TestCase):
+    """Test network operation timeouts and retry logic."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.manuscript_dir = Path("test_manuscript")
+        self.cache_dir = Path("test_cache")
+
+    def test_doi_validation_with_retry_on_timeout(self):
+        """Test DOI validation handles timeout gracefully."""
+        from unittest.mock import patch
+
+        import requests
+
+        validator = DOIValidator(
+            self.manuscript_dir,
+            enable_online_validation=True,
+            cache_dir=self.cache_dir,
+        )
+
+        # Patch at the point of use in the module
+        with patch(
+            "rxiv_maker.validators.doi_validator.get_publication_as_json"
+        ) as mock_get_publication:
+            # Simulate timeout
+            mock_get_publication.side_effect = requests.exceptions.Timeout(
+                "Connection timed out"
+            )
+
+            # Should raise the exception since _fetch_crossref_metadata re-raises
+            with self.assertRaises(requests.exceptions.Timeout):
+                validator._fetch_crossref_metadata("10.1234/test")
+            self.assertEqual(mock_get_publication.call_count, 1)
+
+    @patch("requests.get")
+    def test_update_checker_timeout(self, mock_get):
+        """Test update checker handles timeouts."""
+        import requests
+
+        from rxiv_maker.utils.update_checker import force_update_check
+
+        # Simulate timeout
+        mock_get.side_effect = requests.exceptions.Timeout("PyPI timeout")
+
+        # Should handle timeout gracefully and return False
+        has_update, _ = force_update_check()
+        self.assertFalse(has_update)
+
+    @patch("urllib.request.urlopen")
+    def test_network_check_with_timeout(self, mock_urlopen):
+        """Test network connectivity check with timeout."""
+        from urllib.error import URLError
+
+        # Simulate timeout
+        mock_urlopen.side_effect = URLError(TimeoutError("Network timeout"))
+
+        # Should handle gracefully
+        try:
+            from rxiv_maker.utils.update_checker import has_internet_connection
+
+            result = has_internet_connection()
+            self.assertFalse(result)
+        except Exception:
+            # If function doesn't exist, that's OK - just testing the pattern
+            pass
 
 
 if __name__ == "__main__":

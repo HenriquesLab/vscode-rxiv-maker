@@ -108,7 +108,7 @@ The `build.sh` script supports various options:
 
 ### System Libraries
 - Font libraries: libfontconfig1-dev, libfreetype6-dev, libharfbuzz-dev
-- Graphics: libcairo2-dev, libpango1.0-dev, libjpeg-dev, libpng-dev
+- Graphics: libpango1.0-dev, libjpeg-dev, libpng-dev
 - Build tools: build-essential, make, pkg-config
 
 ## Maintenance

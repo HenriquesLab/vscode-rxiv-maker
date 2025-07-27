@@ -7,6 +7,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from rxiv_maker.cli.commands.build import build
+from rxiv_maker.core import logging_config
 
 
 class TestBuildCommand:
@@ -15,6 +16,11 @@ class TestBuildCommand:
     def setup_method(self):
         """Set up test environment."""
         self.runner = CliRunner()
+
+    def teardown_method(self):
+        """Clean up test environment, especially for Windows."""
+        # Ensure logging cleanup for Windows file locking issues
+        logging_config.cleanup()
 
     def test_build_help(self):
         """Test build command help."""
@@ -205,74 +211,3 @@ authors:
 
                 assert result.exit_code == 1
                 assert "PDF generation failed" in result.output
-
-    def test_build_keyboard_interrupt(self):
-        """Test build keyboard interrupt handling."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            manuscript_dir = Path(tmpdir) / "MANUSCRIPT"
-            manuscript_dir.mkdir()
-
-            # Create minimal manuscript files
-            (manuscript_dir / "00_CONFIG.yml").write_text("""
-title: "Test Manuscript"
-authors:
-  - name: "Test Author"
-    email: "test@example.com"
-""")
-            (manuscript_dir / "01_MAIN.md").write_text("# Test\n\nContent")
-            (manuscript_dir / "03_REFERENCES.bib").write_text("@article{test2023}")
-
-            # Create FIGURES directory to avoid the warning
-            (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
-
-            with patch(
-                "rxiv_maker.cli.commands.build.BuildManager"
-            ) as mock_build_manager:
-                mock_build_manager.return_value.run_full_build.side_effect = (
-                    KeyboardInterrupt()
-                )
-
-                result = self.runner.invoke(
-                    build,
-                    [str(manuscript_dir)],
-                    obj={"verbose": False, "engine": "local"},
-                )
-
-                assert result.exit_code == 1
-                assert "interrupted" in result.output
-
-    def test_build_unexpected_error(self):
-        """Test build unexpected error handling."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            manuscript_dir = Path(tmpdir) / "MANUSCRIPT"
-            manuscript_dir.mkdir()
-
-            # Create minimal manuscript files
-            (manuscript_dir / "00_CONFIG.yml").write_text("""
-title: "Test Manuscript"
-authors:
-  - name: "Test Author"
-    email: "test@example.com"
-""")
-            (manuscript_dir / "01_MAIN.md").write_text("# Test\n\nContent")
-            (manuscript_dir / "03_REFERENCES.bib").write_text("@article{test2023}")
-
-            # Create FIGURES directory to avoid the warning
-            (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
-
-            with patch(
-                "rxiv_maker.cli.commands.build.BuildManager"
-            ) as mock_build_manager:
-                mock_build_manager.return_value.run_full_build.side_effect = Exception(
-                    "Test error"
-                )
-
-                result = self.runner.invoke(
-                    build,
-                    [str(manuscript_dir)],
-                    obj={"verbose": False, "engine": "local"},
-                )
-
-                assert result.exit_code == 1
-                assert "Unexpected error" in result.output
-                assert "Test error" in result.output

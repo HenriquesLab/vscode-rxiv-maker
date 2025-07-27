@@ -525,7 +525,7 @@ affiliations:
             "\\documentclass{article}\\begin{document}Test\\end{document}"
         )
 
-        # Create bibliography file - needs to be in current directory for bibtex to find it
+        # Create bibliography file - needs to be in current directory for bibtex
         bib_file = Path(self.temp_dir) / "03_REFERENCES.bib"
         bib_file.write_text(
             "@article{test2023, title={Test}, author={Author}, year={2023}}"
@@ -551,8 +551,8 @@ affiliations:
         # Find bibtex call
         bibtex_calls = [call for call in calls if "bibtex" in str(call)]
         # BibTeX should be called when bibliography exists
-        # Note: In the test environment, we're mocking the process so bibtex might not be called
-        # if the bibliography file check fails. Let's verify the logic works differently.
+        # Note: In test environment, bibtex might not be called if
+        # the bibliography file check fails. Verify logic differently.
         if len(bibtex_calls) == 0:
             # If bibtex wasn't called, check if the file exists in the mock environment
             bib_path = Path(self.temp_dir) / "03_REFERENCES.bib"
@@ -678,6 +678,130 @@ affiliations:
 
         # Should still succeed (PDFs can be generated without working bibliography)
         self.assertTrue(result)
+
+
+class TestExpandedChangeTracking(unittest.TestCase):
+    """Expanded tests for change tracking with more scenarios."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.manuscript_path = Path(self.temp_dir) / "manuscript"
+        self.manuscript_path.mkdir(parents=True)
+
+        # Create a git repository
+        subprocess.run(["git", "init"], cwd=self.manuscript_path, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=self.manuscript_path,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"], cwd=self.manuscript_path
+        )
+
+    def tearDown(self):
+        """Clean up test fixtures."""
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_track_changes_with_multiple_files(self):
+        """Test tracking changes across multiple manuscript files."""
+        # Create initial files
+        files = {
+            "01_INTRO.md": "# Introduction\nOriginal intro text.",
+            "02_METHODS.md": "# Methods\nOriginal methods.",
+            "03_RESULTS.md": "# Results\nOriginal results.",
+            "00_CONFIG.yml": "title: Original Title\n",
+        }
+
+        for filename, content in files.items():
+            (self.manuscript_path / filename).write_text(content)
+
+        # Initial commit
+        subprocess.run(["git", "add", "."], cwd=self.manuscript_path)
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"], cwd=self.manuscript_path
+        )
+        subprocess.run(["git", "tag", "v1.0"], cwd=self.manuscript_path)
+
+        # Make changes
+        changes = {
+            "01_INTRO.md": "# Introduction\nUpdated intro text with new content.",
+            "02_METHODS.md": "# Methods\nUpdated methods with more detail.",
+            "03_RESULTS.md": "# Results\nUpdated results with new findings.",
+            "00_CONFIG.yml": "title: Updated Title\nauthor: New Author\n",
+        }
+
+        for filename, content in changes.items():
+            (self.manuscript_path / filename).write_text(content)
+
+        # Create TrackChangesManager and run
+        output_dir = os.path.join(self.temp_dir, "output")
+        manager = TrackChangesManager(
+            manuscript_path=str(self.manuscript_path),
+            output_dir=output_dir,
+            git_tag="v1.0",
+        )
+
+        # Test initialization works with multiple files
+        self.assertIsNotNone(manager)
+        self.assertEqual(manager.git_tag, "v1.0")
+
+    def test_track_changes_with_binary_files(self):
+        """Test tracking changes with binary files (figures)."""
+        # Create figures directory
+        figures_dir = self.manuscript_path / "FIGURES"
+        figures_dir.mkdir()
+
+        # Create a fake binary file
+        (figures_dir / "figure1.png").write_bytes(b"PNG\x00\x01\x02")
+
+        # Initial commit
+        subprocess.run(["git", "add", "."], cwd=self.manuscript_path)
+        subprocess.run(["git", "commit", "-m", "Add figure"], cwd=self.manuscript_path)
+        subprocess.run(["git", "tag", "v1.0"], cwd=self.manuscript_path)
+
+        # Modify binary file
+        (figures_dir / "figure1.png").write_bytes(b"PNG\x00\x01\x02\x03\x04")
+
+        # Add new binary file
+        (figures_dir / "figure2.png").write_bytes(b"PNG\x00\x05\x06")
+
+        manager = TrackChangesManager(
+            manuscript_path=str(self.manuscript_path),
+            output_dir=os.path.join(self.temp_dir, "output"),
+            git_tag="v1.0",
+        )
+
+        # Should handle binary files gracefully - just verify it initializes
+        self.assertIsNotNone(manager)
+        self.assertEqual(manager.git_tag, "v1.0")
+
+    def test_track_changes_with_merge_conflicts(self):
+        """Test handling of merge conflict markers in tracked files."""
+        # Create file with merge conflict markers
+        conflict_content = """# Title
+<<<<<<< HEAD
+This is the current version
+=======
+This is the incoming version
+>>>>>>> feature-branch
+Rest of the document"""
+
+        (self.manuscript_path / "01_MAIN.md").write_text(conflict_content)
+
+        # Commit
+        subprocess.run(["git", "add", "."], cwd=self.manuscript_path)
+        subprocess.run(["git", "commit", "-m", "Conflict"], cwd=self.manuscript_path)
+
+        manager = TrackChangesManager(
+            manuscript_path=str(self.manuscript_path),
+            output_dir=os.path.join(self.temp_dir, "output"),
+            git_tag="HEAD~1",
+        )
+
+        # Should initialize successfully with conflict markers
+        self.assertIsNotNone(manager)
+        self.assertEqual(manager.git_tag, "HEAD~1")
 
 
 if __name__ == "__main__":

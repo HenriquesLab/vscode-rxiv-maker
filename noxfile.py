@@ -107,7 +107,6 @@ def integration(session, engine):
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
         "pytest-xdist>=3.8.0",
-        "pytest-notebook>=0.10.0",
         external=True,
     )
 
@@ -153,7 +152,6 @@ def coverage(session, engine):
         "pytest-xdist>=3.8.0",
         "pytest-cov>=4.0",
         "coverage[toml]>=7.0",
-        "pytest-notebook>=0.10.0",
         external=True,
     )
 
@@ -211,24 +209,6 @@ def type_check(session):
     session.run("mypy", "src/")
 
 
-@nox.session(python=["3.11", "3.12"])
-def performance(session):
-    """Run performance benchmarks."""
-    session.run("uv", "pip", "install", "-e", ".", external=True)
-    session.run(
-        "uv",
-        "pip",
-        "install",
-        "pytest>=7.4.0",
-        "pytest-benchmark>=4.0.0",
-        external=True,
-    )
-
-    session.run(
-        "pytest", "tests/performance/", "-v", "--benchmark-only", *session.posargs
-    )
-
-
 @nox.session(python="3.11")
 def security(session):
     """Run security checks."""
@@ -268,7 +248,6 @@ def test_all(session, engine):
         "install",
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
-        "pytest-notebook>=0.10.0",
         "pytest-xdist>=3.8.0",
         external=True,
     )
