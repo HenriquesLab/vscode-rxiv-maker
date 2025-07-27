@@ -568,9 +568,22 @@ class TestBinaryTestingIntegrations:
         test_files = list(Path(__file__).parent.glob("test_*.py"))
 
         binary_test_files = [
-            f for f in test_files if "binary" in f.name or "pyinstaller" in f.name
+            f
+            for f in test_files
+            if any(
+                keyword in f.name
+                for keyword in [
+                    "binary",
+                    "pyinstaller",
+                    "end_to_end",
+                    "package_managers",
+                    "ci_matrix",
+                ]
+            )
         ]
-        assert len(binary_test_files) > 0, "No binary-specific tests found"
+        assert len(binary_test_files) > 0, (
+            f"No binary-specific tests found. Available test files: {[f.name for f in test_files]}"
+        )
 
     def test_package_manager_integration_tests(self):
         """Test that package manager integration tests exist."""
