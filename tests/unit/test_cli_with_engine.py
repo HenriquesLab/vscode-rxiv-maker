@@ -16,15 +16,8 @@ def test_cli_version(execution_engine):
     Tests if the 'rxiv --version' command runs successfully
     in the specified engine.
     """
-    # Use different command based on engine type
-    if execution_engine.engine_type == "local":
-        # Local: use Python module
-        result = execution_engine.run(
-            [sys.executable, "-m", "rxiv_maker.cli", "--version"]
-        )
-    else:
-        # Docker/Podman: use installed rxiv command
-        result = execution_engine.run(["rxiv", "--version"])
+    # Use the standardized rxiv_command method
+    result = execution_engine.rxiv_command("--version")
 
     assert result.returncode == 0
     assert "rxiv" in result.stdout.lower() or "version" in result.stdout.lower()
@@ -35,12 +28,8 @@ def test_cli_help(execution_engine):
     """
     Tests if the 'rxiv --help' command provides help information.
     """
-    if execution_engine.engine_type == "local":
-        result = execution_engine.run(
-            [sys.executable, "-m", "rxiv_maker.cli", "--help"]
-        )
-    else:
-        result = execution_engine.run(["rxiv", "--help"])
+    # Use the standardized rxiv_command method
+    result = execution_engine.rxiv_command("--help")
 
     assert result.returncode == 0
     assert "rxiv-maker" in result.stdout.lower()

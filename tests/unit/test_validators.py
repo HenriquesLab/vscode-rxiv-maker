@@ -565,7 +565,7 @@ l.45 E = mc^2
         with open(log_file_path, "w") as f:
             f.write(log_content)
 
-        parser = LaTeXErrorParser(self.manuscript_dir)
+        parser = LaTeXErrorParser(self.manuscript_dir, log_file_path)
         result = parser.validate()
 
         # Should detect LaTeX errors

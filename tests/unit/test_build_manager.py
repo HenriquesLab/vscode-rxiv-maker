@@ -47,6 +47,11 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
+        # Clean up logging handlers before removing files (Windows compatibility)
+        from rxiv_maker.core.logging_config import cleanup
+
+        cleanup()
+
         import shutil
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -319,6 +324,11 @@ class TestBuildProcessOrder(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
+        # Clean up logging handlers before removing files (Windows compatibility)
+        from rxiv_maker.core.logging_config import cleanup
+
+        cleanup()
+
         import shutil
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -424,6 +434,11 @@ class TestBibTeXWarningExtraction(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
+        # Clean up logging handlers before removing files (Windows compatibility)
+        from rxiv_maker.core.logging_config import cleanup
+
+        cleanup()
+
         import shutil
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -520,6 +535,11 @@ class TestBuildManagerIntegration(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
+        # Clean up logging handlers before removing files (Windows compatibility)
+        from rxiv_maker.core.logging_config import cleanup
+
+        cleanup()
+
         import shutil
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -627,6 +647,11 @@ class TestLaTeXErrorHandling(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
+        # Clean up logging handlers before removing files (Windows compatibility)
+        from rxiv_maker.core.logging_config import cleanup
+
+        cleanup()
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_latex_undefined_control_sequence(self):
