@@ -9,6 +9,8 @@ from ..core.logging_config import get_logger, set_log_directory
 from ..docker.manager import get_docker_manager
 from ..utils.figure_checksum import get_figure_checksum_manager
 from ..utils.platform import platform_detector
+from ..utils.operation_ids import create_operation
+from ..utils.performance import get_performance_tracker, track_operation
 
 logger = get_logger()
 
@@ -925,64 +927,105 @@ class BuildManager:
 
     def run_full_build(self) -> bool:
         """Run the complete build process."""
-        self.log(
-            f"Starting build process for manuscript: {self.manuscript_path}", "STEP"
-        )
+        # Create operation context for the entire build
+        with create_operation("pdf_build", manuscript=self.manuscript_path, 
+                            engine=self.engine) as op:
+            op.log(f"Starting build process for manuscript: {self.manuscript_path}")
+            self.log(
+                f"Starting build process for manuscript: {self.manuscript_path} (Operation ID: {op.operation_id})", "STEP"
+            )
 
-        # Step 1: Check manuscript structure
-        if not self.check_manuscript_structure():
-            return False
+            # Track performance
+            perf_tracker = get_performance_tracker()
+            
+            # Step 1: Check manuscript structure
+            perf_tracker.start_operation("check_structure")
+            if not self.check_manuscript_structure():
+                op.log("Failed at manuscript structure check")
+                return False
+            perf_tracker.end_operation("check_structure")
 
-        # Step 2: Set up output directory
-        if not self.setup_output_directory():
-            return False
+            # Step 2: Set up output directory
+            perf_tracker.start_operation("setup_output")
+            if not self.setup_output_directory():
+                op.log("Failed at output directory setup")
+                return False
+            perf_tracker.end_operation("setup_output")
 
-        # Step 3: Generate figures (before validation to ensure figure files exist)
-        if not self.generate_figures():
-            return False
+            # Step 3: Generate figures (before validation to ensure figure files exist)
+            perf_tracker.start_operation("generate_figures")
+            if not self.generate_figures():
+                op.log("Failed at figure generation")
+                return False
+            perf_tracker.end_operation("generate_figures")
 
-        # Step 4: Validate manuscript (if not skipped)
-        if not self.validate_manuscript():
-            return False
+            # Step 4: Validate manuscript (if not skipped)
+            perf_tracker.start_operation("validate_manuscript")
+            if not self.validate_manuscript():
+                op.log("Failed at manuscript validation")
+                return False
+            perf_tracker.end_operation("validate_manuscript")
 
-        # Step 5: Copy style files
-        if not self.copy_style_files():
-            return False
+            # Step 5: Copy style files
+            perf_tracker.start_operation("copy_files")
+            if not self.copy_style_files():
+                op.log("Failed at copying style files")
+                return False
 
-        # Step 6: Copy references
-        if not self.copy_references():
-            return False
+            # Step 6: Copy references
+            if not self.copy_references():
+                op.log("Failed at copying references")
+                return False
 
-        # Step 7: Copy figures
-        if not self.copy_figures():
-            return False
+            # Step 7: Copy figures
+            if not self.copy_figures():
+                op.log("Failed at copying figures")
+                return False
+            perf_tracker.end_operation("copy_files")
 
-        # Step 8: Generate LaTeX files
-        if not self.generate_tex_files():
-            return False
+            # Step 8: Generate LaTeX files
+            perf_tracker.start_operation("generate_tex")
+            if not self.generate_tex_files():
+                op.log("Failed at LaTeX generation")
+                return False
+            perf_tracker.end_operation("generate_tex")
 
-        # Step 9: Compile PDF
-        if not self.compile_pdf():
-            return False
+            # Step 9: Compile PDF
+            perf_tracker.start_operation("compile_pdf")
+            if not self.compile_pdf():
+                op.log("Failed at PDF compilation")
+                return False
+            perf_tracker.end_operation("compile_pdf")
 
-        # Step 10: Copy PDF to manuscript directory
-        if not self.copy_pdf_to_manuscript():
-            return False
+            # Step 10: Copy PDF to manuscript directory
+            if not self.copy_pdf_to_manuscript():
+                op.log("Failed at copying PDF to manuscript")
+                return False
 
-        # Step 11: Run PDF validation
-        self.run_pdf_validation()
+            # Step 11: Run PDF validation
+            self.run_pdf_validation()
 
-        # Step 12: Run word count analysis
-        self.run_word_count_analysis()
+            # Step 12: Run word count analysis
+            self.run_word_count_analysis()
 
-        # Success!
-        self.log(f"Build completed successfully: {self.output_pdf}")
+            # Success!
+            op.log(f"Build completed successfully: {self.output_pdf}")
+            self.log(f"Build completed successfully: {self.output_pdf} (Operation ID: {op.operation_id})")
 
-        # Inform user about warning logs if they exist
-        if self.warnings_log.exists():
-            self.log(f"Build warnings logged to {self.warnings_log.name}", "INFO")
+            # Generate performance report
+            perf_report = perf_tracker.get_performance_report()
+            if perf_report["summary"]["regressions"] > 0:
+                self.log(f"Performance regressions detected: {perf_report['summary']['regressions']} operations", "WARNING")
 
-        return True
+            # Inform user about warning logs if they exist
+            if self.warnings_log.exists():
+                self.log(f"Build warnings logged to {self.warnings_log.name}", "INFO")
+
+            return True
+    
+    def run(self) -> bool:
+        """Run the build process (alias for run_full_build)."""
+        return self.run_full_build()
 
 
 def main():

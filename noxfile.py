@@ -107,7 +107,6 @@ def integration(session, engine):
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
         "pytest-xdist>=3.8.0",
-        "pytest-notebook>=0.10.0",
         external=True,
     )
 
@@ -153,7 +152,6 @@ def coverage(session, engine):
         "pytest-xdist>=3.8.0",
         "pytest-cov>=4.0",
         "coverage[toml]>=7.0",
-        "pytest-notebook>=0.10.0",
         external=True,
     )
 
@@ -250,7 +248,6 @@ def test_all(session, engine):
         "install",
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
-        "pytest-notebook>=0.10.0",
         "pytest-xdist>=3.8.0",
         external=True,
     )
