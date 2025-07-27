@@ -118,6 +118,7 @@ def build(
                 )
                 logger.tip("Use --engine local to build without Docker")
                 from ...core.logging_config import cleanup
+
                 cleanup()
                 sys.exit(1)
 
@@ -127,6 +128,7 @@ def build(
         except Exception as e:
             logger.error(f"Docker setup error: {e}")
             from ...core.logging_config import cleanup
+
             cleanup()
             sys.exit(1)
 
@@ -135,6 +137,7 @@ def build(
         logger.error(f"Manuscript directory '{manuscript_path}' does not exist")
         logger.tip(f"Run 'rxiv init {manuscript_path}' to create a new manuscript")
         from ...core.logging_config import cleanup
+
         cleanup()
         sys.exit(1)
 
@@ -179,12 +182,14 @@ def build(
                 logger.tip("Run with --verbose for more details")
                 logger.tip("Run 'rxiv validate' to check for issues")
                 from ...core.logging_config import cleanup
+
                 cleanup()
                 sys.exit(1)
 
     except KeyboardInterrupt:
         logger.warning("\nPDF generation interrupted by user")
         from ...core.logging_config import cleanup
+
         cleanup()
         sys.exit(1)
     except Exception as e:
@@ -192,9 +197,11 @@ def build(
         if verbose:
             logger.console.print_exception()
         from ...core.logging_config import cleanup
+
         cleanup()
         sys.exit(1)
     finally:
         # Ensure logging cleanup for Windows compatibility
         from ...core.logging_config import cleanup
+
         cleanup()
