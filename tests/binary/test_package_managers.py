@@ -463,6 +463,7 @@ class TestPackageManagerIntegration:
                                 warnings.warn(
                                     f"Scoop version {scoop_version} significantly behind main version {main_version}",
                                     UserWarning,
+                                    stacklevel=2,
                                 )
                     except ImportError:
                         # If packaging not available, just warn
@@ -471,6 +472,7 @@ class TestPackageManagerIntegration:
                         warnings.warn(
                             f"Scoop version {scoop_version} != main version {main_version} (CI environment)",
                             UserWarning,
+                            stacklevel=2,
                         )
                 else:
                     # In development, enforce strict version matching

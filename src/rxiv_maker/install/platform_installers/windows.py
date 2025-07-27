@@ -29,7 +29,7 @@ class WindowsInstaller:
 
         # On Windows, most system libraries are handled by pip wheels
         # We mainly need to ensure Visual C++ redistributables are available
-        # Note: CairoSVG for Mermaid diagram conversion uses pre-built wheels on Windows
+        # Note: Most graphics libraries use pre-built wheels on Windows
 
         try:
             # Check if we can import key packages
@@ -470,6 +470,6 @@ class WindowsInstaller:
         """Install required npm packages."""
         self.logger.info("No npm packages required - mermaid-cli dependency removed")
 
-        # Mermaid diagrams are now handled via Python-based solutions (cairosvg)
-        # No need for puppeteer-based mermaid-cli
+        # Mermaid diagrams are now handled via mermaid.ink API
+        # No need for local mermaid-cli installation
         return True

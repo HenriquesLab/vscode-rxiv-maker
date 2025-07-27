@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release Orchestration Script
+"""Release Orchestration Script.
 
 This script orchestrates the entire release process including:
 - Validating release readiness

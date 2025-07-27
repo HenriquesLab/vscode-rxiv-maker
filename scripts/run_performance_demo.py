@@ -15,7 +15,6 @@ def copy_tree_optimized(src: Path, dst: Path, use_hardlinks: bool = True):
     # Static file extensions that can use hardlinks safely
     STATIC_EXTENSIONS = {".png", ".jpg", ".jpeg", ".svg", ".pdf", ".eps", ".gif"}
     # Text file extensions that should be copied (may be modified)
-    TEXT_EXTENSIONS = {".md", ".yml", ".yaml", ".bib", ".tex", ".cls", ".bst", ".txt"}
 
     # Minimum file size threshold for hardlink benefit (5KB)
     HARDLINK_THRESHOLD = 5 * 1024
@@ -156,7 +155,7 @@ def benchmark_fixture_scoping():
     def function_scoped_simulation():
         """Simulate function-scoped fixture overhead."""
         total_time = 0
-        for i in range(10):
+        for _i in range(10):
             start = time.perf_counter()
             with tempfile.TemporaryDirectory() as tmpdir:
                 manuscript_dir = Path(tmpdir) / "manuscript"

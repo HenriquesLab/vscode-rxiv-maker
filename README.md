@@ -416,9 +416,9 @@ Rxiv-Maker provides robust Docker support through an integrated architecture tha
 
 | Image | Purpose | Use Case |
 |-------|---------|----------|
-| `henriqueslab/rxiv-maker-base:latest` | Cairo-only production image | PDF generation with enhanced SVG processing |
+| `henriqueslab/rxiv-maker-base:latest` | Production image | PDF generation with mermaid.ink API |
 
-**Note**: As of v1.8+, we've transitioned to a single Cairo-only Docker image for better performance and smaller size. The experimental Cairo variant has been merged into the base image.
+**Note**: As of v1.8+, we use the mermaid.ink API for diagram generation, eliminating browser dependencies.
 
 ### 🚀 Usage Patterns
 
@@ -430,8 +430,8 @@ rxiv pdf --engine docker
 # Set Docker as default
 rxiv config set general.default_engine docker
 
-# Use experimental Cairo variant
-RXIV_DOCKER_VARIANT=experimental-cairo rxiv pdf --engine docker
+# Use Docker engine
+rxiv pdf --engine docker
 ```
 
 **Legacy Make Commands**:
@@ -439,8 +439,8 @@ RXIV_DOCKER_VARIANT=experimental-cairo rxiv pdf --engine docker
 # Standard Docker builds
 make pdf RXIV_ENGINE=DOCKER
 
-# Experimental variant
-make pdf RXIV_ENGINE=DOCKER RXIV_DOCKER_VARIANT=experimental-cairo
+# Docker builds
+make pdf RXIV_ENGINE=DOCKER
 ```
 
 ### ⚙️ Benefits

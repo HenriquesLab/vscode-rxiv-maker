@@ -325,9 +325,9 @@ class FigureGenerator:
         return diagram_content
 
     def _fix_svg_dimensions(self, svg_content):
-        """Fix SVG dimensions from mermaid.ink for CairoSVG compatibility.
+        """Fix SVG dimensions from mermaid.ink for better compatibility.
 
-        Mermaid.ink returns SVGs with width="100%" which CairoSVG can't handle.
+        Mermaid.ink returns SVGs with width="100%" which some processors can't handle.
         Extract dimensions from viewBox and set explicit width/height.
         """
         try:

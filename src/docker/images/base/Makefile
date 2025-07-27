@@ -5,8 +5,8 @@
 # managing Docker images. End users should use the main Makefile with
 # RXIV_ENGINE=DOCKER for containerized builds.
 #
-# ARCHITECTURE: AMD64 and ARM64 supported (CairoSVG-based)
-# No longer requires Chrome/Puppeteer - works on all architectures
+# ARCHITECTURE: AMD64 and ARM64 supported
+# Works on all architectures without browser dependencies
 #
 # Usage:
 #   cd src/docker
@@ -86,7 +86,7 @@ image-local:
 	@echo "🛡️  Using safe build wrapper to prevent crashes"
 	@./build-safe.sh --local --tag test --repo $(DOCKER_HUB_REPO) --platform linux/amd64
 
-# Multi-platform builds now supported with CairoSVG
+# Multi-platform builds now supported
 # Both AMD64 and ARM64 architectures work without browser dependencies
 
 # Build with regular script (for debugging or when safe mode isn't needed)

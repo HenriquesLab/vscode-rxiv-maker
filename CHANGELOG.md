@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optimized Docker base image with streamlined dependency management and reduced layer count
   - Updated figure generation pipeline with improved error handling and API integration
   - Enhanced package management scripts with better validation and error handling
-  - Consolidated testing framework with removal of deprecated Docker Cairo integration tests
+  - Consolidated testing framework with removal of deprecated Docker integration tests
   - Updated submodule configurations for package managers (Homebrew, Scoop, VSCode extension)
   - Improved GitHub Actions workflows with better organization and efficiency
   - Updated documentation and CLI reference materials

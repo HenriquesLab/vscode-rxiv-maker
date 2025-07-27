@@ -466,7 +466,7 @@ except ImportError as e:
         background_color: str = "transparent",
         config_file: Path | None = None,
     ) -> subprocess.CompletedProcess:
-        """Generate SVG from Mermaid diagram using Cairo-only approach."""
+        """Generate SVG from Mermaid diagram using mermaid.ink API."""
         # Build relative paths for Docker with proper error handling
         try:
             input_rel = input_file.relative_to(self.workspace_dir)
@@ -480,7 +480,7 @@ except ImportError as e:
             # If output file is not within workspace, use absolute path resolution
             output_rel = Path("output") / output_file.name
 
-        # Use Cairo-only Mermaid rendering via online Kroki service
+        # Use Mermaid rendering via online service
         # This eliminates the need for local Puppeteer/Chromium dependencies
         python_script = f'''
 import sys
@@ -491,7 +491,7 @@ import zlib
 from pathlib import Path
 
 def generate_mermaid_svg():
-    """Generate SVG from Mermaid using Kroki service (Cairo-compatible)."""
+    """Generate SVG from Mermaid using Kroki service."""
     try:
         # Read the Mermaid file
         with open("/workspace/{input_rel}", "r") as f:
@@ -516,7 +516,7 @@ def generate_mermaid_svg():
                     with open("/workspace/{output_rel}", "w") as f:
                         f.write(svg_content)
 
-                    print("Generated SVG using Kroki service (Cairo-compatible)")
+                    print("Generated SVG using Kroki service")
                     return 0
                 else:
                     raise Exception(
@@ -569,18 +569,12 @@ if __name__ == "__main__":
         """Execute a Python script with optimized Docker execution."""
         try:
             script_rel = script_file.relative_to(self.workspace_dir)
-            script_path = f"/workspace/{script_rel}"
         except ValueError:
             # Script is outside workspace (e.g., in temp directory during tests)
             # Check if it's accessible through a mounted volume at /workspace
             # Try to find the script in the workspace
-            possible_paths = [
-                f"/workspace/{script_file.name}",
-                f"/workspace/FIGURES/{script_file.name}",
-                f"/workspace/TEMP_TEST_MANUSCRIPT/FIGURES/{script_file.name}",
-            ]
             # Use the script name but with a fallback to copy/read approach
-            script_path = f"/workspace/{script_file.name}"
+            pass
 
         docker_working_dir = "/workspace"
 

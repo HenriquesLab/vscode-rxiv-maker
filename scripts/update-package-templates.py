@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified Package Template Update Script
+"""Unified Package Template Update Script.
 
 This script provides a unified way to update both Homebrew and Scoop package
 manager files from templates with proper validation and error handling.
