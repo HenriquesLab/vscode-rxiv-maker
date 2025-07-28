@@ -47,6 +47,14 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Configure safe git directory
+        run: git config --global --add safe.directory /__w/rxiv-maker/rxiv-maker
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
       - name: Get rxiv-maker version and determine Docker image
         id: get-version
         run: |
