@@ -255,6 +255,11 @@ jobs:
         git submodule update --init --recursive || echo "Submodule initialization failed, continuing..."
         git submodule status
 
+    - name: Install GitHub CLI inside container
+      run: |
+        apt-get update
+        apt-get install -y gh
+
     # Cache Python dependencies and virtual environment
     - name: Cache Python dependencies
       uses: actions/cache@v4
