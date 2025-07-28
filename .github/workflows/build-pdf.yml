@@ -41,14 +41,17 @@ jobs:
       rxiv_version: ${{ steps.get-version.outputs.version }}
       docker_image: ${{ steps.get-version.outputs.docker_image }}
     steps:
+      - name: Mark workspace as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Update submodules
+        run: git submodule update --init --recursive
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-
-      - name: Configure safe git directory
-        run: git config --global --add safe.directory /__w/rxiv-maker/rxiv-maker
 
       - name: Install GitHub CLI
         run: |
