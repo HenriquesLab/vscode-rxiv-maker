@@ -41,11 +41,23 @@ jobs:
       rxiv_version: ${{ steps.get-version.outputs.version }}
       docker_image: ${{ steps.get-version.outputs.docker_image }}
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Mark workspace as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Update submodules
+        run: git submodule update --init --recursive
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
 
       - name: Get rxiv-maker version and determine Docker image
         id: get-version
@@ -242,6 +254,11 @@ jobs:
         # Ensure submodules are properly initialized
         git submodule update --init --recursive || echo "Submodule initialization failed, continuing..."
         git submodule status
+
+    - name: Install GitHub CLI inside container
+      run: |
+        apt-get update
+        apt-get install -y gh
 
     # Cache Python dependencies and virtual environment
     - name: Cache Python dependencies
