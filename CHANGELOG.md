@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **🔒 SECURITY**: Fix xml2js prototype pollution vulnerability (CVE-2023-0842) in VSCode extension submodule
+  - Updated xml2js dependency from 0.4.23 to 0.5.0 to address GHSA-776f-qx25-q3cc
+  - Resolves medium severity prototype pollution vulnerability allowing external modification of object properties
+- **CI/CD Pipeline**: Fix CI timeout issue in PyPI integration test
+  - Added `@pytest.mark.timeout(300)` to prevent global 120s timeout from killing LaTeX compilation tests
+  - Resolves GitHub Actions failures where PDF build tests were timing out prematurely
+- Fix PDF detection and download issues in Colab notebook environment
+- Fix GitHub Actions workflow configurations and Docker container setup
+
+### Changed
+- Update GitHub workflows and improve Colab notebook functionality 
+- Update Colab notebook to use modern rxiv CLI commands and improve UX
+- Update setup completion messages to use proper rxiv CLI syntax
+- Improve CI/CD pipeline stability with better error handling and workflow orchestration
+
+## [v1.4.12] - 2025-07-27
+
+### Fixed
+- **Build System**: Add logging cleanup before all sys.exit calls in build command
+  - Ensures proper cleanup of log handles before process termination
+  - Prevents file permission errors and resource leaks during build failures
+- **CI/CD Pipeline**: Fix CI issues with Windows file permissions and module imports
+  - Resolve Windows-specific file permission errors by adding proper logging cleanup
+  - Fix 5 failing tests in CI pipeline through improved error handling
+  - Fix missing imports in build manager tests for better cross-platform compatibility
+- **Dependency Management**: Remove all references to cairo from codebase
+  - Eliminates problematic cairo dependency that caused installation issues
+  - Improves package compatibility across different operating systems
+
+### Changed
+- **GitHub Integration**: Add Claude Code GitHub Workflow for automated assistance
+  - Provides AI-powered code review and automated development support
+  - Enhances development workflow with intelligent suggestions and fixes
+- **Performance**: Implement PR recommendations for improved debugging and performance
+  - Better error reporting and diagnostic information for troubleshooting
+  - Optimized build processes and enhanced logging capabilities
+- **CI/CD Stability**: Stabilize CI/CD pipeline for reliable testing
+  - Improved test execution reliability across different platforms
+  - Enhanced error handling and recovery mechanisms
+
 ## [v1.4.11] - 2025-07-26
 
 ### Fixed
@@ -14,6 +55,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **File Permission Issues**: Resolved log file cleanup permission errors on Windows systems
 - **SVG Placeholder Generation**: Fixed path validation errors when creating SVG placeholders in temporary directories
 - **Container Script Execution**: Improved Docker container script execution with better error handling
+
+## [v1.4.10] - 2025-07-26
+
+### Fixed
+- **🚨 CRITICAL**: Fix PyPI deployment critical issues for Windows cross-platform compatibility
+  - Addresses deployment failures preventing Windows users from installing via PyPI
+  - Resolves platform-specific compatibility issues in package distribution
+- **Windows Platform Support**: Fix Windows platform detector tests to handle path separators correctly
+  - Ensures proper path handling across different operating systems (Windows vs Unix-like)
+  - Fixes test failures related to file system path differences
+- **Test Execution**: Fix Windows test execution by removing unsupported --forked flag
+  - Removes pytest-forked flag that was causing test failures on Windows systems
+  - Improves cross-platform test reliability and execution consistency
 
 ## [v1.4.9] - 2025-07-26
 
