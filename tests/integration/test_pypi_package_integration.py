@@ -284,6 +284,7 @@ class TestPyPIPackageIntegration:
                 os.chdir(original_cwd)
 
     @pytest.mark.skipif("CI" not in os.environ, reason="Only run in CI environment")
+    @pytest.mark.timeout(300)  # Allow 5 minutes for full PDF build in CI
     def test_full_pdf_build_in_ci(self):
         """Test full PDF build in CI environment where LaTeX should be available."""
         with tempfile.TemporaryDirectory() as tmpdir:
