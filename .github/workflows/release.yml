@@ -26,12 +26,13 @@ jobs:
   test:
     name: Test Suite
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 35
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.11', '3.12']
       fail-fast: false
+      max-parallel: 8  # Increase parallelism for releases
 
     steps:
       - name: Checkout code
@@ -44,7 +45,8 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: ${{ matrix.python-version }}
-          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
+          cache-suffix: release-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}
+          enable-cache: true
 
       - name: Run unit tests
         uses: ./.github/actions/test-execution
@@ -57,7 +59,7 @@ jobs:
   build-python:
     name: Build Python Packages
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     needs: test
 
     steps:
@@ -70,6 +72,8 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          cache-suffix: build-python-${{ runner.os }}
+          enable-cache: true
 
       - name: Build Python packages
         run: uv build
@@ -88,9 +92,9 @@ jobs:
 
   # Third job: Build binaries for each platform
   build-binaries:
-    name: Build Binary (${{ matrix.os }})
+    name: Build Binary (${{ matrix.platform }}-${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 45
     needs: test
     strategy:
       matrix:
@@ -105,11 +109,6 @@ jobs:
             arch: x64
             binary_name: rxiv.exe
             artifact_name: rxiv-maker-windows-x64
-          - os: macos-latest
-            platform: macos
-            arch: x64
-            binary_name: rxiv
-            artifact_name: rxiv-maker-macos-x64
           - os: macos-13  # Intel Mac for x64 build
             platform: macos
             arch: x64
@@ -120,6 +119,8 @@ jobs:
             arch: arm64
             binary_name: rxiv
             artifact_name: rxiv-maker-macos-arm64
+      fail-fast: false
+      max-parallel: 4  # Build all platforms in parallel
 
     steps:
       - name: Checkout code
@@ -132,6 +133,8 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          cache-suffix: binary-${{ matrix.platform }}-${{ matrix.arch }}
+          enable-cache: true
 
       - name: Install additional build dependencies (Linux)
         if: runner.os == 'Linux'
@@ -175,7 +178,7 @@ jobs:
               ['src/rxiv_maker/rxiv_maker_cli.py'],
               pathex=[src_path],
               binaries=[],
-              datas=[
+              data=[
                   ('src/rxiv_maker/tex', 'rxiv_maker/tex'),
                   ('src/rxiv_maker/install/templates', 'rxiv_maker/install/templates'),
                   ('src/rxiv_maker/utils/schemas', 'rxiv_maker/utils/schemas'),
@@ -311,12 +314,69 @@ jobs:
             dist/${{ matrix.artifact_name }}.zip
           retention-days: 30
 
-  # Fourth job: Create GitHub release
+  # Fourth job: Build example PDF
+  build-example-pdf:
+    name: Build Example PDF
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+        with:
+          python-version: '3.11'
+          cache-suffix: pdf-build
+          enable-cache: true
+
+      - name: Install LaTeX dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-bibtex-extra biber
+
+      - name: Generate example PDF
+        run: |
+          echo "Building example PDF from EXAMPLE_MANUSCRIPT..."
+          make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
+
+          # Verify PDF was created
+          if [ -f "output/EXAMPLE_MANUSCRIPT.pdf" ]; then
+            echo "✅ PDF generated successfully"
+            ls -la output/EXAMPLE_MANUSCRIPT.pdf
+
+            # Basic validation - check file size
+            PDF_SIZE=$(stat -c%s "output/EXAMPLE_MANUSCRIPT.pdf")
+            if [ "$PDF_SIZE" -gt 10000 ]; then
+              echo "✅ PDF size looks reasonable: $PDF_SIZE bytes"
+            else
+              echo "❌ PDF size seems too small: $PDF_SIZE bytes"
+              exit 1
+            fi
+          else
+            echo "❌ PDF generation failed"
+            ls -la output/
+            exit 1
+          fi
+
+      - name: Upload example PDF
+        uses: ./.github/actions/artifact-management
+        with:
+          action: upload
+          name: example-pdf
+          path: output/EXAMPLE_MANUSCRIPT.pdf
+
+  # Fifth job: Create GitHub release
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [test, build-python, build-binaries]
+    needs: [test, build-python, build-binaries, build-example-pdf]
 
     outputs:
       release_id: ${{ steps.create_release.outputs.id }}
@@ -352,7 +412,7 @@ jobs:
           cat > release_notes.md << 'EOF'
           ## 🚀 Rxiv-Maker ${{ steps.get_version.outputs.tag }}
 
-          This release includes pre-compiled binaries for faster installation across platforms.
+          This release includes pre-compiled binaries and an example PDF generated with Rxiv-Maker to showcase its capabilities.
 
           ### 📦 Installation Options
 
@@ -380,6 +440,9 @@ jobs:
           - **macOS Intel**: `rxiv-maker-macos-x64-intel.tar.gz`
           - **macOS Apple Silicon**: `rxiv-maker-macos-arm64.tar.gz`
 
+          #### 📄 Example Output
+          - **Example PDF**: `EXAMPLE_MANUSCRIPT.pdf` - See what Rxiv-Maker can generate!
+
           ### 🔗 Quick Start
           ```bash
           rxiv init my-paper     # Initialize new manuscript
@@ -406,7 +469,11 @@ jobs:
             --notes-file release_notes.md \
             artifacts/python-packages/* \
             artifacts/*.tar.gz \
-            artifacts/*.zip
+            artifacts/*.zip \
+            artifacts/EXAMPLE_MANUSCRIPT.pdf \
+            README.md \
+            CHANGELOG.md \
+            LICENSE
 
   # Fifth job: Publish to PyPI
   publish-pypi:
@@ -429,6 +496,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          verbose: true
+          verify-metadata: true
 
   # Sixth job: Trigger Docker image sync for new releases
   sync-docker-version:

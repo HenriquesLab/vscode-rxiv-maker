@@ -28,9 +28,7 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
     bib_file_path = current_dir / manuscript_path / bib_filename
 
     if not bib_file_path.exists():
-        print(
-            f"Warning: Bibliography file {bib_file_path} not found. Creating new file."
-        )
+        print(f"Warning: Bibliography file {bib_file_path} not found. Creating new file.")
         bib_file_path.parent.mkdir(parents=True, exist_ok=True)
         bib_file_path.touch()
 
@@ -43,23 +41,20 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
         return
 
     # Check if citation already exists
-    if "saraiva_2025_rxivmaker" in bib_content:
+    if "saraiva2025rxivmaker" in bib_content:
         print("Rxiv-Maker citation already exists in bibliography")
         return
 
     # Define the Rxiv-Maker citation
     rxiv_citation = """
-@article{saraiva_2025_rxivmaker,
-  author       = {Saraiva, Bruno M. and Jacquemet, Guillaume and Henriques, Ricardo},
-  title        = {Rxiv-Maker: an automated template engine for streamlined scientific
-                 publications},
-  journal      = {Zenodo},
-  publisher    = {Zenodo},
-  year         = 2025,
-  month        = jul,
-  doi          = {10.5281/zenodo.15753534},
-  url          = {https://zenodo.org/records/15753534},
-  eprint       = {https://zenodo.org/records/15753534/files/2025__saraiva_et_al__rxiv.pdf}
+@misc{saraiva2025rxivmaker,
+      title={Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications},
+      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025},
+      eprint={2508.00836},
+      archivePrefix={arXiv},
+      primaryClass={cs.DL},
+      url={https://arxiv.org/abs/2508.00836},
 }
 """
 

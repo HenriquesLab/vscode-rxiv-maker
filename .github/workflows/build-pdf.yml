@@ -82,33 +82,43 @@ jobs:
           # Check for version-specific image availability with timeout and retry
           echo "🔍 Checking Docker image availability..."
 
-          # Use Docker Hub API with proper error handling
+          # Use Docker Hub API with proper error handling and retry logic
           check_image_exists() {
             local image_path="$1"
-            local timeout=10
+            local timeout=15
+            local max_attempts=3
 
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$timeout" \
-              "https://hub.docker.com/v2/repositories/$image_path/" 2>/dev/null || echo "000")
+            for attempt in $(seq 1 $max_attempts); do
+              echo "  Attempt $attempt/$max_attempts for $image_path"
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$timeout" \
+                "https://hub.docker.com/v2/repositories/$image_path/" 2>/dev/null || echo "000")
 
-            if [ "$HTTP_CODE" = "200" ]; then
-              return 0
-            else
-              return 1
-            fi
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "  ✅ Image found (HTTP $HTTP_CODE)"
+                return 0
+              elif [ "$HTTP_CODE" = "404" ]; then
+                echo "  ❌ Image not found (HTTP $HTTP_CODE)"
+                return 1
+              else
+                echo "  ⚠️ API error (HTTP $HTTP_CODE), retrying in 2 seconds..."
+                [ $attempt -lt $max_attempts ] && sleep 2
+              fi
+            done
+            echo "  ❌ Failed after $max_attempts attempts"
+            return 1
           }
 
-          # Priority order: versioned -> latest
-          if check_image_exists "henriqueslab/rxiv-maker-base/tags/v$VERSION"; then
-            echo "✅ Version-specific image available: $VERSIONED_IMAGE"
-            DOCKER_IMAGE="$VERSIONED_IMAGE"
-          elif check_image_exists "henriqueslab/rxiv-maker-base/tags/latest"; then
-            echo "✅ Using latest base image: $FALLBACK_IMAGE"
-            echo "ℹ️ Version-specific image not available, using latest"
+          # Always use latest image for stability, with version-specific as backup
+          echo "🔍 Checking latest image availability first for stability..."
+          if check_image_exists "henriqueslab/rxiv-maker-base/tags/latest"; then
+            echo "✅ Using stable latest image: $FALLBACK_IMAGE"
             DOCKER_IMAGE="$FALLBACK_IMAGE"
+          elif check_image_exists "henriqueslab/rxiv-maker-base/tags/v$VERSION"; then
+            echo "✅ Using version-specific image: $VERSIONED_IMAGE"
+            DOCKER_IMAGE="$VERSIONED_IMAGE"
           else
-            echo "❌ No suitable Docker images available"
+            echo "⚠️ No images found via API, defaulting to latest (may work due to Docker Hub caching)"
             echo "📋 Will attempt to use fallback anyway: $FALLBACK_IMAGE"
-            echo "⚠️ Build may fail if image is unavailable"
             DOCKER_IMAGE="$FALLBACK_IMAGE"
           fi
 
@@ -147,7 +157,7 @@ jobs:
     timeout-minutes: 60
     container:
       image: ${{ needs.prepare.outputs.docker_image }}  # Version-specific pre-compiled image
-      options: --platform linux/amd64 --user root
+      options: --user root --privileged
     outputs:
       pdf-path: ${{ steps.build-result.outputs.pdf-path }}
       artifact-name: ${{ steps.build-result.outputs.artifact-name }}

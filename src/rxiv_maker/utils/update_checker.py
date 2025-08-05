@@ -4,6 +4,7 @@ This module handles checking for newer versions of rxiv-maker on PyPI
 and notifying users about available updates in a non-intrusive way.
 """
 
+import contextlib
 import json
 import os
 import threading
@@ -61,11 +62,8 @@ class UpdateChecker:
             try:
                 migrate_cache_file(legacy_cache_file, self.cache_file)
                 # Try to remove empty legacy directory
-                try:
+                with contextlib.suppress(OSError):
                     legacy_cache_dir.rmdir()
-                except OSError:
-                    # Directory not empty, leave it alone
-                    pass
             except Exception:
                 # Migration failed, continue with new location
                 pass
@@ -195,9 +193,7 @@ class UpdateChecker:
         }
 
         if latest_version and self.current_version != "unknown":
-            cache_data["update_available"] = self._compare_versions(
-                self.current_version, latest_version
-            )
+            cache_data["update_available"] = self._compare_versions(self.current_version, latest_version)
 
         self._save_cache(cache_data)
 

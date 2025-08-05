@@ -8,6 +8,7 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     permissions:
       contents: read
       checks: write
@@ -16,6 +17,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [18, 20]
+      fail-fast: false
+      max-parallel: 6
 
     steps:
     - name: Checkout
@@ -26,18 +29,16 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: 'package-lock.json'
 
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --prefer-offline --no-audit
 
     - name: Run linter
       run: npm run lint
 
     - name: Run type check
       run: npm run check-types
-
-    - name: Skip tests (integration tests require specific setup)
-      run: echo "Skipping tests - they require EXAMPLE_MANUSCRIPT setup not available in CI"
 
     - name: Package extension
       run: npm run package

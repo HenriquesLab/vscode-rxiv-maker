@@ -1,7 +1,5 @@
 """Type definitions for markdown to LaTeX conversion."""
 
-from typing import Union
-
 # Type aliases for better readability
 MarkdownContent = str
 LatexContent = str
@@ -19,7 +17,7 @@ FigureAttributes = dict[str, str]
 TableAttributes = dict[str, str]
 
 # Content processing types
-ContentProcessor = Union[str, list[str]]
+ContentProcessor = str | list[str]
 ProcessingContext = dict[str, bool | str | int | ProtectedContent]
 
 # Table-specific types

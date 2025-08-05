@@ -22,12 +22,310 @@ interface ReferenceLabel {
 interface ManuscriptFolderResult {
 	success: boolean;
 	manuscriptPath?: string;
-	rxivMakerRoot?: string;
 	error?: string;
+}
+
+interface InstallationTool {
+	name: string;
+	command: string;
+	available: boolean;
+	description: string;
+}
+
+interface RxivInstallationResult {
+	isInstalled: boolean;
+	availableTools: InstallationTool[];
 }
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Rxiv-Maker extension is now active!');
+
+	// Helper function to check if rxiv CLI is installed
+	async function checkRxivInstalled(): Promise<boolean> {
+		try {
+			await new Promise<void>((resolve, reject) => {
+				exec('rxiv --version', { timeout: 5000 }, (error, stdout, stderr) => {
+					if (error) {
+						reject(error);
+					} else {
+						resolve();
+					}
+				});
+			});
+			return true;
+		} catch {
+			// Check if rxiv exists in common uv tool locations but isn't in PATH
+			const uvToolPath = path.join(os.homedir(), '.local', 'bin', 'rxiv');
+			try {
+				await fs.promises.access(uvToolPath, fs.constants.F_OK);
+				// rxiv exists but not in PATH - this is a PATH configuration issue
+				console.log('Rxiv-Maker: rxiv found at', uvToolPath, 'but not in PATH');
+				return false;
+			} catch {
+				// rxiv truly not installed
+				return false;
+			}
+		}
+	}
+
+	// Helper function to detect available installation tools
+	async function checkInstallationTools(): Promise<InstallationTool[]> {
+		const tools: InstallationTool[] = [
+			{
+				name: 'pipx',
+				command: 'pipx --version',
+				available: false,
+				description: 'Recommended: Install in isolated environment with global CLI access'
+			},
+			{
+				name: 'uv',
+				command: 'uv --version',
+				available: false,
+				description: 'Fast modern Python package manager'
+			},
+			{
+				name: 'pip',
+				command: os.platform() === 'win32' ? 'pip --version' : 'pip3 --version',
+				available: false,
+				description: 'Standard Python package manager (may fail on managed systems like macOS)'
+			}
+		];
+
+		for (const tool of tools) {
+			try {
+				await new Promise<void>((resolve, reject) => {
+					exec(tool.command, { timeout: 5000 }, (error, stdout, stderr) => {
+						if (error) {
+							reject(error);
+						} else {
+							resolve();
+						}
+					});
+				});
+				tool.available = true;
+			} catch {
+				tool.available = false;
+			}
+		}
+
+		return tools;
+	}
+
+	// Helper function to install rxiv-maker using selected method
+	async function installRxivMaker(tool: InstallationTool): Promise<boolean> {
+		return new Promise((resolve) => {
+			const installTerminal = vscode.window.createTerminal({
+				name: `rxiv-maker-install-${tool.name}`,
+			});
+
+			installTerminal.show();
+
+			let installCommand: string;
+			let fallbackMessage: string = '';
+
+			switch (tool.name) {
+				case 'pipx':
+					installCommand = 'pipx install rxiv-maker';
+					break;
+				case 'uv':
+					installCommand = 'uv tool install rxiv-maker && uv tool update-shell';
+					break;
+				case 'pip':
+					installCommand = os.platform() === 'win32'
+						? 'pip install rxiv-maker --user'
+						: 'pip3 install rxiv-maker --user';
+
+					// Add fallback guidance for pip on systems with externally-managed environments
+					if (os.platform() !== 'win32') {
+						fallbackMessage = `echo "If pip installation fails due to externally-managed-environment:"
+echo "  1. Consider using 'pipx install rxiv-maker' instead (recommended)"
+echo "  2. Or create a virtual environment first:"
+echo "     python3 -m venv ~/.rxiv-env"
+echo "     source ~/.rxiv-env/bin/activate"
+echo "     pip install rxiv-maker"
+echo ""`;
+					}
+					break;
+				default:
+					resolve(false);
+					return;
+			}
+
+			installTerminal.sendText(`echo "Installing rxiv-maker using ${tool.name}..."`);
+
+			if (tool.name === 'uv') {
+				installTerminal.sendText(`echo "This will also configure your shell PATH automatically using 'uv tool update-shell'"`);
+			}
+
+			if (fallbackMessage) {
+				installTerminal.sendText(fallbackMessage);
+			}
+
+			installTerminal.sendText(installCommand);
+
+			// Add conditional success message and fallback for pip
+			if (tool.name === 'pip') {
+				installTerminal.sendText(`if [ $? -eq 0 ]; then
+    echo "✅ Installation complete! You can now use rxiv commands."
+    echo "Please restart VS Code to ensure the extension recognizes the new installation."
+else
+    echo "⚠️  Pip installation failed. This is common on macOS/Linux with managed Python environments."
+    echo "🚀 Recommended: Install pipx and run 'pipx install rxiv-maker' instead"
+    echo "Or follow the virtual environment instructions above."
+fi`);
+			} else if (tool.name === 'uv') {
+				installTerminal.sendText(`echo "✅ Installation complete! rxiv-maker is now installed with PATH configured."`);
+				installTerminal.sendText(`echo "Please restart your terminal or VS Code for PATH changes to take effect."`);
+				installTerminal.sendText(`echo "If 'rxiv' command is still not found, run: hash -r"`);
+			} else {
+				installTerminal.sendText(`echo "✅ Installation complete! You can now use rxiv commands."`);
+				installTerminal.sendText(`echo "Please restart VS Code to ensure the extension recognizes the new installation."`);
+			}
+
+			// We can't easily detect when the installation is complete from here,
+			// so we'll assume success and let the user restart if needed
+			setTimeout(() => resolve(true), 1000);
+		});
+	}
+
+	// Helper function to check if rxiv exists but isn't in PATH
+	async function checkRxivPATHIssue(): Promise<boolean> {
+		const uvToolPath = path.join(os.homedir(), '.local', 'bin', 'rxiv');
+		try {
+			await fs.promises.access(uvToolPath, fs.constants.F_OK);
+			return true; // rxiv exists but not in PATH
+		} catch {
+			return false; // rxiv doesn't exist
+		}
+	}
+
+	// Helper function to ensure rxiv is available before running commands
+	async function ensureRxivAvailable(): Promise<boolean> {
+		const isInstalled = await checkRxivInstalled();
+
+		if (isInstalled) {
+			return true;
+		}
+
+		// Check if this is a PATH configuration issue
+		const hasPATHIssue = await checkRxivPATHIssue();
+		if (hasPATHIssue) {
+			const choice = await vscode.window.showWarningMessage(
+				'rxiv-maker is installed but not accessible from PATH. This commonly happens after uv tool install.',
+				'Configure PATH',
+				'Reinstall',
+				'Cancel'
+			);
+
+			if (choice === 'Configure PATH') {
+				const terminal = vscode.window.createTerminal({
+					name: 'rxiv-path-config'
+				});
+				terminal.show();
+				terminal.sendText('echo "Configuring PATH for rxiv-maker..."');
+				terminal.sendText('uv tool update-shell');
+				terminal.sendText('echo "PATH configuration complete. Please restart your terminal or run: hash -r"');
+
+				vscode.window.showInformationMessage(
+					'PATH configuration initiated. Please restart VS Code or your terminal, then try again.',
+					'Restart VS Code'
+				).then(choice => {
+					if (choice === 'Restart VS Code') {
+						vscode.commands.executeCommand('workbench.action.reloadWindow');
+					}
+				});
+				return false;
+			} else if (choice === 'Reinstall') {
+				// Fall through to installation options
+			} else {
+				return false;
+			}
+		}
+
+		// rxiv is not installed, offer installation options
+		const availableTools = await checkInstallationTools();
+		const availableOptions = availableTools.filter(tool => tool.available);
+
+		if (availableOptions.length === 0) {
+			vscode.window.showErrorMessage(
+				'rxiv-maker CLI is not installed and no suitable installation tools (pipx, uv, pip) were found. Please install pipx or uv first.',
+				'Show Instructions'
+			).then(choice => {
+				if (choice === 'Show Instructions') {
+					const instructions = `To install rxiv-maker CLI, you need one of these tools:
+
+**Recommended: pipx**
+\`\`\`bash
+# Install pipx first
+${os.platform() === 'win32' ? 'pip install pipx' :
+  os.platform() === 'darwin' ? 'brew install pipx' : 'sudo apt install pipx'}
+
+# Then install rxiv-maker
+pipx install rxiv-maker
+\`\`\`
+
+**Alternative: uv**
+\`\`\`bash
+# Install uv first
+${os.platform() === 'win32' ? 'pip install uv' :
+  os.platform() === 'darwin' ? 'brew install uv' : 'curl -LsSf https://astral.sh/uv/install.sh | sh'}
+
+# Then install rxiv-maker and configure PATH
+uv tool install rxiv-maker
+uv tool update-shell
+
+# Restart your terminal after installation
+\`\`\``;
+
+					vscode.workspace.openTextDocument({
+						content: instructions,
+						language: 'markdown'
+					}).then(doc => vscode.window.showTextDocument(doc));
+				}
+			});
+			return false;
+		}
+
+		// Show installation options to user
+		const items = availableOptions.map(tool => ({
+			label: `$(package) Install with ${tool.name}`,
+			description: tool.description,
+			tool: tool
+		}));
+
+		items.push({
+			label: '$(x) Cancel',
+			description: 'Cancel the operation',
+			tool: null as any
+		});
+
+		const selected = await vscode.window.showQuickPick(items, {
+			placeHolder: 'rxiv-maker CLI is not installed. Choose an installation method:',
+			ignoreFocusOut: true
+		});
+
+		if (!selected || !selected.tool) {
+			return false;
+		}
+
+		// Install using selected tool
+		const success = await installRxivMaker(selected.tool);
+
+		if (success) {
+			vscode.window.showInformationMessage(
+				`rxiv-maker installation initiated using ${selected.tool.name}. Please restart VS Code after installation completes.`,
+				'Restart Now'
+			).then(choice => {
+				if (choice === 'Restart Now') {
+					vscode.commands.executeCommand('workbench.action.reloadWindow');
+				}
+			});
+		} else {
+			vscode.window.showErrorMessage(`Failed to install rxiv-maker using ${selected.tool.name}`);
+		}
+
+		return success;
+	}
 
 	// Cached project detection
 	const projectCache = new Map<string, boolean>();
@@ -241,7 +539,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Shared terminal management
 	let rxivMakerTerminal: vscode.Terminal | undefined;
 
-	const getRxivMakerTerminal = (cwd: string): vscode.Terminal => {
+	const getRxivMakerTerminal = (manuscriptDir: string): vscode.Terminal => {
 		// Check if existing terminal is still alive
 		if (rxivMakerTerminal && rxivMakerTerminal.exitStatus === undefined) {
 			return rxivMakerTerminal;
@@ -250,7 +548,7 @@ export function activate(context: vscode.ExtensionContext) {
 		// Create new terminal
 		rxivMakerTerminal = vscode.window.createTerminal({
 			name: 'rxiv-maker',
-			cwd: cwd
+			cwd: manuscriptDir
 		});
 
 		// Clean up reference when terminal is closed
@@ -264,183 +562,170 @@ export function activate(context: vscode.ExtensionContext) {
 	};
 
 	const makeValidateCommand = vscode.commands.registerCommand('rxiv-maker.makeValidate', async () => {
+		// Check if rxiv is available before proceeding
+		const rxivAvailable = await ensureRxivAvailable();
+		if (!rxivAvailable) {
+			return;
+		}
+
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make validate MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv validate "${result.manuscriptPath}"`);
 	});
 
 	const makePdfCommand = vscode.commands.registerCommand('rxiv-maker.makePdf', async () => {
+		// Check if rxiv is available before proceeding
+		const rxivAvailable = await ensureRxivAvailable();
+		if (!rxivAvailable) {
+			return;
+		}
+
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make pdf MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv pdf "${result.manuscriptPath}"`);
 	});
 
 	const makeCleanCommand = vscode.commands.registerCommand('rxiv-maker.makeClean', async () => {
+		// Check if rxiv is available before proceeding
+		const rxivAvailable = await ensureRxivAvailable();
+		if (!rxivAvailable) {
+			return;
+		}
+
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make clean MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv clean "${result.manuscriptPath}"`);
 	});
 
 	const installRxivMakerCommand = vscode.commands.registerCommand('rxiv-maker.installRxivMaker', async () => {
-		// Show progress while checking dependencies
+		// Show progress while checking installation status
 		await vscode.window.withProgress({
 			location: vscode.ProgressLocation.Notification,
-			title: "Checking dependencies...",
+			title: "Checking rxiv-maker installation...",
 			cancellable: false
 		}, async (progress) => {
-			const dependencies = [
-				{ name: 'git', command: 'git --version' },
-				{ name: 'make', command: 'make --version' },
-				{ name: 'python', command: os.platform() === 'win32' ? 'python --version' : 'python3 --version' },
-				{ name: 'latex', command: 'pdflatex --version' }
-			];
+			progress.report({ increment: 30, message: 'Checking if rxiv-maker is already installed...' });
 
-			const missingDeps: string[] = [];
-			let completed = 0;
-
-			// Check each dependency
-			for (const dep of dependencies) {
-				progress.report({
-					increment: 25,
-					message: `Checking ${dep.name}...`
-				});
-
-				try {
-					await new Promise<void>((resolve, reject) => {
-						exec(dep.command, { timeout: 5000 }, (error, stdout, stderr) => {
-							if (error) {
-								missingDeps.push(dep.name);
-							}
-							resolve();
-						});
-					});
-				} catch {
-					missingDeps.push(dep.name);
-				}
-				completed++;
-			}
-
-			if (missingDeps.length > 0) {
-				const installInstructions = {
-					git: 'Install Git from https://git-scm.com/',
-					make: os.platform() === 'win32'
-						? 'Install Visual Studio Build Tools or Git Bash'
-						: os.platform() === 'darwin'
-						? 'Run: xcode-select --install'
-						: 'Run: sudo apt install build-essential',
-					python: 'Install Python from https://python.org/',
-					latex: os.platform() === 'win32'
-						? 'Install MiKTeX from https://miktex.org/'
-						: os.platform() === 'darwin'
-						? 'Install MacTeX from https://tug.org/mactex/'
-						: 'Run: sudo apt install texlive-full'
-				};
-
-				const message = `Missing dependencies: ${missingDeps.join(', ')}\n\nInstallation instructions:\n${missingDeps.map(dep => `• ${dep}: ${installInstructions[dep as keyof typeof installInstructions]}`).join('\n')}`;
-
-				const choice = await vscode.window.showErrorMessage(
-					`Cannot install rxiv-maker. Missing dependencies: ${missingDeps.join(', ')}`,
-					'Show Instructions',
+			// First check if rxiv-maker is already installed
+			const isInstalled = await checkRxivInstalled();
+			if (isInstalled) {
+				const choice = await vscode.window.showInformationMessage(
+					'rxiv-maker CLI is already installed on your system.',
+					'Show Version Info',
+					'Reinstall Anyway',
 					'Cancel'
 				);
 
-				if (choice === 'Show Instructions') {
-					const doc = await vscode.workspace.openTextDocument({
-						content: message,
-						language: 'markdown'
+				if (choice === 'Show Version Info') {
+					const terminal = vscode.window.createTerminal({
+						name: 'rxiv-maker-info'
 					});
-					await vscode.window.showTextDocument(doc);
-				}
-				return;
-			}
-
-			// All dependencies are available, proceed with installation
-			const warningMessage = 'All required dependencies are installed. Would you like to clone the rxiv-maker repository and run setup?\n\nNote: The setup process will automatically create a Python virtual environment (.venv) if needed.';
-
-			const choice = await vscode.window.showInformationMessage(
-				warningMessage,
-				{ modal: true },
-				'Yes, install rxiv-maker',
-				'No, cancel'
-			);
-
-			if (choice !== 'Yes, install rxiv-maker') {
-				return;
-			}
-
-			// Build installation directory options
-			const installOptions: vscode.QuickPickItem[] = [];
-
-			// Add workspace folders as options
-			if (vscode.workspace.workspaceFolders) {
-				for (const folder of vscode.workspace.workspaceFolders) {
-					installOptions.push({
-						label: `$(folder) ${path.basename(folder.uri.fsPath)}`,
-						description: folder.uri.fsPath,
-						detail: 'Install in this workspace folder'
-					});
+					terminal.show();
+					terminal.sendText('rxiv --version');
+					terminal.sendText('echo "rxiv-maker is ready to use!"');
+					return;
+				} else if (choice !== 'Reinstall Anyway') {
+					return;
 				}
 			}
 
-			// Add common directories
-			const homeDir = os.homedir();
-			const commonPaths = [
-				{ path: path.join(homeDir, 'Documents', 'GitHub'), label: 'Documents/GitHub' },
-				{ path: path.join(homeDir, 'Documents'), label: 'Documents' },
-				{ path: path.join(homeDir, 'Desktop'), label: 'Desktop' },
-				{ path: homeDir, label: 'Home directory' }
-			];
+			progress.report({ increment: 30, message: 'Checking available installation methods...' });
 
-			for (const commonPath of commonPaths) {
-				// Only add if not already present from workspaces
-				if (!installOptions.some(opt => opt.description === commonPath.path)) {
-					installOptions.push({
-						label: `$(home) ${commonPath.label}`,
-						description: commonPath.path,
-						detail: 'Common installation location'
-					});
+			// Check for available installation tools
+			const availableTools = await checkInstallationTools();
+			const availableOptions = availableTools.filter(tool => tool.available);
+
+			if (availableOptions.length === 0) {
+				// No modern tools available, fall back to repository installation
+				progress.report({ increment: 40, message: 'No package managers found, checking system dependencies...' });
+
+				// Check system dependencies for repository-based installation
+				const dependencies = [
+					{ name: 'git', command: 'git --version' },
+					{ name: 'make', command: 'make --version' },
+					{ name: 'python', command: os.platform() === 'win32' ? 'python --version' : 'python3 --version' }
+				];
+
+				const missingDeps: string[] = [];
+				for (const dep of dependencies) {
+					try {
+						await new Promise<void>((resolve, reject) => {
+							exec(dep.command, { timeout: 5000 }, (error, stdout, stderr) => {
+								if (error) {
+									reject(error);
+								} else {
+									resolve();
+								}
+							});
+						});
+					} catch {
+						missingDeps.push(dep.name);
+					}
 				}
-			}
 
-			// Add custom option
-			installOptions.push({
-				label: '$(edit) Custom path...',
-				description: 'custom',
-				detail: 'Enter a custom installation path'
-			});
+				if (missingDeps.length > 0) {
+					const installInstructions = {
+						git: 'Install Git from https://git-scm.com/',
+						make: os.platform() === 'win32'
+							? 'Install Visual Studio Build Tools or Git Bash'
+							: os.platform() === 'darwin'
+							? 'Run: xcode-select --install'
+							: 'Run: sudo apt install build-essential',
+						python: 'Install Python from https://python.org/'
+					};
 
-			const selectedOption = await vscode.window.showQuickPick(installOptions, {
-				placeHolder: 'Select where to install rxiv-maker',
-				matchOnDescription: true
-			});
+					const message = `To install rxiv-maker, you need these tools:\n\nMissing dependencies: ${missingDeps.join(', ')}\n\nInstallation instructions:\n${missingDeps.map(dep => `• ${dep}: ${installInstructions[dep as keyof typeof installInstructions]}`).join('\n')}\n\n**Recommended**: Install pipx or uv for easier rxiv-maker installation:\n• pipx: ${os.platform() === 'darwin' ? 'brew install pipx' : 'pip install pipx'}\n• uv: ${os.platform() === 'darwin' ? 'brew install uv' : 'curl -LsSf https://astral.sh/uv/install.sh | sh'}`;
 
-			if (!selectedOption) {
-				return;
-			}
+					const choice = await vscode.window.showErrorMessage(
+						`Missing dependencies for rxiv-maker installation: ${missingDeps.join(', ')}`,
+						'Show Instructions',
+						'Cancel'
+					);
 
-			let installDir: string;
-			if (selectedOption.description === 'custom') {
-				const customDir = await vscode.window.showInputBox({
-					prompt: 'Enter custom directory where you want to install rxiv-maker',
-					value: path.join(homeDir, 'Documents', 'GitHub'),
+					if (choice === 'Show Instructions') {
+						const doc = await vscode.workspace.openTextDocument({
+							content: message,
+							language: 'markdown'
+						});
+						await vscode.window.showTextDocument(doc);
+					}
+					return;
+				}
+
+				// Proceed with repository-based installation
+				const choice = await vscode.window.showInformationMessage(
+					'No modern package managers (pipx, uv) found. Install rxiv-maker from source repository?',
+					{ modal: true },
+					'Yes, install from repository',
+					'Cancel'
+				);
+
+				if (choice !== 'Yes, install from repository') {
+					return;
+				}
+
+				// Show directory selection for repository installation
+				const installDir = await vscode.window.showInputBox({
+					prompt: 'Enter directory where to clone rxiv-maker repository',
+					value: path.join(os.homedir(), 'Documents', 'GitHub'),
 					validateInput: (value) => {
 						if (!value) {
 							return 'Installation directory is required';
@@ -449,60 +734,131 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 				});
 
-				if (!customDir) {
+				if (!installDir) {
 					return;
 				}
-				installDir = customDir;
-			} else {
-				installDir = selectedOption.description!;
-			}
 
-			if (!installDir) {
+				// Repository installation
+				try {
+					await fs.promises.mkdir(installDir, { recursive: true });
+				} catch (error) {
+					vscode.window.showErrorMessage(`Failed to create installation directory: ${installDir}\n${error}`);
+					return;
+				}
+
+				const installTerminal = vscode.window.createTerminal({
+					name: 'rxiv-maker-repo-install',
+					cwd: installDir
+				});
+
+				installTerminal.show();
+				installTerminal.sendText('echo "Installing rxiv-maker from repository..."');
+				installTerminal.sendText('git clone https://github.com/HenriquesLab/rxiv-maker.git');
+				installTerminal.sendText('cd rxiv-maker');
+				installTerminal.sendText('make setup');
+				installTerminal.sendText('echo "Repository installation complete! The CLI may not be globally available."');
+				installTerminal.sendText('echo "Consider installing pipx or uv for global CLI access."');
+
 				return;
 			}
 
-			// Expand home directory if needed
-			const expandedDir = installDir.startsWith('~')
-				? path.join(os.homedir(), installDir.slice(1))
-				: installDir;
+			// Modern installation options available
+			progress.report({ increment: 40, message: 'Preparing installation options...' });
 
-			// Ensure the installation directory exists
-			try {
-				await fs.promises.mkdir(expandedDir, { recursive: true });
-			} catch (error) {
-				vscode.window.showErrorMessage(`Failed to create installation directory: ${expandedDir}\n${error}`);
-				return;
-			}
+			// Add repository option as fallback
+			const allOptions = [...availableOptions, {
+				name: 'repository',
+				command: '',
+				available: true,
+				description: 'Install from source repository (advanced users)'
+			}];
 
-			// Create installation terminal
-			const installTerminal = vscode.window.createTerminal({
-				name: 'rxiv-maker-install',
-				cwd: expandedDir
+			// Show installation method selection
+			const items = allOptions.map(tool => ({
+				label: tool.name === 'repository' ? '$(repo) Install from repository' : `$(package) Install with ${tool.name}`,
+				description: tool.description,
+				tool: tool
+			}));
+
+			items.push({
+				label: '$(x) Cancel',
+				description: 'Cancel installation',
+				tool: null as any
 			});
 
-			installTerminal.show();
+			const selected = await vscode.window.showQuickPick(items, {
+				placeHolder: 'Choose installation method for rxiv-maker:',
+				ignoreFocusOut: true
+			});
 
-			// Simple installation commands - Makefile handles virtual environment automatically
-			if (os.platform() === 'win32') {
-				installTerminal.sendText('echo Installing rxiv-maker...');
+			if (!selected || !selected.tool) {
+				return;
+			}
+
+			if (selected.tool.name === 'repository') {
+				// Handle repository installation (similar to old logic but simplified)
+				const installDir = await vscode.window.showInputBox({
+					prompt: 'Enter directory where to clone rxiv-maker repository',
+					value: path.join(os.homedir(), 'Documents', 'GitHub'),
+					validateInput: (value) => {
+						if (!value) {
+							return 'Installation directory is required';
+						}
+						return undefined;
+					}
+				});
+
+				if (!installDir) {
+					return;
+				}
+
+				try {
+					await fs.promises.mkdir(installDir, { recursive: true });
+				} catch (error) {
+					vscode.window.showErrorMessage(`Failed to create installation directory: ${installDir}\n${error}`);
+					return;
+				}
+
+				const installTerminal = vscode.window.createTerminal({
+					name: 'rxiv-maker-repo-install',
+					cwd: installDir
+				});
+
+				installTerminal.show();
+				installTerminal.sendText('echo "Installing rxiv-maker from repository..."');
 				installTerminal.sendText('git clone https://github.com/HenriquesLab/rxiv-maker.git');
 				installTerminal.sendText('cd rxiv-maker');
 				installTerminal.sendText('make setup');
-				installTerminal.sendText('echo rxiv-maker installation complete!');
+				installTerminal.sendText('echo "Repository installation complete!"');
 			} else {
-				installTerminal.sendText('echo "Installing rxiv-maker..."');
-				installTerminal.sendText('git clone https://github.com/HenriquesLab/rxiv-maker.git');
-				installTerminal.sendText('cd rxiv-maker');
-				installTerminal.sendText('make setup');
-				installTerminal.sendText('echo "rxiv-maker installation complete!"');
-				installTerminal.sendText('echo "You can now create manuscripts using the rxiv-maker framework."');
+				// Install using selected modern tool
+				const success = await installRxivMaker(selected.tool);
+
+				if (success) {
+					vscode.window.showInformationMessage(
+						`rxiv-maker installation initiated using ${selected.tool.name}. Please restart VS Code after installation completes.`,
+						'Restart Now'
+					).then(choice => {
+						if (choice === 'Restart Now') {
+							vscode.commands.executeCommand('workbench.action.reloadWindow');
+						}
+					});
+				} else {
+					vscode.window.showErrorMessage(`Failed to install rxiv-maker using ${selected.tool.name}`);
+				}
 			}
 		});
 	});
 
 	const makeAddBibliographyCommand = vscode.commands.registerCommand('rxiv-maker.makeAddBibliography', async () => {
+		// Check if rxiv is available before proceeding
+		const rxivAvailable = await ensureRxivAvailable();
+		if (!rxivAvailable) {
+			return;
+		}
+
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
@@ -531,9 +887,9 @@ export function activate(context: vscode.ExtensionContext) {
 		// Clean up DOI - remove URL parts if present
 		const cleanDoi = doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, '');
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make add-bibliography ${cleanDoi} MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv bibliography add "${result.manuscriptPath}" ${cleanDoi}`);
 	});
 
 	context.subscriptions.push(
@@ -889,40 +1245,9 @@ async function findManuscriptFolder(): Promise<ManuscriptFolderResult> {
 		manuscriptPath = foundManuscriptPath;
 	}
 
-	// Now find the rxiv-maker root directory (where Makefile is located)
-	let rxivMakerRoot: string | null = null;
-	let searchDir = manuscriptPath;
-
-	// Search up the directory tree for Makefile
-	while (searchDir !== path.dirname(searchDir)) { // Stop at filesystem root
-		try {
-			await fs.promises.access(path.join(searchDir, 'Makefile'));
-			// Check if this Makefile contains rxiv-maker content
-			const makefileContent = await fs.promises.readFile(path.join(searchDir, 'Makefile'), 'utf8');
-			if (makefileContent.includes('Rxiv-Maker') || makefileContent.includes('MANUSCRIPT_PATH')) {
-				rxivMakerRoot = searchDir;
-				break;
-			}
-		} catch {
-			// Makefile not found in this directory, continue searching
-		}
-		searchDir = path.dirname(searchDir);
-	}
-
-	if (!rxivMakerRoot) {
-		return {
-			success: false,
-			error: 'Could not find rxiv-maker root directory (no Makefile found). Please ensure you have the rxiv-maker repository cloned and accessible.'
-		};
-	}
-
-	// Convert manuscript path to relative path from rxiv-maker root
-	const relativePath = path.relative(rxivMakerRoot, manuscriptPath);
-
 	return {
 		success: true,
-		manuscriptPath: relativePath || '.',
-		rxivMakerRoot: rxivMakerRoot
+		manuscriptPath: manuscriptPath
 	};
 }
 

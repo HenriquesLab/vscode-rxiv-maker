@@ -1,6 +1,6 @@
 [![DOI](https://img.shields.io/badge/DOI-10.48550%2FarXiv.2508.00836-blue)](https://doi.org/10.48550/arXiv.2508.00836)
-[![License](https://img.shields.io/github/license/henriqueslab/rxiv-maker?color=Green)](https://github.com/henriqueslab/rxiv-maker/blob/main/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/henriqueslab/rxiv-maker?style=social)](https://github.com/HenriquesLab/rxiv-maker/stargazers)
+[![License](https://img.shields.io/github/license/HenriquesLab/rxiv-maker?color=Green)](https://github.com/HenriquesLab/rxiv-maker/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/HenriquesLab/rxiv-maker?style=social)](https://github.com/HenriquesLab/rxiv-maker/stargazers)
 
 # Rxiv-Maker
 
@@ -122,7 +122,7 @@ RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
 - **Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop) + Make
 - **Setup Time**: 3-5 minutes
 ```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
+git clone https://github.com/HenriquesLab/rxiv-maker.git
 cd rxiv-maker
 make pdf RXIV_ENGINE=DOCKER
 ```
@@ -131,7 +131,7 @@ make pdf RXIV_ENGINE=DOCKER
 - **Prerequisites**: Python 3.11+, LaTeX, Make ([platform guide](docs/getting-started/installation.md))
 - **Setup Time**: 10-30 minutes
 ```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
+git clone https://github.com/HenriquesLab/rxiv-maker.git
 cd rxiv-maker
 pip install -e .                    # Install with modern CLI
 rxiv build                          # Generate PDF using CLI
@@ -139,7 +139,7 @@ rxiv build                          # Generate PDF using CLI
 
 **🛠️ Legacy Make Interface** (Still supported)
 ```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
+git clone https://github.com/HenriquesLab/rxiv-maker.git
 cd rxiv-maker
 make setup && make pdf
 ```
@@ -280,16 +280,15 @@ RXIV_INSTALL_MODE=core pip install rxiv-maker
 RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
 ```
 
-### 🍺 Homebrew (macOS) - Deprecated
+### 🍺 Homebrew (macOS)
 ```bash
-# Still supported but deprecated in favor of universal installer
-brew tap henriqueslab/rxiv-maker
+# Includes LaTeX dependencies automatically
 brew install rxiv-maker
 ```
 
 ### 📋 Development Install
 ```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
+git clone https://github.com/HenriquesLab/rxiv-maker.git
 cd rxiv-maker
 pip install -e .                       # Modern hatch-based build system
 ```
@@ -381,7 +380,7 @@ make setup                            # Install dependencies
 ### Quick Help
 - **Issues?** Check [Troubleshooting Guide](docs/troubleshooting/troubleshooting-missing-figures.md)
 - **Platform problems?** See [Installation Guide](docs/getting-started/installation.md) 
-- **Need help?** Visit [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
+- **Need help?** Visit [GitHub Discussions](https://github.com/HenriquesLab/rxiv-maker/discussions)
 
 ## Project Structure
 
@@ -458,7 +457,7 @@ For detailed Docker documentation, see the [Docker infrastructure directory](src
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
+git clone https://github.com/HenriquesLab/rxiv-maker.git
 pip install -e ".[dev]" && pre-commit install
 ```
 
@@ -501,7 +500,7 @@ If you use Rxiv-Maker in your research, please cite our work:
 
 **BibTeX:**
 ```bibtex
-@misc{saraiva_2025_rxivmaker,
+@misc{saraiva2025rxivmaker,
       title={Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications}, 
       author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
       year={2025},

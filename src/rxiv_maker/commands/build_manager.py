@@ -8,9 +8,9 @@ from pathlib import Path
 from ..core.logging_config import get_logger, set_log_directory
 from ..docker.manager import get_docker_manager
 from ..utils.figure_checksum import get_figure_checksum_manager
-from ..utils.platform import platform_detector
 from ..utils.operation_ids import create_operation
-from ..utils.performance import get_performance_tracker, track_operation
+from ..utils.performance import get_performance_tracker
+from ..utils.platform import platform_detector
 
 logger = get_logger()
 
@@ -51,9 +51,7 @@ class BuildManager:
             track_changes_tag: Git tag to track changes against
             engine: Execution engine ("local" or "docker")
         """
-        self.manuscript_path: str = manuscript_path or os.getenv(
-            "MANUSCRIPT_PATH", "MANUSCRIPT"
-        )
+        self.manuscript_path: str = manuscript_path or os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
         # Make output_dir absolute relative to manuscript directory
         self.manuscript_dir_path = Path(self.manuscript_path)
         if Path(output_dir).is_absolute():
@@ -76,7 +74,8 @@ class BuildManager:
         # Set up paths
         self.manuscript_dir = self.manuscript_dir_path
         self.figures_dir = self.manuscript_dir / "FIGURES"
-        self.style_dir = Path("src/tex/style")
+        # Try to find style directory relative to this file's location
+        self.style_dir = Path(__file__).parent.parent.parent / "tex/style"
         self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
 
         # Output file names
@@ -186,14 +185,7 @@ class BuildManager:
             self.manuscript_path != "MANUSCRIPT"
             or (
                 self.manuscript_path == "MANUSCRIPT"
-                and len(
-                    [
-                        f
-                        for f in self.manuscript_dir.iterdir()
-                        if f.suffix in [".md", ".yml", ".bib"]
-                    ]
-                )
-                > 2
+                and len([f for f in self.manuscript_dir.iterdir() if f.suffix in [".md", ".yml", ".bib"]]) > 2
             )
         )
 
@@ -202,10 +194,7 @@ class BuildManager:
             try:
                 self.figures_dir.mkdir(parents=True, exist_ok=True)
                 self.log(f"Created FIGURES directory: {self.figures_dir}")
-                self.log(
-                    "💡 Add figure generation scripts (.py) or Mermaid diagrams "
-                    "(.mmd) to this directory"
-                )
+                self.log("💡 Add figure generation scripts (.py) or Mermaid diagrams (.mmd) to this directory")
             except Exception as e:
                 self.log(f"Failed to create FIGURES directory: {e}", "ERROR")
                 return False
@@ -252,9 +241,7 @@ class BuildManager:
             if self.verbose:
                 validation_cmd.append("--verbose")
 
-            result = self.docker_manager.run_command(
-                command=validation_cmd, session_key="validation"
-            )
+            result = self.docker_manager.run_command(command=validation_cmd, session_key="validation")
 
             if result.returncode == 0:
                 self.log("Validation completed successfully")
@@ -460,9 +447,7 @@ class BuildManager:
         self.log("Copying style files...", "STEP")
 
         if not self.style_dir.exists():
-            self.log(
-                "Style directory not found, skipping style file copying", "WARNING"
-            )
+            self.log("Style directory not found, skipping style file copying", "WARNING")
             return True
 
         # Copy style files
@@ -663,9 +648,7 @@ class BuildManager:
                 elif "warning" in bibtex_result.stdout.lower():
                     # Count warnings but don't spam the output
                     warning_count = bibtex_result.stdout.lower().count("warning")
-                    self.log(
-                        f"BibTeX completed with {warning_count} warning(s)", "WARNING"
-                    )
+                    self.log(f"BibTeX completed with {warning_count} warning(s)", "WARNING")
 
                 # Check for serious bibtex errors that would prevent citation resolution
                 if bibtex_result.returncode != 0:
@@ -677,8 +660,7 @@ class BuildManager:
                     bbl_file = Path(f"{self.manuscript_name}.bbl")
                     if not bbl_file.exists():
                         self.log(
-                            "BibTeX failed to create .bbl file - citations will "
-                            "appear as ?",
+                            "BibTeX failed to create .bbl file - citations will appear as ?",
                             "ERROR",
                         )
                         return False
@@ -688,9 +670,7 @@ class BuildManager:
                     try:
                         self._log_bibtex_warnings()
                     except Exception as e:
-                        self.log(
-                            f"Debug: BibTeX warning logging failed: {e}", "WARNING"
-                        )
+                        self.log(f"Debug: BibTeX warning logging failed: {e}", "WARNING")
 
             # Second pass
             subprocess.run(
@@ -722,9 +702,7 @@ class BuildManager:
                     self.log("LaTeX completed with warnings:", "WARNING")
                     if result3.stdout:
                         print("LaTeX output:")
-                        print(
-                            result3.stdout[-2000:]
-                        )  # Show last 2000 chars to avoid spam
+                        print(result3.stdout[-2000:])  # Show last 2000 chars to avoid spam
                 return True
             else:
                 self.log("PDF compilation failed", "ERROR")
@@ -746,50 +724,97 @@ class BuildManager:
     def copy_pdf_to_manuscript(self) -> bool:
         """Copy generated PDF to manuscript directory with custom name."""
         try:
-            # Use the existing copy_pdf command
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/copy_pdf.py",
-                "--output-dir",
-                str(self.output_dir),
-            ]
+            # Try direct function call first (more reliable)
+            from .copy_pdf import copy_pdf_with_custom_filename
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Set environment variable for the function
+            original_env = os.environ.get("MANUSCRIPT_PATH")
+            os.environ["MANUSCRIPT_PATH"] = self.manuscript_path
 
-            # Set environment variables
-            env = os.environ.copy()
-            env["MANUSCRIPT_PATH"] = self.manuscript_path
+            # Store current working directory and change to project root
+            original_cwd = os.getcwd()
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                encoding="utf-8",
-                errors="replace",
-            )
+            try:
+                # Change to project root directory for proper module resolution
+                project_root = Path(__file__).parent.parent.parent.parent
+                os.chdir(project_root)
 
-            if result.returncode == 0:
-                self.log("PDF copied to manuscript directory")
-                return True
-            else:
-                self.log(f"Failed to copy PDF: {result.stderr}", "ERROR")
-                return False
+                # Call the function directly
+                result = copy_pdf_with_custom_filename(str(self.output_dir))
+
+                if result:
+                    self.log("PDF copied to manuscript directory")
+                    return True
+                else:
+                    self.log("PDF copying function failed", "ERROR")
+                    return False
+
+            finally:
+                # Restore environment and working directory
+                os.chdir(original_cwd)
+                if original_env is not None:
+                    os.environ["MANUSCRIPT_PATH"] = original_env
+                else:
+                    os.environ.pop("MANUSCRIPT_PATH", None)
 
         except Exception as e:
-            self.log(f"Error copying PDF: {e}", "ERROR")
-            return False
+            self.log(f"Direct copy failed, trying subprocess: {e}", "WARNING")
+
+            # Fallback to subprocess approach with proper PYTHONPATH
+            try:
+                # Use sys.executable for consistency
+                import sys
+
+                cmd = [
+                    sys.executable,
+                    "-m",
+                    "rxiv_maker.commands.copy_pdf",
+                    "--output-dir",
+                    str(self.output_dir),
+                ]
+
+                # Set environment variables including PYTHONPATH
+                env = os.environ.copy()
+                env["MANUSCRIPT_PATH"] = self.manuscript_path
+
+                # Add project source directory to PYTHONPATH
+                project_root = Path(__file__).parent.parent.parent.parent
+                src_path = str(project_root / "src")
+                if "PYTHONPATH" in env:
+                    env["PYTHONPATH"] = src_path + os.pathsep + env["PYTHONPATH"]
+                else:
+                    env["PYTHONPATH"] = src_path
+
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                    cwd=str(project_root),  # Run from project root
+                    encoding="utf-8",
+                    errors="replace",
+                )
+
+                if result.returncode == 0:
+                    self.log("PDF copied to manuscript directory")
+                    return True
+                else:
+                    self.log(f"Failed to copy PDF: {result.stderr}", "ERROR")
+                    return False
+
+            except Exception as subprocess_error:
+                self.log(f"Error copying PDF with subprocess: {subprocess_error}", "ERROR")
+                return False
 
     def run_word_count_analysis(self) -> bool:
         """Run word count analysis on the manuscript."""
         try:
-            # Use the existing word count analysis command
+            # Use the existing word count analysis command via module path
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/analyze_word_count.py",
+                "-m",
+                "rxiv_maker.commands.analyze_word_count",
             ]
 
             if "uv run" in self.platform.python_cmd:
@@ -856,18 +881,17 @@ class BuildManager:
                 # Fallback to output directory relative path
                 pdf_rel = Path("output") / self.output_pdf.name
 
-            # Build PDF validation command for Docker
+            # Build PDF validation command for Docker via module path
             pdf_validation_cmd = [
                 "python",
-                "/workspace/src/rxiv_maker/validators/pdf_validator.py",
+                "-m",
+                "rxiv_maker.validators.pdf_validator",
                 str(manuscript_rel),
                 "--pdf-path",
                 f"/workspace/{pdf_rel}",
             ]
 
-            result = self.docker_manager.run_command(
-                command=pdf_validation_cmd, session_key="pdf_validation"
-            )
+            result = self.docker_manager.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")
@@ -889,11 +913,12 @@ class BuildManager:
     def _run_pdf_validation_local(self) -> bool:
         """Run PDF validation using local installation."""
         try:
-            # Use the existing PDF validation command
+            # Use the existing PDF validation command via module path
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/validators/pdf_validator.py",
+                "-m",
+                "rxiv_maker.validators.pdf_validator",
                 self.manuscript_path,
                 "--pdf-path",
                 str(self.output_pdf),
@@ -902,9 +927,7 @@ class BuildManager:
             if "uv run" in self.platform.python_cmd:
                 cmd = ["uv", "run", "python"] + cmd[1:]
 
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")
@@ -928,16 +951,16 @@ class BuildManager:
     def run_full_build(self) -> bool:
         """Run the complete build process."""
         # Create operation context for the entire build
-        with create_operation("pdf_build", manuscript=self.manuscript_path, 
-                            engine=self.engine) as op:
+        with create_operation("pdf_build", manuscript=self.manuscript_path, engine=self.engine) as op:
             op.log(f"Starting build process for manuscript: {self.manuscript_path}")
             self.log(
-                f"Starting build process for manuscript: {self.manuscript_path} (Operation ID: {op.operation_id})", "STEP"
+                f"Starting build process for manuscript: {self.manuscript_path} (Operation ID: {op.operation_id})",
+                "STEP",
             )
 
             # Track performance
             perf_tracker = get_performance_tracker()
-            
+
             # Step 1: Check manuscript structure
             perf_tracker.start_operation("check_structure")
             if not self.check_manuscript_structure():
@@ -1015,14 +1038,17 @@ class BuildManager:
             # Generate performance report
             perf_report = perf_tracker.get_performance_report()
             if perf_report["summary"]["regressions"] > 0:
-                self.log(f"Performance regressions detected: {perf_report['summary']['regressions']} operations", "WARNING")
+                self.log(
+                    f"Performance regressions detected: {perf_report['summary']['regressions']} operations",
+                    "WARNING",
+                )
 
             # Inform user about warning logs if they exist
             if self.warnings_log.exists():
                 self.log(f"Build warnings logged to {self.warnings_log.name}", "INFO")
 
             return True
-    
+
     def run(self) -> bool:
         """Run the build process (alias for run_full_build)."""
         return self.run_full_build()
@@ -1032,22 +1058,12 @@ def main():
     """Main entry point for build manager command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Build manager for Rxiv-Maker manuscript compilation"
-    )
-    parser.add_argument(
-        "--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory"
-    )
+    parser = argparse.ArgumentParser(description="Build manager for Rxiv-Maker manuscript compilation")
+    parser.add_argument("--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory")
     parser.add_argument("--output-dir", default="output", help="Output directory")
-    parser.add_argument(
-        "--force-figures", action="store_true", help="Force regeneration of all figures"
-    )
-    parser.add_argument(
-        "--skip-validation", action="store_true", help="Skip manuscript validation"
-    )
-    parser.add_argument(
-        "--skip-pdf-validation", action="store_true", help="Skip PDF validation"
-    )
+    parser.add_argument("--force-figures", action="store_true", help="Force regeneration of all figures")
+    parser.add_argument("--skip-validation", action="store_true", help="Skip manuscript validation")
+    parser.add_argument("--skip-pdf-validation", action="store_true", help="Skip PDF validation")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--track-changes", help="Git tag to track changes against")
 

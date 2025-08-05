@@ -30,9 +30,7 @@ def get_template_path():
     try:
         import pkg_resources
 
-        template_path = Path(
-            pkg_resources.resource_filename("rxiv_maker", "tex/template.tex")
-        )
+        template_path = Path(pkg_resources.resource_filename("rxiv_maker", "tex/template.tex"))
         if template_path.exists():
             return template_path
     except Exception:
@@ -54,7 +52,8 @@ def get_template_path():
         f"Could not find template.tex file. Searched locations:\n"
         f"  - Package resource: rxiv_maker/tex/template.tex\n"
         f"  - Relative path: {Path(__file__).parent.parent / 'tex' / 'template.tex'}\n"
-        f"  - Fallback path: {Path(__file__).parent.parent.parent / 'tex' / 'template.tex'}"
+        f"  - Fallback path: "
+        f"{Path(__file__).parent.parent.parent / 'tex' / 'template.tex'}"
     )
 
 
@@ -148,13 +147,9 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
         tables_content = sections["tables"]
 
         # Convert section headers to regular LaTeX sections
-        tables_content = re.sub(
-            r"^## (.+)$", r"\\section*{\1}", tables_content, flags=re.MULTILINE
-        )
+        tables_content = re.sub(r"^## (.+)$", r"\\section*{\1}", tables_content, flags=re.MULTILINE)
 
-        tables_latex = "% Supplementary Tables\n\n" + convert_markdown_to_latex(
-            tables_content, is_supplementary=True
-        )
+        tables_latex = "% Supplementary Tables\n\n" + convert_markdown_to_latex(tables_content, is_supplementary=True)
 
     if sections["notes"]:
         # Process notes section with special handling for section headers
@@ -163,9 +158,7 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
         # Convert section headers to regular LaTeX sections (not supplementary notes)
         # This prevents "## Supplementary Notes" from becoming
         # "Supp. Note 1: Supplementary Notes"
-        notes_content = re.sub(
-            r"^## (.+)$", r"\\section*{\1}", notes_content, flags=re.MULTILINE
-        )
+        notes_content = re.sub(r"^## (.+)$", r"\\section*{\1}", notes_content, flags=re.MULTILINE)
 
         # Set up supplementary note numbering before the content
         note_setup = """
@@ -175,9 +168,7 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
 
 """
         notes_latex = (
-            "% Supplementary Notes\n"
-            + note_setup
-            + convert_markdown_to_latex(notes_content, is_supplementary=True)
+            "% Supplementary Notes\n" + note_setup + convert_markdown_to_latex(notes_content, is_supplementary=True)
         )
 
     if sections["figures"]:
@@ -185,9 +176,7 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
         figures_content = sections["figures"]
 
         # Convert section headers to regular LaTeX sections
-        figures_content = re.sub(
-            r"^## (.+)$", r"\\section*{\1}", figures_content, flags=re.MULTILINE
-        )
+        figures_content = re.sub(r"^## (.+)$", r"\\section*{\1}", figures_content, flags=re.MULTILINE)
 
         figures_latex = "% Supplementary Figures\n\n" + convert_markdown_to_latex(
             figures_content, is_supplementary=True
@@ -209,17 +198,11 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
     # Replace \begin{figure} with \begin{sfigure} and \end{figure} with \end{sfigure}
     # Also preserve \newpage commands that come after figures
     # (with or without line breaks)
-    supplementary_latex = supplementary_latex.replace(
-        "\\begin{figure}", "\\begin{sfigure}"
-    )
+    supplementary_latex = supplementary_latex.replace("\\begin{figure}", "\\begin{sfigure}")
     # Handle newpage with line breaks (using escaped backslashes)
-    supplementary_latex = supplementary_latex.replace(
-        "\\end{figure}\n\\newpage", "\\end{sfigure}\n\\newpage"
-    )
+    supplementary_latex = supplementary_latex.replace("\\end{figure}\n\\newpage", "\\end{sfigure}\n\\newpage")
     # Handle newpage without line breaks
-    supplementary_latex = supplementary_latex.replace(
-        "\\end{figure}\\newpage", "\\end{sfigure}\\newpage"
-    )
+    supplementary_latex = supplementary_latex.replace("\\end{figure}\\newpage", "\\end{sfigure}\\newpage")
     # Handle remaining figure endings
     supplementary_latex = supplementary_latex.replace("\\end{figure}", "\\end{sfigure}")
 
@@ -227,32 +210,20 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
     # Replace \begin{table} with \begin{stable} and \end{table} with \end{stable}
     # Also preserve \newpage commands that come after tables
     # (with or without line breaks)
-    supplementary_latex = supplementary_latex.replace(
-        "\\begin{table}", "\\begin{stable}"
-    )
+    supplementary_latex = supplementary_latex.replace("\\begin{table}", "\\begin{stable}")
     # Handle newpage with line breaks (using escaped backslashes)
-    supplementary_latex = supplementary_latex.replace(
-        "\\end{table}\n\\newpage", "\\end{stable}\n\\newpage"
-    )
+    supplementary_latex = supplementary_latex.replace("\\end{table}\n\\newpage", "\\end{stable}\n\\newpage")
     # Handle newpage without line breaks
-    supplementary_latex = supplementary_latex.replace(
-        "\\end{table}\\newpage", "\\end{stable}\\newpage"
-    )
+    supplementary_latex = supplementary_latex.replace("\\end{table}\\newpage", "\\end{stable}\\newpage")
     # Handle remaining table endings
     supplementary_latex = supplementary_latex.replace("\\end{table}", "\\end{stable}")
 
     # Also handle two-column tables
-    supplementary_latex = supplementary_latex.replace(
-        "\\begin{table*}", "\\begin{stable*}"
-    )
+    supplementary_latex = supplementary_latex.replace("\\begin{table*}", "\\begin{stable*}")
     # Handle newpage with line breaks (using escaped backslashes)
-    supplementary_latex = supplementary_latex.replace(
-        "\\end{table*}\n\\newpage", "\\end{stable*}\n\\newpage"
-    )
+    supplementary_latex = supplementary_latex.replace("\\end{table*}\n\\newpage", "\\end{stable*}\n\\newpage")
     # Handle newpage without line breaks
-    supplementary_latex = supplementary_latex.replace(
-        "\\end{table*}\\newpage", "\\end{stable*}\\newpage"
-    )
+    supplementary_latex = supplementary_latex.replace("\\end{table*}\\newpage", "\\end{stable*}\\newpage")
     # Handle remaining table* endings
     supplementary_latex = supplementary_latex.replace("\\end{table*}", "\\end{stable*}")
 
@@ -340,11 +311,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
         elif isinstance(title_data, dict) and "lead_author" in title_data:
             lead_author = title_data["lead_author"]
 
-    if (
-        lead_author == "Unknown"
-        and "authors" in yaml_metadata
-        and yaml_metadata["authors"]
-    ):
+    if lead_author == "Unknown" and "authors" in yaml_metadata and yaml_metadata["authors"]:
         # get the last name of the first author
         first_author = yaml_metadata["authors"][0]
         if isinstance(first_author, dict) and "name" in first_author:
@@ -357,10 +324,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     # Process long title
     long_title = "Untitled Article"
     if "title" in yaml_metadata:
-        if (
-            isinstance(yaml_metadata["title"], dict)
-            and "long" in yaml_metadata["title"]
-        ):
+        if isinstance(yaml_metadata["title"], dict) and "long" in yaml_metadata["title"]:
             long_title = yaml_metadata["title"]["long"]
         elif isinstance(yaml_metadata["title"], list):
             for item in yaml_metadata["title"]:
@@ -375,10 +339,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     # Process short title
     short_title = "Untitled"
     if "title" in yaml_metadata:
-        if (
-            isinstance(yaml_metadata["title"], dict)
-            and "short" in yaml_metadata["title"]
-        ):
+        if isinstance(yaml_metadata["title"], dict) and "short" in yaml_metadata["title"]:
             short_title = yaml_metadata["title"]["short"]
         elif isinstance(yaml_metadata["title"], list):
             for item in yaml_metadata["title"]:
@@ -387,30 +348,22 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
                     break
         elif isinstance(yaml_metadata["title"], str):
             short_title = (
-                yaml_metadata["title"][:50] + "..."
-                if len(yaml_metadata["title"]) > 50
-                else yaml_metadata["title"]
+                yaml_metadata["title"][:50] + "..." if len(yaml_metadata["title"]) > 50 else yaml_metadata["title"]
             )
     txt = f"\\shorttitle{{{short_title}}}\n"
     template_content = template_content.replace("<PY-RPL:SHORT-TITLE-STR>", txt)
 
     # Generate authors and affiliations dynamically
     authors_and_affiliations = generate_authors_and_affiliations(yaml_metadata)
-    template_content = template_content.replace(
-        "<PY-RPL:AUTHORS-AND-AFFILIATIONS>", authors_and_affiliations
-    )
+    template_content = template_content.replace("<PY-RPL:AUTHORS-AND-AFFILIATIONS>", authors_and_affiliations)
 
     # Generate corresponding authors section
     corresponding_authors = generate_corresponding_authors(yaml_metadata)
-    template_content = template_content.replace(
-        "<PY-RPL:CORRESPONDING-AUTHORS>", corresponding_authors
-    )
+    template_content = template_content.replace("<PY-RPL:CORRESPONDING-AUTHORS>", corresponding_authors)
 
     # Generate extended author information section
     extended_author_info = generate_extended_author_info(yaml_metadata)
-    template_content = template_content.replace(
-        "<PY-RPL:EXTENDED-AUTHOR-INFO>", extended_author_info
-    )
+    template_content = template_content.replace("<PY-RPL:EXTENDED-AUTHOR-INFO>", extended_author_info)
 
     # Generate keywords section
     keywords_section = generate_keywords(yaml_metadata)
@@ -418,79 +371,42 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
 
     # Generate bibliography section
     bibliography_section = generate_bibliography(yaml_metadata)
-    template_content = template_content.replace(
-        "<PY-RPL:BIBLIOGRAPHY>", bibliography_section
-    )
+    template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", bibliography_section)
 
     # Extract content sections from markdown
     content_sections = extract_content_sections(article_md)
 
     # Replace content placeholders with extracted sections
-    template_content = template_content.replace(
-        "<PY-RPL:ABSTRACT>", content_sections.get("abstract", "")
-    )
-    template_content = template_content.replace(
-        "<PY-RPL:MAIN-CONTENT>", content_sections.get("main", "")
-    )
-    template_content = template_content.replace(
-        "<PY-RPL:METHODS>", content_sections.get("methods", "")
-    )
+    template_content = template_content.replace("<PY-RPL:ABSTRACT>", content_sections.get("abstract", ""))
+    template_content = template_content.replace("<PY-RPL:MAIN-CONTENT>", content_sections.get("main", ""))
+    template_content = template_content.replace("<PY-RPL:METHODS>", content_sections.get("methods", ""))
 
     # Handle main content sections conditionally
     # Results section
     results_content = content_sections.get("results", "").strip()
-    if results_content:
-        results_section = f"\\section*{{Results}}\n{results_content}"
-    else:
-        results_section = ""
-    template_content = template_content.replace(
-        "<PY-RPL:RESULTS-SECTION>", results_section
-    )
+    results_section = f"\\section*{{Results}}\n{results_content}" if results_content else ""
+    template_content = template_content.replace("<PY-RPL:RESULTS-SECTION>", results_section)
 
     # Discussion section
     discussion_content = content_sections.get("discussion", "").strip()
-    if discussion_content:
-        discussion_section = f"\\section*{{Discussion}}\n{discussion_content}"
-    else:
-        discussion_section = ""
-    template_content = template_content.replace(
-        "<PY-RPL:DISCUSSION-SECTION>", discussion_section
-    )
+    discussion_section = f"\\section*{{Discussion}}\n{discussion_content}" if discussion_content else ""
+    template_content = template_content.replace("<PY-RPL:DISCUSSION-SECTION>", discussion_section)
 
     # Conclusions section
     conclusions_content = content_sections.get("conclusion", "").strip()
-    if conclusions_content:
-        conclusions_section = f"\\section*{{Conclusions}}\n{conclusions_content}"
-    else:
-        conclusions_section = ""
-    template_content = template_content.replace(
-        "<PY-RPL:CONCLUSIONS-SECTION>", conclusions_section
-    )
+    conclusions_section = f"\\section*{{Conclusions}}\n{conclusions_content}" if conclusions_content else ""
+    template_content = template_content.replace("<PY-RPL:CONCLUSIONS-SECTION>", conclusions_section)
 
     # Handle optional sections conditionally
     # Data availability
     data_availability = content_sections.get("data_availability", "").strip()
-    if data_availability:
-        data_block = f"""\\begin{{data}}
-{data_availability}
-\\end{{data}}"""
-    else:
-        data_block = ""
-    template_content = template_content.replace(
-        "<PY-RPL:DATA-AVAILABILITY-BLOCK>", data_block
-    )
+    data_block = f"""\\begin{{data}}\n{data_availability}\n\\end{{data}}""" if data_availability else ""
+    template_content = template_content.replace("<PY-RPL:DATA-AVAILABILITY-BLOCK>", data_block)
 
     # Code availability
     code_availability = content_sections.get("code_availability", "").strip()
-    if code_availability:
-        code_block = f"""\\begin{{code}}
-{code_availability}
-\\end{{code}}"""
-    else:
-        code_block = ""
-    template_content = template_content.replace(
-        "<PY-RPL:CODE-AVAILABILITY-BLOCK>", code_block
-    )
+    code_block = f"""\\begin{{code}}\n{code_availability}\n\\end{{code}}""" if code_availability else ""
+    template_content = template_content.replace("<PY-RPL:CODE-AVAILABILITY-BLOCK>", code_block)
 
     # Author contributions
     author_contributions = content_sections.get("author_contributions", "").strip()
@@ -500,9 +416,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
 \\end{{contributions}}"""
     else:
         contributions_block = ""
-    template_content = template_content.replace(
-        "<PY-RPL:AUTHOR-CONTRIBUTIONS-BLOCK>", contributions_block
-    )
+    template_content = template_content.replace("<PY-RPL:AUTHOR-CONTRIBUTIONS-BLOCK>", contributions_block)
 
     # Acknowledgements
     acknowledgements = content_sections.get("acknowledgements", "").strip()
@@ -512,13 +426,9 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
 \\end{{acknowledgements}}"""
     else:
         acknowledgements_block = ""
-    template_content = template_content.replace(
-        "<PY-RPL:ACKNOWLEDGEMENTS-BLOCK>", acknowledgements_block
-    )
+    template_content = template_content.replace("<PY-RPL:ACKNOWLEDGEMENTS-BLOCK>", acknowledgements_block)
 
-    template_content = template_content.replace(
-        "<PY-RPL:FUNDING>", content_sections.get("funding", "")
-    )
+    template_content = template_content.replace("<PY-RPL:FUNDING>", content_sections.get("funding", ""))
     # Generate manuscript preparation content
     manuscript_prep_content = content_sections.get("manuscript_preparation", "")
 
@@ -526,8 +436,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     acknowledge_rxiv = yaml_metadata.get("acknowledge_rxiv_maker", False)
     if acknowledge_rxiv and not manuscript_prep_content.strip():
         manuscript_prep_content = (
-            "This manuscript was prepared using "
-            "{\\color{red}R}$\\chi$iv-Maker~\\cite{saraiva_2025_rxivmaker}."
+            "This manuscript was prepared using {\\color{red}R}$\\chi$iv-Maker~\\cite{saraiva2025rxivmaker}."
         )
 
     # Add license information if specified

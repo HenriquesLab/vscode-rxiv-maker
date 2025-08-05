@@ -8,7 +8,7 @@
 | **LaTeX Graphics** | `.tex`, `.tikz` | LaTeX compilation | PDF | Vector | Mathematical diagrams |
 | **Data Files** | `.csv`, `.json`, `.xlsx` | Python and R processing | Via scripts | Computed | Raw data integration |
 
-{#stable:figure-formats} **Supported Figure Generation Methods.** Comprehensive overview of the framework's figure processing capabilities, demonstrating support for both static and dynamic content generation with emphasis on reproducible computational graphics.
+{#stable:figure-formats} **Supported Figure Generation Methods.** Figure processing methods supported by Rxiv-Maker, showing input formats, processing approaches, and output options for both static images and computed graphics.
 
 | **Tool** | **Type** | **Markdown** | **Primary Use Case** | **Key Strengths** | **Open Source** |
 |----------|----------|--------------|-------------------|-------------------|-----------------|
@@ -20,7 +20,7 @@
 | **Bookdown** [@Xie2016_bookdown] | Publisher | R Markdown | Academic books | Cross-references, multiple formats | Yes |
 | **Direct LaTeX** | Typesetter | Limited | Traditional publishing | Ultimate control, established workflows | Yes |
 
-{#stable:tool-comparison} **Comprehensive Comparison of Manuscript Preparation Tools.** This comparison provides an exhaustive overview of available tools for scientific manuscript preparation, positioning each within the broader ecosystem of academic publishing workflows. Rxiv-Maker is designed as a specialised solution optimising for preprint server submissions, complementing rather than replacing established tools like Overleaf for general LaTeX collaboration or Quarto for multi-format publishing. The comparison highlights that different tools excel in distinct contexts: Overleaf dominates collaborative LaTeX editing, Quarto excels at multi-format computational publishing, and Rxiv-Maker streamlines the specific workflow of preparing reproducible preprints for submission to arXiv, bioRxiv, and medRxiv.
+{#stable:tool-comparison} **Comparison of Manuscript Preparation Tools.** Comparison of manuscript preparation tools, showing how Rxiv-Maker fits within the existing ecosystem of academic publishing software. Each tool serves different needs: Overleaf for collaborative LaTeX editing, Quarto for multi-format publishing, and Rxiv-Maker for streamlined preprint preparation. Different tools excel in distinct contexts: Overleaf dominates collaborative LaTeX editing, Quarto excels at multi-format computational publishing, and Rxiv-Maker streamlines the workflow of preparing reproducible preprints for submission to arXiv, bioRxiv, and medRxiv.
 
 | **Deployment Method** | **Environment** | **Dependencies** | **Collaboration** | **Ease of Use** | **Reproducibility** |
 |-------------------|-------------|-------------|--------------|-------------|----------------|
@@ -29,7 +29,7 @@
 | **Local Python** | Local machine | Python + LaTeX | Git-based | Medium | Good |
 | **Manual LaTeX** | Local machine | Full LaTeX suite | Git-based | Low | Variable |
 
-{#stable:deployment-options} **Rxiv-Maker Deployment Strategies.** Comparison of available compilation methods, highlighting the flexibility of the framework in accommodating different user preferences and technical environments whilst maintaining consistent output quality.
+{#stable:deployment-options} **Rxiv-Maker Deployment Strategies.** Comparison of available compilation methods, showing how the framework accommodates different user preferences and technical environments while maintaining consistent output quality.
 
 | **Markdown Element** | **LaTeX Equivalent** | **Description** |
 |------------------|------------------|-------------|
@@ -66,24 +66,24 @@
 | `<newpage>` | `\newpage` | Manual page break control |
 | `<clearpage>` | `\clearpage` | Page break with float clearing |
 
-{#stable:markdown-syntax} **Rxiv-Maker Markdown Syntax Overview.** Comprehensive mapping of markdown elements to their LaTeX equivalents, demonstrating the automated translation system that enables researchers to write in familiar markdown syntax whilst producing professional LaTeX output.
+{#stable:markdown-syntax} **Rxiv-Maker Markdown Syntax Overview.** Mapping of markdown elements to their LaTeX equivalents, showing the automated translation system that lets researchers write in familiar markdown syntax while producing professional LaTeX output.
 
 
 <newpage>
 
 ## Supplementary Notes
 
-{#snote:figure-generation} **Programmatic Figure Generation and Computational Reproducibility**
+{#snote:figure-generation} **Programmatic Figure Generation**
 
-Rxiv-Maker's figure generation capabilities demonstrate automated processing pipelines maintaining transparent connections between source data and final visualisations whilst ensuring computational reproducibility. The system supports two primary methodologies: Mermaid diagram processing and Python/R-based data visualisation, each addressing distinct requirements within scientific publishing workflows.
+Rxiv-Maker generates figures through two methods: Mermaid diagrams and Python/R scripts. Both keep figures connected to their source data.
 
-Mermaid diagram processing leverages the Mermaid CLI to convert text-based specifications into publication-ready graphics. This approach enables version-controlled diagram creation where complex flowcharts, system architectures, and conceptual models are specified using intuitive syntax and automatically rendered into multiple output formats. The system generates SVG, PNG, and PDF variants accommodating different compilation requirements whilst maintaining vector quality. This automation eliminates manual effort for diagram creation and updates, ensuring modifications are immediately reflected in the final document.
+Mermaid diagrams start as text files that describe flowcharts or system diagrams. During compilation, the Mermaid CLI converts these to SVG, PNG, or PDF files. Since the diagrams are text-based, they work with version control and update automatically when the source changes.
 
-Script-based figure generation represents computational reproducibility where analytical scripts execute during compilation to generate figures directly from source data. This integration ensures visualisations remain synchronised with underlying datasets and analytical methods, eliminating outdated or inconsistent graphics. The system executes image generation scripts within the compilation environment, automatically detecting generated files and incorporating them into document structure. This approach transforms figures from static illustrations into dynamic, reproducible computational artefacts enhancing scientific rigour.
+Python and R scripts run during document compilation to create figures from data files. This means figures update when data changes, preventing outdated graphics. The system finds the generated image files and includes them in the final document. Scripts can access the same data files used in the analysis, keeping visualisations current with the research.
 
 {#snote:mathematical-formulas} **Mathematical Formula Support and LaTeX Integration**
 
-Rxiv-Maker integrates mathematical notation by translating markdown-style expressions into publication-ready LaTeX mathematics. This enables researchers to author complex mathematical content using familiar syntax whilst benefiting from LaTeX's superior typesetting capabilities.
+Rxiv-Maker converts markdown math expressions to LaTeX format. Users can write math in familiar markdown syntax and get proper LaTeX typesetting in the final document.
 
 Inline mathematical expressions use dollar sign delimiters (`$...$`), enabling formulas such as $E = mc^2$ or $\alpha = \frac{\beta}{\gamma}$ to be embedded within text. The conversion system preserves expressions during markdown-to-LaTeX transformation, ensuring mathematical notation maintains proper formatting and spacing.
 
@@ -108,11 +108,11 @@ Statistical notation commonly required in manuscripts is supported, including co
 ## Supplementary Figures 
 
 ![](FIGURES/SFigure__arxiv_growth/SFigure__arxiv_growth.svg)
-{#sfig:arxiv_growth width="100%"} **The growth of preprint submissions on the arXiv server from 1991 to 2025.** The data, sourced from arXiv's public statistics, is plotted using a Python script integrated into our Rxiv-Maker pipeline. This demonstrates the system's capacity for reproducible, data-driven figure generation directly within the publication workflow.
+{#sfig:arxiv_growth width="100%"} **The growth of preprint submissions on the arXiv server from 1991 to 2025.** Data from arXiv public statistics, plotted using a Python script that runs during document compilation.
 
 ![](FIGURES/SFigure__preprint_trends/SFigure__preprint_trends.svg)
-{#sfig:preprint_trends width="100%"} **Preprint Submission Trends Across Multiple Servers (2018-2025).** The figure displays the annual number of preprint submissions to major repositories, including arXiv, bioRxiv, and medRxiv. Data was collected from publicly available sources [@PubMedByYear2025] and visualised using a reproducible R script within the Rxiv-Maker pipeline. This approach ensures that the figure remains synchronised with the latest available data and supports transparent, data-driven scientific reporting.
+{#sfig:preprint_trends width="100%"} **Preprint Submission Trends Across Multiple Servers (2018-2025).** The figure displays the annual number of preprint submissions to major repositories, including arXiv, bioRxiv, and medRxiv. Data from publicly available sources [@PubMedByYear2025], visualised using an R script that executes during compilation to ensure current data.
 
 ![](FIGURES/SFigure__architecture/SFigure__architecture.svg)
-{#sfig:architecture width="75%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration with Docker containerisation support. This figure illustrates the modular design that enables independent development and testing of system components across both local and containerised environments.
+{#sfig:architecture width="75%"} **Detailed System Architecture and Processing Layers.** Technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology with Docker containerisation support. This figure shows the modular design that enables independent development and testing of system components across both local and containerised environments.
 

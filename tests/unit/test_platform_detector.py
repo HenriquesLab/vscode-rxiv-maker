@@ -463,7 +463,7 @@ class TestPlatformDetectorEdgeCases(unittest.TestCase):
 ")
             f.write("SPACE_IN_KEY =value
 ")
-            f.write("KEY= VALUE_WITH_SPACES 
+            f.write("KEY= VALUE_WITH_SPACES
 ")
             env_file = Path(f.name)
 

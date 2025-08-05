@@ -4,6 +4,7 @@ This module provides efficient Docker container management with session reuse,
 volume caching, and optimized command construction for all Rxiv-Maker operations.
 """
 
+import contextlib
 import os
 import platform
 import subprocess
@@ -67,14 +68,10 @@ class DockerSession:
 
         try:
             # Stop the container
-            subprocess.run(
-                ["docker", "stop", self.container_id], capture_output=True, timeout=10
-            )
+            subprocess.run(["docker", "stop", self.container_id], capture_output=True, timeout=10)
 
             # Remove the container
-            subprocess.run(
-                ["docker", "rm", self.container_id], capture_output=True, timeout=10
-            )
+            subprocess.run(["docker", "rm", self.container_id], capture_output=True, timeout=10)
 
             self._active = False
             return True
@@ -119,7 +116,7 @@ class DockerManager:
         self._docker_platform = self._detect_docker_platform()
         self._base_volumes = self._get_base_volumes()
         self._base_env = self._get_base_environment()
-        
+
         # Resource monitoring
         self._resource_warnings = 0
         self._last_resource_check = time.time()
@@ -184,7 +181,7 @@ class DockerManager:
 
         # Platform specification
         docker_cmd.extend(["--platform", self._docker_platform])
-        
+
         # Resource limits
         docker_cmd.extend(["--memory", self.memory_limit])
         docker_cmd.extend(["--cpus", self.cpu_limit])
@@ -223,9 +220,7 @@ class DockerManager:
 
         return docker_cmd
 
-    def _get_or_create_session(
-        self, session_key: str, image: str
-    ) -> DockerSession | None:
+    def _get_or_create_session(self, session_key: str, image: str) -> DockerSession | None:
         """Get an existing session or create a new one if session reuse is enabled."""
         if not self.enable_session_reuse:
             return None
@@ -251,9 +246,7 @@ class DockerManager:
                 remove=False,
             )
 
-            result = subprocess.run(
-                docker_cmd, capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(docker_cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
                 container_id = result.stdout.strip()
@@ -282,9 +275,7 @@ class DockerManager:
                 "echo",
                 "container_ready",
             ]
-            result = subprocess.run(
-                exec_cmd, capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=10)
             if result.returncode != 0:
                 return False
 
@@ -295,11 +286,9 @@ class DockerManager:
                 session.container_id,
                 "python3",
                 "-c",
-                "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
+                ("import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')"),
             ]
-            result = subprocess.run(
-                python_test, capture_output=True, text=True, timeout=15
-            )
+            result = subprocess.run(python_test, capture_output=True, text=True, timeout=15)
             if result.returncode != 0:
                 return False
 
@@ -319,9 +308,7 @@ except ImportError as e:
     exit(1)
 """,
             ]
-            result = subprocess.run(
-                deps_test, capture_output=True, text=True, timeout=20
-            )
+            result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
             if result.returncode != 0:
                 return False
 
@@ -358,9 +345,7 @@ except ImportError as e:
                 "-c",
                 "chmod -R 755 /workspace && mkdir -p /workspace/output",
             ]
-            result = subprocess.run(
-                workspace_setup, capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(workspace_setup, capture_output=True, text=True, timeout=10)
             return result.returncode == 0
 
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
@@ -378,10 +363,7 @@ except ImportError as e:
         expired_keys = []
 
         for key, session in self._active_sessions.items():
-            if (
-                current_time - session.created_at > self._session_timeout
-                or not session.is_active()
-            ):
+            if current_time - session.created_at > self._session_timeout or not session.is_active():
                 session.cleanup()
                 expired_keys.append(key)
 
@@ -390,9 +372,7 @@ except ImportError as e:
 
         # If we have too many sessions, cleanup the oldest ones
         if len(self._active_sessions) > self._max_sessions:
-            sorted_sessions = sorted(
-                self._active_sessions.items(), key=lambda x: x[1].created_at
-            )
+            sorted_sessions = sorted(self._active_sessions.items(), key=lambda x: x[1].created_at)
             excess_count = len(self._active_sessions) - self._max_sessions
             for key, session in sorted_sessions[:excess_count]:
                 session.cleanup()
@@ -581,14 +561,8 @@ if __name__ == "__main__":
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess:
         """Execute a Python script with optimized Docker execution."""
-        try:
+        with contextlib.suppress(ValueError):
             script_rel = script_file.relative_to(self.workspace_dir)
-        except ValueError:
-            # Script is outside workspace (e.g., in temp directory during tests)
-            # Check if it's accessible through a mounted volume at /workspace
-            # Try to find the script in the workspace
-            # Use the script name but with a fallback to copy/read approach
-            pass
 
         docker_working_dir = "/workspace"
 
@@ -714,9 +688,7 @@ if __name__ == "__main__":
     def check_docker_available(self) -> bool:
         """Check if Docker is available and running."""
         try:
-            result = subprocess.run(
-                ["docker", "--version"], capture_output=True, text=True, timeout=5
-            )
+            result = subprocess.run(["docker", "--version"], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
         except (
             subprocess.TimeoutExpired,
@@ -765,9 +737,7 @@ if __name__ == "__main__":
         """Get statistics about active Docker sessions."""
         stats: dict[str, Any] = {
             "total_sessions": len(self._active_sessions),
-            "active_sessions": sum(
-                1 for s in self._active_sessions.values() if s.is_active()
-            ),
+            "active_sessions": sum(1 for s in self._active_sessions.values() if s.is_active()),
             "session_details": [],
         }
 
@@ -783,9 +753,7 @@ if __name__ == "__main__":
 
         return stats
 
-    def warmup_session(
-        self, session_key: str, image: str | None = None, force_pull: bool = False
-    ) -> bool:
+    def warmup_session(self, session_key: str, image: str | None = None, force_pull: bool = False) -> bool:
         """Pre-warm a Docker session for faster subsequent operations."""
         target_image = image or self.default_image
 
@@ -799,9 +767,7 @@ if __name__ == "__main__":
         if session and session.is_active():
             # Run a simple health check to warm up the container
             try:
-                result = self.run_command(
-                    command=["echo", "warmup"], session_key=session_key, timeout=10
-                )
+                result = self.run_command(command=["echo", "warmup"], session_key=session_key, timeout=10)
                 return result.returncode == 0
             except Exception:
                 return False
@@ -818,9 +784,7 @@ if __name__ == "__main__":
             return False
 
         try:
-            result = self.run_command(
-                command=["echo", "health_check"], session_key=session_key, timeout=5
-            )
+            result = self.run_command(command=["echo", "health_check"], session_key=session_key, timeout=5)
             return result.returncode == 0
         except Exception:
             return False
@@ -852,9 +816,7 @@ if __name__ == "__main__":
                 "--format",
                 "{{json .}}",
             ]
-            result = subprocess.run(
-                inspect_cmd, capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(inspect_cmd, capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 import json
@@ -882,39 +844,46 @@ if __name__ == "__main__":
             self._session_timeout = 600  # 10 minutes default
             self._max_sessions = 5  # Normal concurrent sessions
             self.enable_session_reuse = True
-            
+
     def get_resource_usage(self) -> dict[str, Any]:
         """Get Docker resource usage statistics."""
         stats = {
             "containers": {},
             "total_memory_mb": 0,
             "total_cpu_percent": 0.0,
-            "warnings": []
+            "warnings": [],
         }
-        
+
         for key, session in self._active_sessions.items():
             if session.is_active():
                 try:
                     # Get container stats
                     result = subprocess.run(
-                        ["docker", "stats", session.container_id, "--no-stream", "--format", 
-                         "{{json .}}"],
+                        [
+                            "docker",
+                            "stats",
+                            session.container_id,
+                            "--no-stream",
+                            "--format",
+                            "{{json .}}",
+                        ],
                         capture_output=True,
                         text=True,
-                        timeout=5
+                        timeout=5,
                     )
-                    
+
                     if result.returncode == 0 and result.stdout:
                         import json
+
                         container_stats = json.loads(result.stdout.strip())
-                        
+
                         # Parse memory usage
                         mem_usage = container_stats.get("MemUsage", "0MiB / 0MiB")
                         mem_parts = mem_usage.split(" / ")
                         if len(mem_parts) >= 1:
                             mem_current = self._parse_memory_str(mem_parts[0])
                             stats["total_memory_mb"] += mem_current
-                            
+
                         # Parse CPU usage
                         cpu_percent = container_stats.get("CPUPerc", "0%").rstrip("%")
                         try:
@@ -922,32 +891,32 @@ if __name__ == "__main__":
                             stats["total_cpu_percent"] += cpu_float
                         except ValueError:
                             pass
-                            
+
                         stats["containers"][key] = {
                             "memory_mb": mem_current,
                             "cpu_percent": cpu_float,
-                            "container_id": session.container_id[:12]
+                            "container_id": session.container_id[:12],
                         }
-                        
+
                 except Exception as e:
                     stats["warnings"].append(f"Failed to get stats for {key}: {e}")
-                    
+
         # Check for resource warnings
         if stats["total_memory_mb"] > 3072:  # Over 3GB
             stats["warnings"].append("High memory usage detected (>3GB)")
             self._resource_warnings += 1
-            
+
         if stats["total_cpu_percent"] > 150:  # Over 150% CPU
             stats["warnings"].append("High CPU usage detected (>150%)")
             self._resource_warnings += 1
-            
+
         # Auto-cleanup if too many warnings
         if self._resource_warnings > 5:
             self.enable_aggressive_cleanup(True)
             stats["warnings"].append("Enabled aggressive cleanup due to resource pressure")
-            
+
         return stats
-        
+
     def _parse_memory_str(self, mem_str: str) -> float:
         """Parse memory string like '512MiB' to MB float."""
         mem_str = mem_str.strip()
@@ -980,7 +949,7 @@ def get_docker_manager(
     cpu_limit: str | None = None,
 ) -> DockerManager:
     """Get or create the global Docker manager instance.
-    
+
     Args:
         image: Docker image to use
         workspace_dir: Workspace directory
@@ -997,11 +966,11 @@ def get_docker_manager(
             _docker_manager.cleanup_all_sessions()
 
         default_image = image or "henriqueslab/rxiv-maker-base:latest"
-        
+
         # Get resource limits from environment or defaults
         memory = memory_limit or os.environ.get("RXIV_DOCKER_MEMORY", "2g")
         cpu = cpu_limit or os.environ.get("RXIV_DOCKER_CPU", "2.0")
-        
+
         _docker_manager = DockerManager(
             default_image=default_image,
             workspace_dir=workspace_dir,

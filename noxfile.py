@@ -27,6 +27,7 @@ def tests(session, engine):
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
         "pytest-xdist>=3.8.0",
+        "pytest-cov>=4.0",
         external=True,
     )
 
@@ -67,6 +68,7 @@ def test_fast(session):
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
         "pytest-xdist>=3.8.0",
+        "pytest-cov>=4.0",
         external=True,
     )
 
@@ -107,6 +109,7 @@ def integration(session, engine):
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
         "pytest-xdist>=3.8.0",
+        "pytest-cov>=4.0",
         external=True,
     )
 
@@ -150,6 +153,7 @@ def coverage(session, engine):
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
         "pytest-xdist>=3.8.0",
+        "pytest-cov>=4.0",
         "pytest-cov>=4.0",
         "coverage[toml]>=7.0",
         external=True,
@@ -213,9 +217,7 @@ def type_check(session):
 def security(session):
     """Run security checks."""
     session.run("uv", "pip", "install", "-e", ".", external=True)
-    session.run(
-        "uv", "pip", "install", "bandit[toml]>=1.7.0", "safety>=2.3.0", external=True
-    )
+    session.run("uv", "pip", "install", "bandit[toml]>=1.7.0", "safety>=2.3.0", external=True)
 
     # Run bandit security linter
     session.run("bandit", "-r", "src/", "-f", "json", "-o", "bandit-report.json")
@@ -232,7 +234,15 @@ def test_quick(session):
     session.run("uv", "pip", "install", "pytest>=7.4.0", external=True)
 
     session.run(
-        "pytest", "tests/unit/", "-v", "--tb=short", "-k", "not slow", *session.posargs
+        "pytest",
+        "tests/unit/",
+        "-v",
+        "--tb=short",
+        "-k",
+        "not slow",
+        "--override-ini=addopts=",  # Override pyproject.toml addopts
+        "--maxfail=1",
+        *session.posargs,
     )
 
 
@@ -249,6 +259,7 @@ def test_all(session, engine):
         "pytest>=7.4.0",
         "pytest-timeout>=2.4.0",
         "pytest-xdist>=3.8.0",
+        "pytest-cov>=4.0",
         external=True,
     )
 
@@ -305,7 +316,7 @@ a = Analysis(
     [r'{entry_script}'],
     pathex=[src_path],
     binaries=[],
-    datas=[],
+    data=[],
     hiddenimports=[
         'rxiv_maker',
         'rxiv_maker.cli',

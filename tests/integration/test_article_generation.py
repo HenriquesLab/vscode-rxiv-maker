@@ -50,9 +50,7 @@ keywords: ["test", "article"]
         monkeypatch.chdir(temp_dir)
         # Set environment variable to point to our test manuscript
         monkeypatch.setenv("MANUSCRIPT_PATH", "MANUSCRIPT")
-        with patch(
-            "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
-        ):
+        with patch("sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]):
             # Import and run the main function
             from rxiv_maker.commands.generate_preprint import main
 
@@ -68,15 +66,10 @@ keywords: ["test", "article"]
 
             # Check content of generated file
             main_tex_file = output_dir / "MANUSCRIPT.tex"
-            if main_tex_file.exists():
-                tex_content = main_tex_file.read_text()
-            else:
-                tex_content = tex_files[0].read_text()
+            tex_content = main_tex_file.read_text() if main_tex_file.exists() else tex_files[0].read_text()
 
             # Check for basic LaTeX structure and content
-            assert (
-                "\\documentclass" in tex_content or "\\begin{document}" in tex_content
-            )
+            assert "\\documentclass" in tex_content or "\\begin{document}" in tex_content
             assert len(tex_content) > 100  # Should have substantial content
 
     def test_figure_generation_integration(self, temp_dir, monkeypatch):
@@ -129,9 +122,7 @@ plt.close()
             except Exception as e:
                 # Figure generation might fail in CI due to missing dependencies
                 if "matplotlib" in str(e).lower() or "importerror" in str(e).lower():
-                    pytest.skip(
-                        f"Figure generation failed due to missing dependencies: {e}"
-                    )
+                    pytest.skip(f"Figure generation failed due to missing dependencies: {e}")
                 raise
 
             # Check if figures were generated (they're created in a subdirectory)
@@ -140,15 +131,10 @@ plt.close()
 
             # In CI environments without proper setup, figure generation might not work
             if not (png_file.exists() or pdf_file.exists()):
-                pytest.skip(
-                    "Figure generation did not produce output files - "
-                    "likely missing dependencies in CI"
-                )
+                pytest.skip("Figure generation did not produce output files - likely missing dependencies in CI")
 
             # Assert that figures were generated successfully
-            assert png_file.exists() or pdf_file.exists(), (
-                "At least one figure format should be generated"
-            )
+            assert png_file.exists() or pdf_file.exists(), "At least one figure format should be generated"
 
     def test_end_to_end_with_citations(self, temp_dir, monkeypatch):
         """Test end-to-end generation with citations and references."""
@@ -223,9 +209,7 @@ References will be processed from 03_REFERENCES.bib.
 
         # Run article generation
         monkeypatch.chdir(temp_dir)
-        with patch(
-            "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
-        ):
+        with patch("sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]):
             from rxiv_maker.commands.generate_preprint import main
 
             result = main()
@@ -237,10 +221,7 @@ References will be processed from 03_REFERENCES.bib.
 
             # Read the main MANUSCRIPT.tex file
             main_tex_file = output_dir / "MANUSCRIPT.tex"
-            if main_tex_file.exists():
-                tex_content = main_tex_file.read_text()
-            else:
-                tex_content = tex_files[0].read_text()
+            tex_content = main_tex_file.read_text() if main_tex_file.exists() else tex_files[0].read_text()
 
             # Check citations were converted
             assert r"\cite{smith2023}" in tex_content

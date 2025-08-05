@@ -38,6 +38,7 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
+        cache: 'pip'
 
     - name: Install UV
       id: setup-uv
@@ -45,18 +46,30 @@ runs:
       with:
         version: "latest"
         enable-cache: ${{ inputs.enable-cache }}
-        cache-suffix: ${{ inputs.cache-suffix }}
+        cache-suffix: ${{ runner.os }}-${{ runner.arch }}-${{ inputs.cache-suffix }}
         cache-dependency-glob: "**/uv.lock"
         prune-cache: true
         ignore-nothing-to-cache: true
       continue-on-error: true  # Don't fail on cache issues
 
+    - name: Cache system dependencies (Linux)
+      if: inputs.install-system-deps == 'true' && runner.os == 'Linux'
+      uses: actions/cache@v4
+      with:
+        path: |
+          /var/cache/apt
+          /var/lib/apt
+        key: apt-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/actions/setup-environment/action.yml') }}
+        restore-keys: |
+          apt-deps-${{ runner.os }}-${{ runner.arch }}-
+          apt-deps-${{ runner.os }}-
+
     - name: Install system dependencies (Linux)
       if: inputs.install-system-deps == 'true' && runner.os == 'Linux'
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
+        sudo apt-get update -qq
+        sudo apt-get install -y --no-install-recommends \
           build-essential \
           libfreetype6-dev \
           libjpeg-dev \
@@ -70,11 +83,26 @@ runs:
           pkg-config \
           git
 
+    - name: Cache Homebrew packages (macOS)
+      if: inputs.install-system-deps == 'true' && runner.os == 'macOS'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/Homebrew
+          /usr/local/Homebrew
+          /opt/homebrew
+        key: homebrew-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/actions/setup-environment/action.yml') }}
+        restore-keys: |
+          homebrew-deps-${{ runner.os }}-${{ runner.arch }}-
+          homebrew-deps-${{ runner.os }}-
+
     - name: Install system dependencies (macOS)
       if: inputs.install-system-deps == 'true' && runner.os == 'macOS'
       shell: bash
       run: |
-        brew install \
+        # Update Homebrew and install dependencies efficiently
+        brew update --quiet
+        brew install --quiet \
           freetype \
           jpeg \
           libpng \
@@ -104,21 +132,28 @@ runs:
       if: inputs.install-python-deps == 'true'
       shell: bash
       run: |
-        # Install Python dependencies and package in development mode
-        # Try sync first, fallback to manual install on persistent failures
-        if uv sync; then
-          echo "✅ Dependencies synced successfully"
+        # Install Python dependencies and package in development mode with optimized flags
+        export UV_CACHE_DIR="$HOME/.cache/uv"
+        export UV_PYTHON_PREFERENCE="only-managed"
+
+        # Try sync with optimized settings
+        if uv sync --frozen --no-dev; then
+          echo "✅ Dependencies synced successfully (frozen mode)"
+        elif uv sync; then
+          echo "✅ Dependencies synced successfully (standard mode)"
         else
           echo "⚠️ Sync failed, attempting manual installation..."
           # Fallback to manual dependency installation
-          uv pip install -e . || {
+          uv pip install -e . --no-deps || {
             echo "❌ Manual installation failed, trying with --force-reinstall"
             uv pip install -e . --force-reinstall
           }
         fi
 
-        # Also install in system Python for subprocess calls in integration tests
-        python -m pip install -e . || echo "⚠️ System Python installation failed (might be expected)"
+        # Also install in system Python for subprocess calls in integration tests (only if available)
+        if command -v python >/dev/null 2>&1; then
+          python -m pip install -e . --quiet || echo "⚠️ System Python installation failed (might be expected)"
+        fi
 
     - name: Verify CLI installation
       if: inputs.install-python-deps == 'true'

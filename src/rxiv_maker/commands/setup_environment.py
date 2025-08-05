@@ -15,9 +15,7 @@ from pathlib import Path
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from rxiv_maker.utils.dependency_checker import DependencyChecker
 from rxiv_maker.utils.platform import platform_detector
@@ -61,9 +59,7 @@ class EnvironmentSetup:
     def check_uv_installation(self) -> bool:
         """Check if uv is installed and working."""
         try:
-            result = subprocess.run(
-                ["uv", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["uv", "--version"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 version = result.stdout.strip()
                 if self.verbose:
@@ -194,9 +190,7 @@ class EnvironmentSetup:
 
         # Try to run python in the virtual environment
         try:
-            result = subprocess.run(
-                [venv_python, "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run([venv_python, "--version"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 python_version = result.stdout.strip()
                 self.log(f"Python environment validated: {python_version}")
@@ -220,20 +214,14 @@ class EnvironmentSetup:
 
         # Check if we have missing dependencies to show appropriate guidance
         if self.check_system_deps and hasattr(self, "dependency_checker"):
-            missing_required = (
-                self.dependency_checker.get_missing_required_dependencies()
-            )
-            missing_optional = (
-                self.dependency_checker.get_missing_optional_dependencies()
-            )
+            missing_required = self.dependency_checker.get_missing_required_dependencies()
+            missing_optional = self.dependency_checker.get_missing_optional_dependencies()
 
             if missing_required:
                 print("⚠️  Some required dependencies are missing. Check them with:")
                 print("   make check-deps")
             elif missing_optional:
-                print(
-                    "💡 Some optional dependencies are missing. For full functionality:"
-                )
+                print("💡 Some optional dependencies are missing. For full functionality:")
                 print("   make check-deps")
             else:
                 print("✅ All system dependencies are available!")
@@ -259,16 +247,17 @@ class EnvironmentSetup:
         )
 
         # Step 1: Check system dependencies first (if enabled)
-        if self.check_system_deps:
-            if not self.check_system_dependencies():
-                print()
-                self.log("System dependency check failed. You can:", "WARNING")
-                print("  • Install missing dependencies and run 'make setup' again")
-                print(
-                    "  • Skip dependency checking with 'python src/rxiv_maker/commands/setup_environment.py --no-check-system-deps'"
-                )
-                print("  • Use Docker mode instead: 'make pdf RXIV_ENGINE=DOCKER'")
-                return False
+        if self.check_system_deps and not self.check_system_dependencies():
+            print()
+            self.log("System dependency check failed. You can:", "WARNING")
+            print("  • Install missing dependencies and run 'make setup' again")
+            print(
+                "  • Skip dependency checking with "
+                "'python src/rxiv_maker/commands/setup_environment.py "
+                "--no-check-system-deps'"
+            )
+            print("  • Use Docker mode instead: 'make pdf RXIV_ENGINE=DOCKER'")
+            return False
 
         # Step 2: Remove existing environment if reinstalling
         if self.reinstall and not self.remove_existing_venv():
@@ -304,17 +293,13 @@ def main():
     """Main entry point for setup environment command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Set up development environment for rxiv-maker"
-    )
+    parser = argparse.ArgumentParser(description="Set up development environment for rxiv-maker")
     parser.add_argument(
         "--reinstall",
         action="store_true",
         help="Reinstall dependencies (removes .venv and creates new one)",
     )
-    parser.add_argument(
-        "--check-deps-only", action="store_true", help="Only check system dependencies"
-    )
+    parser.add_argument("--check-deps-only", action="store_true", help="Only check system dependencies")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()

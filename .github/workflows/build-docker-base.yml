@@ -7,11 +7,15 @@ on:
       - 'src/docker/**'
       - 'src/rxiv_maker/__version__.py'  # Trigger on version changes
       - '.github/workflows/build-docker-base.yml'
+      - 'pyproject.toml'  # Trigger on dependency changes
+      - 'uv.lock'  # Trigger on lockfile changes
   pull_request:
     branches: [ main ]
     paths:
       - 'src/docker/**'
       - '.github/workflows/build-docker-base.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
   workflow_dispatch:
     inputs:
       tag:
@@ -47,6 +51,7 @@ permissions:
 jobs:
   build-base:
     runs-on: ubuntu-latest
+    timeout-minutes: 45  # Add timeout for better resource management
 
     steps:
     - name: Checkout repository
@@ -56,6 +61,9 @@ jobs:
       uses: docker/setup-buildx-action@v3
       with:
         platforms: linux/amd64,linux/arm64
+        driver-opts: |
+          network=host
+          image=moby/buildkit:buildx-stable-1
 
     - name: Log in to Docker Hub
       if: github.event_name != 'pull_request'
@@ -122,12 +130,18 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: |
+          type=gha
+          type=registry,ref=${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}:buildcache
+        cache-to: |
+          type=gha,mode=max
+          type=registry,ref=${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}:buildcache,mode=max
         build-args: |
           BUILDKIT_INLINE_CACHE=1
+          BUILDKIT_MULTI_PLATFORM=1
         provenance: false  # Disable provenance to prevent cache issues
         sbom: false       # Disable SBOM to prevent cache issues
+        outputs: type=image,name=${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }},push-by-digest=false,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
 
 
     - name: Update repository description

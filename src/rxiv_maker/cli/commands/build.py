@@ -27,9 +27,7 @@ logger = get_logger()
     help="Output directory for generated files",
     metavar="DIR",
 )
-@click.option(
-    "--force-figures", "-f", is_flag=True, help="Force regeneration of all figures"
-)
+@click.option("--force-figures", "-f", is_flag=True, help="Force regeneration of all figures")
 @click.option("--skip-validation", "-s", is_flag=True, help="Skip validation step")
 @click.option(
     "--track-changes",
@@ -97,10 +95,7 @@ def build(
 
     # Set up preliminary log directory (will be updated by BuildManager)
     manuscript_dir = Path(manuscript_path)
-    if Path(output_dir).is_absolute():
-        preliminary_output_dir = Path(output_dir)
-    else:
-        preliminary_output_dir = manuscript_dir / output_dir
+    preliminary_output_dir = Path(output_dir) if Path(output_dir).is_absolute() else manuscript_dir / output_dir
 
     # Set up logging to the output directory early
     set_log_directory(preliminary_output_dir)
@@ -112,10 +107,7 @@ def build(
         try:
             docker_manager = get_docker_manager()
             if not docker_manager.check_docker_available():
-                logger.error(
-                    "Docker is not available for build pipeline. "
-                    "Please ensure Docker is running."
-                )
+                logger.error("Docker is not available for build pipeline. Please ensure Docker is running.")
                 logger.tip("Use --engine local to build without Docker")
                 from ...core.logging_config import cleanup
 
@@ -166,9 +158,7 @@ def build(
 
             if success:
                 progress.update(task, description="✅ PDF generated successfully!")
-                logger.success(
-                    f"PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf"
-                )
+                logger.success(f"PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf")
 
                 # Show additional info
                 if track_changes:

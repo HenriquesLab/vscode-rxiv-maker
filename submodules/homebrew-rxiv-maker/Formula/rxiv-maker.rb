@@ -11,10 +11,10 @@ class RxivMaker < Formula
   def install
     # Create virtual environment using uv for fast isolation
     system "uv", "venv", libexec
-    
+
     # Install rxiv-maker and all dependencies using uv
     system "uv", "pip", "install", "--python", libexec/"bin/python", "rxiv-maker==#{version}"
-    
+
     # Create executable wrapper in bin
     (bin/"rxiv").write <<~EOS
       #!/bin/bash

@@ -181,17 +181,10 @@ This text only cites one reference @smith2023.
 
         # Should have warnings for unused bibliography entries
         self.assertTrue(result.has_warnings)
-        warning_messages = [
-            error.message for error in result.errors if error.level.value == "warning"
-        ]
+        warning_messages = [error.message for error in result.errors if error.level.value == "warning"]
 
         # Should warn about unused jones2022 entry
-        self.assertTrue(
-            any(
-                "jones2022" in msg and "Unused bibliography entry" in msg
-                for msg in warning_messages
-            )
-        )
+        self.assertTrue(any("jones2022" in msg and "Unused bibliography entry" in msg for msg in warning_messages))
 
         # Check metadata
         self.assertEqual(result.metadata.get("unused_entries"), 1)
@@ -214,9 +207,7 @@ This text cites @smith2023.
 
 Additional details with reference to @jones2022.
 """
-        with open(
-            os.path.join(self.manuscript_dir, "02_SUPPLEMENTARY_INFO.md"), "w"
-        ) as f:
+        with open(os.path.join(self.manuscript_dir, "02_SUPPLEMENTARY_INFO.md"), "w") as f:
             f.write(supp_content)
 
         validator = CitationValidator(self.manuscript_dir, enable_doi_validation=False)
@@ -230,7 +221,7 @@ Additional details with reference to @jones2022.
         self.assertEqual(result.metadata.get("unique_citations"), 2)
 
     def test_citation_validation_excludes_system_entries(self):
-        """Test that system entries like saraiva_2025_rxivmaker are not flagged as unused."""
+        """Test that system entries like saraiva2025rxivmaker are not flagged as unused."""
         # Create bibliography with system entry and regular entry
         bib_content_with_system = """
 @article{smith2023,
@@ -239,7 +230,7 @@ Additional details with reference to @jones2022.
     year = {2023}
 }
 
-@article{saraiva_2025_rxivmaker,
+@misc{saraiva2025rxivmaker,
     title = {Rxiv-Maker: Automated LaTeX Article Generation},
     author = {Saraiva, Paulo},
     year = {2025}
@@ -266,21 +257,12 @@ This text only cites @smith2023.
         validator = CitationValidator(self.manuscript_dir, enable_doi_validation=False)
         result = validator.validate()
 
-        # Should have warnings for unused_entry but NOT for saraiva_2025_rxivmaker
-        warning_messages = [
-            error.message for error in result.errors if error.level.value == "warning"
-        ]
+        # Should have warnings for unused_entry but NOT for saraiva2025rxivmaker
+        warning_messages = [error.message for error in result.errors if error.level.value == "warning"]
 
-        # Should warn about unused_entry but not saraiva_2025_rxivmaker
-        self.assertTrue(
-            any(
-                "unused_entry" in msg and "Unused bibliography entry" in msg
-                for msg in warning_messages
-            )
-        )
-        self.assertFalse(
-            any("saraiva_2025_rxivmaker" in msg for msg in warning_messages)
-        )
+        # Should warn about unused_entry but not saraiva2025rxivmaker
+        self.assertTrue(any("unused_entry" in msg and "Unused bibliography entry" in msg for msg in warning_messages))
+        self.assertFalse(any("saraiva2025rxivmaker" in msg for msg in warning_messages))
 
         # Check metadata shows only 1 unused entry (not counting system entry)
         self.assertEqual(result.metadata.get("unused_entries"), 1)
@@ -573,12 +555,7 @@ l.45 E = mc^2
 
         # Check that specific error types are detected
         error_messages = [error.message for error in result.errors]
-        self.assertTrue(
-            any(
-                "Unknown LaTeX command" in msg or "control sequence" in msg
-                for msg in error_messages
-            )
-        )
+        self.assertTrue(any("Unknown LaTeX command" in msg or "control sequence" in msg for msg in error_messages))
 
 
 @pytest.mark.validation
@@ -656,9 +633,7 @@ See @fig:test for mathematical details: $E = mc^2$.
         for validator in validators:
             result = validator.validate()
             # Valid manuscript should pass all validations
-            self.assertFalse(
-                result.has_errors, f"{validator.__class__.__name__} failed validation"
-            )
+            self.assertFalse(result.has_errors, f"{validator.__class__.__name__} failed validation")
 
     def test_comprehensive_validation_invalid_manuscript(self):
         """Test comprehensive validation of an invalid manuscript."""

@@ -1,7 +1,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.48550%2FarXiv.2508.00836-blue)](https://doi.org/10.48550/arXiv.2508.00836)
 [![License](https://img.shields.io/github/license/henriqueslab/vscode-rxiv-maker?color=Green)](https://github.com/henriqueslab/vscode-rxiv-maker/blob/main/LICENSE)
 [![Contributors](https://img.shields.io/github/contributors-anon/henriqueslab/vscode-rxiv-maker)](https://github.com/henriqueslab/vscode-rxiv-maker/graphs/contributors)
-[![GitHub stars](https://img.shields.io/github/stars/henriqueslab/vscode-rxiv-maker?style=social)](https://github.com/HenriquesLab/vscode-rxiv-maker/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/henriqueslab/vscode-rxiv-maker?style=social)](https://github.com/henriqueslab/vscode-rxiv-maker/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/henriqueslab/vscode-rxiv-maker?style=social)](https://github.com/henriqueslab/vscode-rxiv-maker/forks)
 
 ![Enhanced Markdown (rxiv-markdown)](https://img.shields.io/badge/rxiv_markdown-20+_features-blue?labelColor=white&color=gray)
@@ -14,9 +14,9 @@
 
 > 🔗 **Companion extension for [Rxiv-Maker](https://github.com/HenriquesLab/rxiv-maker)** - The automated LaTeX article generation system
 
-A VS Code extension that brings the power of [Rxiv-Maker](https://github.com/HenriquesLab/rxiv-maker) directly into your editor. Transform scientific manuscript writing with enhanced markdown features, intelligent autocompletion, and seamless integration with the rxiv-maker workflow.
+A VS Code extension that brings the power of [Rxiv-Maker](https://github.com/HenriquesLab/rxiv-maker) directly into your editor. Transform scientific manuscript writing with enhanced markdown features, intelligent autocompletion, seamless integration, and **smart automatic installation**.
 
-This extension provides syntax highlighting, IntelliSense, and project management tools for **rxiv-markdown** - the enhanced markdown syntax that bridges the gap between easy writing and professional LaTeX output.
+This extension provides syntax highlighting, IntelliSense, project management tools, and intelligent rxiv-maker CLI setup for **rxiv-markdown** - the enhanced markdown syntax that bridges the gap between easy writing and professional LaTeX output.
 
 ## About Rxiv-Maker
 
@@ -26,20 +26,24 @@ The platform bridges the gap between **easy writing** (Markdown) and **beautiful
 
 ## VS Code Extension Features
 
+- **🚀 Smart Installation**: Automatic rxiv-maker CLI setup with intelligent tool detection (pipx, uv, pip)
 - **🎨 Syntax Highlighting**: Custom syntax highlighting for rxiv-maker markdown files (.rxm)
 - **💡 Citation Completion**: IntelliSense for bibliography entries from `03_REFERENCES.bib`
 - **🔗 Cross-reference Completion**: Autocompletion for `@fig:`, `@table:`, `@eq:`, `@snote:` references
 - **✅ YAML Validation**: Schema validation for `00_CONFIG.yml` configuration files
 - **⚡ Project Commands**: Insert citations, figure references, and validate project structure
 - **🏗️ Integrated Workflow**: Direct access to rxiv-maker build, validate, and clean commands
+- **🛠️ Error Handling**: Graceful handling of installation issues with helpful guidance
 
 ## Key Benefits for VS Code Users
 
+- **Zero-Setup Experience**: Smart installation handles rxiv-maker CLI setup automatically
 - **Enhanced Productivity**: Write manuscripts with intelligent autocompletion and syntax highlighting
 - **Error Prevention**: Real-time validation catches configuration errors and missing references
 - **Seamless Integration**: Access all rxiv-maker features directly from VS Code
 - **Professional Writing**: Focus on content while the extension handles formatting and references
 - **Team Collaboration**: Consistent experience across team members using VS Code
+- **Cross-Platform Compatibility**: Works on Windows, macOS, and Linux with appropriate package managers
 
 ## Supported Rxiv-Markdown Syntax
 
@@ -88,6 +92,65 @@ The platform bridges the gap between **easy writing** (Markdown) and **beautiful
 1. Install from VS Code Marketplace: Search for "Rxiv-Maker"
 2. Or install from VSIX: Download the latest release and install manually
 
+## Smart Installation System
+
+The extension features an intelligent installation system that automatically handles rxiv-maker CLI setup:
+
+### Installation Priority
+
+When rxiv-maker CLI is not found, the extension detects available package managers and offers options in this priority order:
+
+| **Method** | **Recommended For** | **Benefits** | **Requirements** |
+|------------|-------------------|--------------|----------------|
+| **1. pipx** 🚀 | Most users | • Isolated environment<br>• Global CLI access<br>• No conflicts with system Python | `pipx` installed |
+| **2. uv** ⚡ | Performance-focused | • Ultra-fast installation<br>• Modern dependency resolution<br>• Automatic PATH configuration<br>• Clean tool management | `uv` installed |
+| **3. pip** ⚠️ | Traditional setup | • Standard Python package manager<br>• Wide compatibility | May fail on managed environments |
+| **4. Repository** 🔧 | Advanced users | • Development setup<br>• Full source access<br>• Custom modifications | Git, Make, Python |
+
+### Automatic Workflow
+
+1. **Detection Phase**: Extension checks if `rxiv` command is available
+2. **Tool Discovery**: Scans system for available installation tools
+3. **User Choice**: Presents prioritized options with clear descriptions
+4. **Guided Installation**: Executes selected method with progress feedback
+5. **PATH Configuration**: Automatically runs `uv tool update-shell` for uv installations
+6. **Verification**: Tests installation and provides next steps
+
+### Error Handling
+
+The extension gracefully handles common installation issues:
+- **Externally-managed environments** (macOS/Linux): Suggests pipx or uv alternatives
+- **Missing dependencies**: Provides specific installation instructions
+- **Network issues**: Offers offline installation methods
+- **Permission problems**: Guides users to appropriate solutions
+- **PATH Configuration Issues**: Automatically detects and fixes PATH problems
+
+### Troubleshooting PATH Issues
+
+**Problem**: `rxiv` command not found after installation
+
+**Solution**: The extension automatically handles PATH configuration, but if you encounter issues:
+
+1. **For uv installations**:
+   - The extension automatically runs `uv tool update-shell` during installation
+   - If issues persist, manually run: `uv tool update-shell`
+   - Restart your terminal or VS Code
+
+2. **Manual PATH fixes**:
+   ```bash
+   # Clear shell command cache
+   hash -r
+   
+   # Or restart your terminal/VS Code
+   ```
+
+3. **Extension PATH Detection**:
+   - The extension detects when `rxiv` exists but isn't in PATH
+   - Choose "Configure PATH" option when prompted
+   - Extension will automatically run `uv tool update-shell` for you
+
+**Note**: The extension prioritizes uv over other installation methods partly because it provides the most reliable PATH configuration through `uv tool update-shell`.
+
 ## Usage
 
 1. **Open a workspace** containing rxiv-maker files
@@ -114,12 +177,25 @@ The extension automatically activates when it detects:
 
 Access these commands through the Command Palette (`Ctrl+Shift+P`):
 
-- **`Rxiv-Maker: Insert Citation`** - Insert bibliography citation
-- **`Rxiv-Maker: Insert Figure Reference`** - Insert figure reference
-- **`Rxiv-Maker: Add Bibliography Entry by DOI`** - Add new bibliography entry
+### Content Editing Commands
+- **`Rxiv-Maker: Insert citation`** - Insert bibliography citation with autocomplete
+- **`Rxiv-Maker: Insert figure reference`** - Insert figure cross-reference
+- **`Rxiv-Maker: Insert table reference`** - Insert table cross-reference
+- **`Rxiv-Maker: Insert equation reference`** - Insert equation cross-reference
+- **`Rxiv-Maker: Add bibliography entry by DOI`** - Add new bibliography entry from DOI
+
+### Project Management Commands  
+- **`Rxiv-Maker: Install rxiv-maker framework`** - Smart installation with automatic tool detection
 - **`Rxiv-Maker: Validate`** - Check project structure and files
 - **`Rxiv-Maker: Build PDF`** - Generate PDF from manuscript
 - **`Rxiv-Maker: Clean`** - Clean build artifacts
+
+### Smart Installation Features
+The extension automatically detects if rxiv-maker CLI is installed and offers intelligent installation options:
+- **Automatic Detection**: Checks for rxiv-maker on first use
+- **Multiple Installation Methods**: Prioritizes pipx → uv → pip → repository installation  
+- **Guided Setup**: Clear instructions and fallback options for any system
+- **Error Handling**: Helpful guidance when installations fail (e.g., externally-managed Python environments)
 
 ## Project Structure
 
@@ -141,20 +217,47 @@ your-manuscript/
 ## Requirements
 
 - **VS Code**: Version 1.101.0 or higher
-- **Rxiv-Maker**: Install the main [rxiv-maker](https://github.com/HenriquesLab/rxiv-maker) system for full functionality
+- **Rxiv-Maker CLI**: Automatically installed when needed (see Smart Installation below)
 - **Project Files**: Standard rxiv-maker project structure
 
-For full manuscript generation capabilities, see the [Rxiv-Maker documentation](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/user_guide.md).
+### Smart Installation System
+The extension automatically handles rxiv-maker installation:
+- **No manual setup required**: The extension detects missing installations automatically
+- **Intelligent tool selection**: Prefers modern package managers (pipx, uv) over traditional pip
+- **Guided installation**: Step-by-step prompts with clear error handling
+- **Fallback options**: Multiple installation methods ensure compatibility across all systems
+
+When you first use an rxiv-maker command, the extension will:
+1. Check if rxiv-maker CLI is installed
+2. If not found, offer smart installation options based on your system
+3. Guide you through the installation process with the best available method  
+4. Automatically configure PATH (using `uv tool update-shell` for uv installations)
+5. Provide clear next steps including terminal restart instructions
+
+For full manuscript generation capabilities, see the [Rxiv-Maker documentation](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/getting-started/user_guide.md).
 
 ## Getting Started with Rxiv-Maker
 
-New to Rxiv-Maker? Choose your preferred setup:
+New to Rxiv-Maker? The VS Code extension provides the easiest local setup experience:
+
+### Quickstart Options
 
 | Setup Type | Best For | Requirements | Time |
 |-----------|----------|--------------|------|
-| **[Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** | Beginners | Google account | 2 min |
-| **[GitHub Actions](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/github-actions-guide.md)** | Team collaboration | GitHub account | 5 min |
-| **[Local Install](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/platforms/LOCAL_DEVELOPMENT.md)** | Full control | Python 3.11+, LaTeX | 10-30 min |
+| **🎯 VS Code Extension** | **Recommended** | VS Code + this extension | **2-5 min** |
+| **[Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** | Cloud-based testing | Google account | 2 min |
+| **[GitHub Actions](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/workflows/github-actions.md)** | Team collaboration | GitHub account | 5 min |
+| **[Manual Local Install](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/platforms/LOCAL_DEVELOPMENT.md)** | Advanced setup | Python 3.11+, LaTeX | 10-30 min |
+
+### VS Code Extension Quickstart
+
+1. **Install Extension**: Search "Rxiv-Maker" in VS Code Marketplace
+2. **Open/Create Project**: Use standard rxiv-maker project structure
+3. **Try a Command**: Run `Rxiv-Maker: Build PDF` from Command Palette
+4. **Automatic Setup**: Extension will detect if rxiv-maker CLI is needed and guide you through installation
+5. **Start Writing**: Begin editing your manuscript with full IDE support
+
+The extension handles all the complex installation logic automatically, making it the fastest way to get started with rxiv-maker locally.
 
 ## How to Cite
 
@@ -164,7 +267,7 @@ If you use Rxiv-Maker or this VS Code extension in your research, please cite ou
 
 **BibTeX:**
 ```bibtex
-@misc{saraiva2025rxivmakerautomatedtemplateengine,
+@misc{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications}, 
       author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
       year={2025},
@@ -182,8 +285,8 @@ https://doi.org/10.48550/arXiv.2508.00836
 ## Related Projects
 
 - **[Rxiv-Maker](https://github.com/HenriquesLab/rxiv-maker)** - Main automated LaTeX article generation system
-- **[Rxiv-Maker Documentation](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/user_guide.md)** - Complete usage guide
-- **[GitHub Actions Guide](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/github-actions-guide.md)** - Cloud-based PDF generation
+- **[Rxiv-Maker Documentation](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/getting-started/user_guide.md)** - Complete usage guide
+- **[GitHub Actions Guide](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/workflows/github-actions.md)** - Cloud-based PDF generation
 
 ## Contributing
 

@@ -27,15 +27,13 @@ class RLanguageHandler:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (subprocess.CalledProcessError, OSError, FileNotFoundError):
             return False
 
     def get_version(self) -> str | None:
         """Get R version."""
         try:
-            result = subprocess.run(
-                ["R", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["R", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 lines = result.stdout.split("\n")
@@ -43,7 +41,7 @@ class RLanguageHandler:
                     if "R version" in line:
                         return line.strip()
             return None
-        except:
+        except (subprocess.CalledProcessError, OSError, FileNotFoundError):
             return None
 
     def install_packages(self, packages: list[str]) -> bool:
@@ -55,9 +53,7 @@ class RLanguageHandler:
 
         # Create R command to install packages
         packages_str = "', '".join(packages)
-        r_command = (
-            f"install.packages(c('{packages_str}'), repos='https://cran.rstudio.com/')"
-        )
+        r_command = f"install.packages(c('{packages_str}'), repos='https://cran.rstudio.com/')"
 
         try:
             result = subprocess.run(
@@ -106,5 +102,5 @@ class RLanguageHandler:
             )
 
             return result.returncode == 0 and "TRUE" in result.stdout
-        except:
+        except (subprocess.CalledProcessError, OSError, FileNotFoundError):
             return False

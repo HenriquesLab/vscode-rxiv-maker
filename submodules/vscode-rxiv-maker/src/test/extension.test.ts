@@ -64,7 +64,7 @@ suite('Extension Test Suite', () => {
 		const commands = await vscode.commands.getCommands();
 		assert.ok(commands.includes('rxiv-maker.insertCitation'), 'Should register insertCitation command');
 		assert.ok(commands.includes('rxiv-maker.insertFigureReference'), 'Should register insertFigureReference command');
-		assert.ok(commands.includes('rxiv-maker.validateProject'), 'Should register validateProject command');
+		assert.ok(commands.includes('rxiv-maker.makeValidate'), 'Should register makeValidate command');
 	});
 
 	test('Extension should register rxiv-markdown language', async () => {
@@ -103,9 +103,9 @@ suite('Extension Test Suite', () => {
 			const content = fs.readFileSync(mainPath, 'utf8');
 
 			// Test that main document contains expected references
-			assert.ok(content.includes('@fig:diagram'), 'Should contain figure diagram reference');
+			assert.ok(content.includes('@fig:system_diagram'), 'Should contain figure system_diagram reference');
 			assert.ok(content.includes('@fig:workflow'), 'Should contain figure workflow reference');
-			assert.ok(content.includes('@sfig:arxiv-growth'), 'Should contain supplementary figure reference');
+			assert.ok(content.includes('@sfig:arxiv_growth'), 'Should contain supplementary figure reference');
 		});
 
 		test('Should detect equation references', async () => {
@@ -140,11 +140,13 @@ suite('Extension Test Suite', () => {
 			const figuresPath = path.join(exampleManuscriptPath, 'FIGURES');
 			assert.ok(fs.existsSync(figuresPath), 'FIGURES directory should exist');
 
-			// Check for specific figure files
-			const figure1Path = path.join(figuresPath, 'Figure_1');
-			const figure2Path = path.join(figuresPath, 'Figure_2');
-			assert.ok(fs.existsSync(figure1Path), 'Figure_1 directory should exist');
-			assert.ok(fs.existsSync(figure2Path), 'Figure_2 directory should exist');
+			// Check for specific figure files that actually exist
+			const systemDiagramPath = path.join(figuresPath, 'Figure__system_diagram');
+			const workflowPath = path.join(figuresPath, 'Figure__workflow');
+			const arxivGrowthPath = path.join(figuresPath, 'SFigure__arxiv_growth');
+			assert.ok(fs.existsSync(systemDiagramPath), 'Figure__system_diagram directory should exist');
+			assert.ok(fs.existsSync(workflowPath), 'Figure__workflow directory should exist');
+			assert.ok(fs.existsSync(arxivGrowthPath), 'SFigure__arxiv_growth directory should exist');
 		});
 
 		test('Should validate CONFIG.yml structure', async () => {
@@ -218,7 +220,7 @@ suite('Extension Test Suite', () => {
 			assert.ok(noteRefs && noteRefs.length > 0, 'Should find note references');
 
 			// Verify specific references exist
-			assert.ok(figureRefs.includes('@fig:diagram'), 'Should contain diagram figure reference');
+			assert.ok(figureRefs.includes('@fig:system_diagram'), 'Should contain system_diagram figure reference');
 			assert.ok(figureRefs.includes('@fig:workflow'), 'Should contain workflow figure reference');
 			assert.ok(equationRefs.includes('@eq:einstein'), 'Should contain Einstein equation reference');
 			assert.ok(tableRefs.includes('@stable:figure-formats'), 'Should contain figure formats table reference');
@@ -234,7 +236,7 @@ suite('Extension Test Suite', () => {
 			if (workspaceFolders && workspaceFolders.length > 0) {
 				// The command should be available
 				const commands = await vscode.commands.getCommands();
-				assert.ok(commands.includes('rxiv-maker.validateProject'), 'validateProject command should be available');
+				assert.ok(commands.includes('rxiv-maker.makeValidate'), 'makeValidate command should be available');
 			}
 		});
 	});

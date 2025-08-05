@@ -148,8 +148,8 @@ dev-dependencies = [
 
 # Ruff configuration (replaces black, isort, flake8, autoflake, docformatter)
 [tool.ruff]
-# Set the maximum line length to match Black
-line-length = 88
+# Set the maximum line length to allow context strings
+line-length = 120
 target-version = "py311"
 exclude = [
     "versioneer.py",

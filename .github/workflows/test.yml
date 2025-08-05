@@ -9,6 +9,7 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - '.github/workflows/test.yml'
+      - '.github/actions/**'
   pull_request:
     branches: [main, dev, dev-no-puppets]
     paths:
@@ -17,6 +18,7 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - '.github/workflows/test.yml'
+      - '.github/actions/**'
   workflow_dispatch:
     inputs:
       test-scope:
@@ -135,8 +137,8 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.setup.outputs.test-matrix) }}
       fail-fast: false
-      max-parallel: 4  # Further reduced for better stability
-    timeout-minutes: 25  # Reduced timeout for faster feedback on core tests only
+      max-parallel: 6  # Optimized for better throughput
+    timeout-minutes: 25  # Increased timeout for cross-platform stability
 
     steps:
       - name: Checkout code
@@ -149,7 +151,8 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: ${{ matrix.python-version }}
-          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
+          cache-suffix: ${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}
+          enable-cache: true
 
       - name: Run unit tests
         uses: ./.github/actions/test-execution
@@ -171,7 +174,7 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     needs: [setup, test]
     if: needs.setup.outputs.test-scope != 'quick'
 
@@ -185,11 +188,24 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          cache-suffix: integration-${{ runner.os }}-${{ runner.arch }}
+          enable-cache: true
+
+      - name: Cache LaTeX packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/share/texlive
+            /var/lib/texmf
+            ~/.texlive
+          key: latex-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/test.yml') }}
+          restore-keys: |
+            latex-packages-${{ runner.os }}-
 
       - name: Install LaTeX
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
             texlive-latex-base \
             texlive-latex-extra \
             texlive-fonts-recommended \
@@ -220,7 +236,7 @@ jobs:
   multi-engine:
     name: Multi-Engine Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 35
     needs: [setup, test]
     if: needs.setup.outputs.test-scope == 'comprehensive'
     strategy:
@@ -238,17 +254,39 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          cache-suffix: multi-engine-${{ matrix.engine }}-${{ runner.os }}
+          enable-cache: true
+
+      - name: Cache LaTeX packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/share/texlive
+            /var/lib/texmf
+            ~/.texlive
+          key: latex-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/test.yml') }}
+          restore-keys: |
+            latex-packages-${{ runner.os }}-
 
       - name: Install LaTeX
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
             texlive-latex-base \
             texlive-latex-extra \
             texlive-fonts-recommended \
             texlive-fonts-extra \
             texlive-science \
             texlive-plain-generic
+
+      - name: Cache Docker images
+        if: matrix.engine == 'docker'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.docker-cache
+          key: docker-images-${{ runner.os }}-${{ hashFiles('src/docker/**') }}
+          restore-keys: |
+            docker-images-${{ runner.os }}-
 
       - name: Setup Docker (if needed)
         if: matrix.engine == 'docker'
@@ -257,8 +295,17 @@ jobs:
           sudo systemctl start docker
           sudo systemctl enable docker
 
-          # Pull the latest rxiv-maker base image
-          docker pull henriqueslab/rxiv-maker-base:latest || echo "Failed to pull image, will use local build"
+          # Load cached images if available
+          if [ -f "/tmp/.docker-cache/rxiv-maker-base.tar" ]; then
+            echo "Loading cached Docker image..."
+            docker load < /tmp/.docker-cache/rxiv-maker-base.tar
+          else
+            echo "Pulling fresh Docker image..."
+            docker pull henriqueslab/rxiv-maker-base:latest || echo "Failed to pull image, will use local build"
+            # Save image to cache
+            mkdir -p /tmp/.docker-cache
+            docker save henriqueslab/rxiv-maker-base:latest > /tmp/.docker-cache/rxiv-maker-base.tar || true
+          fi
 
       - name: Run multi-engine integration tests
         run: |
@@ -287,7 +334,7 @@ jobs:
   build:
     name: Build & Test Distribution
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     needs: [setup, test]
     if: needs.setup.outputs.test-scope != 'quick'
 
@@ -301,6 +348,8 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          cache-suffix: build-${{ runner.os }}
+          enable-cache: true
 
       - name: Build package
         run: uv build
@@ -324,7 +373,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
     if: needs.setup.outputs.run-comprehensive == 'true'
-    timeout-minutes: 15
+    timeout-minutes: 12
 
     steps:
       - name: Checkout code
@@ -336,6 +385,8 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          cache-suffix: security-${{ runner.os }}
+          enable-cache: true
 
       - name: Build package
         run: |
@@ -373,7 +424,7 @@ jobs:
           - os: macos-latest
             package-managers: "pypi,homebrew"
       fail-fast: false
-    timeout-minutes: 30
+    timeout-minutes: 25
 
     steps:
       - name: Checkout code
@@ -385,6 +436,8 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          cache-suffix: ecosystem-${{ matrix.os }}
+          enable-cache: true
 
       - name: Test PyPI installation
         if: contains(matrix.package-managers, 'pypi')
@@ -530,10 +583,8 @@ jobs:
       - name: Generate summary
         run: |
           echo "# CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Test Scope**: ${{ needs.setup.outputs.test-scope }}" >> $GITHUB_STEP_SUMMARY
           echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
 
           # Job results
           jobs=(

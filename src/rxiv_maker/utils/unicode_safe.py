@@ -28,7 +28,8 @@ def supports_unicode() -> bool:
     # Check if we're on Windows with legacy console
     if os.name == "nt":
         try:
-            # Try to encode a test emoji - use checkmark specifically since that's what fails
+            # Try to encode a test emoji - use checkmark specifically since
+            # that's what fails
             test_chars = ["✅", "📦", "❌"]
             stdout_encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
 
@@ -150,9 +151,7 @@ def safe_print(message: str, **kwargs) -> None:
         pass
 
 
-def safe_console_print(
-    console, message: str, style: str | None = None, **kwargs
-) -> None:
+def safe_console_print(console, message: str, style: str | None = None, **kwargs) -> None:
     """Print a message using Rich console with cross-platform Unicode fallback.
 
     Args:
