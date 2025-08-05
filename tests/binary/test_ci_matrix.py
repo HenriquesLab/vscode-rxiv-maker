@@ -252,7 +252,8 @@ class TestBinaryCompatibilityMatrix:
             or (normalized_platform == "windows" and current_os.lower() == "windows")
         )
         assert platform_matches, (
-            f"Platform mismatch: detected '{platform_name}' (normalized: '{normalized_platform}') vs system '{current_os}'"
+            f"Platform mismatch: detected '{platform_name}' "
+            f"(normalized: '{normalized_platform}') vs system '{current_os}'"
         )
 
     def test_architecture_detection(self):
@@ -582,7 +583,8 @@ class TestBinaryTestingIntegrations:
             )
         ]
         assert len(binary_test_files) > 0, (
-            f"No binary-specific tests found. Available test files: {[f.name for f in test_files]}"
+            f"No binary-specific tests found. Available test files: "
+            f"{[f.name for f in test_files]}"
         )
 
     def test_package_manager_integration_tests(self):

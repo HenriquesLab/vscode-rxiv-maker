@@ -32,7 +32,10 @@ class TestCLIIntegration:
                 main,
                 ["init", str(manuscript_dir), "--template", "basic"],
                 obj={"verbose": False, "engine": "local"},
-                input="Test Paper\nTest Subtitle\nTest Author\ntest@example.com\nTest University\n",
+                input=(
+                    \"Test Paper\\nTest Subtitle\\nTest Author\\n\"
+                    \"test@example.com\\nTest University\\n\"
+                ),
             )
 
             # Init should create the directory and files
@@ -70,25 +73,27 @@ class TestCLIIntegration:
 
     def test_config_integration(self):
         """Test configuration integration across commands."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                # Set configuration
-                result = self.runner.invoke(
-                    main, ["config", "set", "general.default_engine", "docker"]
-                )
-                assert result.exit_code == 0
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch("pathlib.Path.home", return_value=Path(tmpdir)),
+        ):
+            # Set configuration
+            result = self.runner.invoke(
+                main, ["config", "set", "general.default_engine", "docker"]
+            )
+            assert result.exit_code == 0
 
-                # Get configuration
-                result = self.runner.invoke(
-                    main, ["config", "get", "general.default_engine"]
-                )
-                assert result.exit_code == 0
-                assert "docker" in result.output
+            # Get configuration
+            result = self.runner.invoke(
+                main, ["config", "get", "general.default_engine"]
+            )
+            assert result.exit_code == 0
+            assert "docker" in result.output
 
-                # Show configuration
-                result = self.runner.invoke(main, ["config", "show"])
-                assert result.exit_code == 0
-                assert "docker" in result.output
+            # Show configuration
+            result = self.runner.invoke(main, ["config", "show"])
+            assert result.exit_code == 0
+            assert "docker" in result.output
 
     def test_bibliography_workflow(self):
         """Test bibliography management workflow."""
@@ -114,7 +119,13 @@ authors:
 
                 self.runner.invoke(
                     main,
-                    ["bibliography", "add", str(manuscript_dir), "10.1000/test.doi"],
+                    [
+                        "bibliography",
+                        "add",
+                        "-m",
+                        str(manuscript_dir),
+                        "10.1000/test.doi",
+                    ],
                     obj={"verbose": False, "engine": "local"},
                 )
 

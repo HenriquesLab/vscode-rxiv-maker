@@ -255,18 +255,22 @@ class TestUpdateChecker:
         """Test async update checking."""
         checker = UpdateChecker(self.package_name, self.current_version)
 
-        with patch.object(checker, "should_check_for_updates", return_value=False):
+        with (
+            patch.object(checker, "should_check_for_updates", return_value=False),
+            patch("threading.Thread") as mock_thread,
+        ):
             # Should not start thread if checking is disabled
-            with patch("threading.Thread") as mock_thread:
-                checker.check_for_updates_async()
-                mock_thread.assert_not_called()
+            checker.check_for_updates_async()
+            mock_thread.assert_not_called()
 
-        with patch.object(checker, "should_check_for_updates", return_value=True):
+        with (
+            patch.object(checker, "should_check_for_updates", return_value=True),
+            patch("threading.Thread") as mock_thread,
+        ):
             # Should start thread if checking is enabled
-            with patch("threading.Thread") as mock_thread:
-                checker.check_for_updates_async()
-                mock_thread.assert_called_once()
-                mock_thread.return_value.start.assert_called_once()
+            checker.check_for_updates_async()
+            mock_thread.assert_called_once()
+            mock_thread.return_value.start.assert_called_once()
 
 
 class TestGlobalFunctions:

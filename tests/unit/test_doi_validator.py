@@ -159,6 +159,94 @@ class TestDOIValidator(unittest.TestCase):
                 validator.DOI_REGEX.match(doi), f"Invalid DOI passed: {doi}"
             )
 
+    def test_doi_normalization(self):
+        """Test DOI URL normalization functionality."""
+        validator = DOIValidator(
+            self.manuscript_dir,
+            enable_online_validation=False,
+            cache_dir=self.cache_dir,
+        )
+
+        # Test valid DOI URL formats that should be normalized
+        test_cases = [
+            # Format: (input, expected_output)
+            (
+                "10.1038/d41586-022-00563-z",
+                "10.1038/d41586-022-00563-z",
+            ),  # already normalized
+            (
+                "https://doi.org/10.1038/d41586-022-00563-z",
+                "10.1038/d41586-022-00563-z",
+            ),
+            ("http://doi.org/10.1038/d41586-022-00563-z", "10.1038/d41586-022-00563-z"),
+            ("doi.org/10.1038/d41586-022-00563-z", "10.1038/d41586-022-00563-z"),
+            (
+                "  https://doi.org/10.1000/test.2023.001  ",
+                "10.1000/test.2023.001",
+            ),  # with whitespace
+        ]
+
+        for input_doi, expected in test_cases:
+            result = validator._normalize_doi(input_doi)
+            self.assertEqual(result, expected, f"Failed to normalize: {input_doi}")
+
+        # Test invalid DOI formats that should return None
+        invalid_cases = [
+            "not-a-doi",
+            "https://example.com/10.1000/test",
+            "https://doi.org/invalid-doi",
+            "10./invalid",
+            "",
+            "https://doi.org/",
+        ]
+
+        for invalid_doi in invalid_cases:
+            result = validator._normalize_doi(invalid_doi)
+            self.assertIsNone(
+                result, f"Should have rejected invalid DOI: {invalid_doi}"
+            )
+
+    def test_doi_like_detection(self):
+        """Test DOI-like string detection for CLI argument parsing."""
+        # Import the function from CLI module for testing
+        from rxiv_maker.cli.commands.bibliography import _is_doi_like
+
+        # Test cases that should be detected as DOI-like
+        doi_like_cases = [
+            "10.1038/d41586-022-00563-z",
+            "https://doi.org/10.1038/d41586-022-00563-z",
+            "http://doi.org/10.1038/d41586-022-00563-z",
+            "doi.org/10.1038/d41586-022-00563-z",
+            "10.1000/test.2023.001",
+            "  https://doi.org/10.1000/test  ",  # with whitespace
+        ]
+
+        for test_case in doi_like_cases:
+            result = _is_doi_like(test_case)
+            self.assertTrue(result, f"Should have detected as DOI-like: {test_case}")
+
+        # Test cases that should NOT be detected as DOI-like
+        non_doi_cases = [
+            "not-a-doi",
+            "https://example.com",
+            "./manuscript",
+            "/path/to/manuscript",
+            "MANUSCRIPT",
+            "",
+            None,
+            123,
+            "10./invalid",
+            # Note: "https://doi.org/invalid" IS detected as DOI-like
+            # because we want to catch DOI URLs even with invalid DOI parts
+            # The actual DOI validation happens in _normalize_doi()
+        ]
+
+        for test_case in non_doi_cases:
+            result = _is_doi_like(test_case)
+            self.assertFalse(
+                result, f"Should NOT have detected as DOI-like: {test_case}"
+            )
+
     def test_bib_entry_extraction(self):
         """Test BibTeX entry extraction."""
         bib_content = """

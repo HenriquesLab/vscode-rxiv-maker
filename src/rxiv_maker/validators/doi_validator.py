@@ -70,6 +70,40 @@ class DOIValidator(BaseValidator):
         self.similarity_threshold = 0.8  # Minimum similarity for title matching
         self.force_validation = force_validation
 
+    def _normalize_doi(self, doi: str) -> str | None:
+        """Normalize DOI from various URL formats to plain DOI format.
+
+        Args:
+            doi: DOI string in various formats (URL or plain)
+
+        Returns:
+            Normalized DOI string (e.g., "10.1000/test") or None if invalid
+        """
+        if not doi:
+            return None
+
+        # Strip whitespace
+        doi = doi.strip()
+
+        # Remove common URL prefixes
+        prefixes_to_remove = [
+            "https://doi.org/",
+            "http://doi.org/",
+            "doi.org/",
+            "www.doi.org/",
+        ]
+
+        for prefix in prefixes_to_remove:
+            if doi.lower().startswith(prefix.lower()):
+                doi = doi[len(prefix) :]
+                break
+
+        # Validate the final DOI format
+        if self.DOI_REGEX.match(doi):
+            return doi
+
+        return None
+
     def validate(self) -> ValidationResult:
         """Validate DOI entries in bibliography using checksum-based caching.
 
@@ -177,11 +211,19 @@ class DOIValidator(BaseValidator):
                     validation_errors = [
                         self._create_error(
                             ValidationLevel.WARNING,
-                            f"DOI validation failed due to error: {entry.get('doi', 'unknown')}",
+                            (
+                                f"DOI validation failed due to error: "
+                                f"{entry.get('doi', 'unknown')}"
+                            ),
                             file_path=str(bib_file),
                             line_number=entry.get("line_start", 1),
-                            context=f"Entry: {entry.get('key', 'unknown')}\nError: {str(e)}",
-                            suggestion="Check internet connection or try again later. You can disable DOI validation with --no-doi flag.",
+                            context=(
+                                f"Entry: {entry.get('key', 'unknown')}\nError: {str(e)}"
+                            ),
+                            suggestion=(
+                                "Check internet connection or try again later. "
+                                "You can disable DOI validation with --no-doi flag."
+                            ),
                             error_code="DOI_VALIDATION_ERROR",
                         )
                     ]
@@ -218,8 +260,11 @@ class DOIValidator(BaseValidator):
                 errors.append(
                     self._create_error(
                         ValidationLevel.INFO,
-                        f"DOI validation: {metadata['validated_dois']}/{metadata['total_dois']} "
-                        f"({success_rate:.1f}%) successfully validated",
+                        (
+                            f"DOI validation: {metadata['validated_dois']}/"
+                            f"{metadata['total_dois']} "
+                            f"({success_rate:.1f}%) successfully validated"
+                        ),
                         error_code="DOI_VALIDATION_SUMMARY",
                     )
                 )
@@ -655,7 +700,11 @@ class DOIValidator(BaseValidator):
                         "Publication year mismatch (JOSS)",
                         file_path=bib_file,
                         line_number=line_number,
-                        context=f"Entry: {entry_key}\nBibliography: {bib_year_str}\nJOSS: {joss_year}",
+                        context=(
+                            f"Entry: {entry_key}\n"
+                            f"Bibliography: {bib_year_str}\n"
+                            f"JOSS: {joss_year}"
+                        ),
                         suggestion="Check if the publication year is correct",
                         error_code="DOI_MISMATCH_YEAR_JOSS",
                     )
@@ -679,7 +728,11 @@ class DOIValidator(BaseValidator):
                             "First author mismatch (JOSS)",
                             file_path=bib_file,
                             line_number=line_number,
-                            context=f"Entry: {entry_key}\nBibliography: {bib_entry['author']}\nJOSS first author: {first_author_family}",
+                            context=(
+                                f"Entry: {entry_key}\n"
+                                f"Bibliography: {bib_entry['author']}\n"
+                                f"JOSS first author: {first_author_family}"
+                            ),
                             suggestion="Check if the first author name is correct",
                             error_code="DOI_MISMATCH_AUTHOR_JOSS",
                         )
@@ -919,7 +972,11 @@ class DOIValidator(BaseValidator):
                         "Publication year mismatch (DataCite)",
                         file_path=bib_file,
                         line_number=line_number,
-                        context=f"Entry: {entry_key}\nBibliography: {bib_year_str}\nDataCite: {datacite_year}",
+                        context=(
+                            f"Entry: {entry_key}\n"
+                            f"Bibliography: {bib_year_str}\n"
+                            f"DataCite: {datacite_year}"
+                        ),
                         suggestion="Check if the publication year is correct",
                         error_code="DOI_MISMATCH_YEAR_DATACITE",
                     )
@@ -953,7 +1010,11 @@ class DOIValidator(BaseValidator):
                             "First author mismatch (DataCite)",
                             file_path=bib_file,
                             line_number=line_number,
-                            context=f"Entry: {entry_key}\nBibliography: {bib_entry['author']}\nDataCite first creator: {first_author_family}",
+                            context=(
+                                f"Entry: {entry_key}\n"
+                                f"Bibliography: {bib_entry['author']}\n"
+                                f"DataCite first creator: {first_author_family}"
+                            ),
                             suggestion="Check if the first author name is correct",
                             error_code="DOI_MISMATCH_AUTHOR_DATACITE",
                         )
@@ -971,7 +1032,11 @@ class DOIValidator(BaseValidator):
                         "Publisher mismatch (DataCite)",
                         file_path=bib_file,
                         line_number=line_number,
-                        context=f"Entry: {entry_key}\nBibliography: {bib_entry['publisher']}\nDataCite: {datacite_metadata['publisher']}",
+                        context=(
+                            f"Entry: {entry_key}\n"
+                            f"Bibliography: {bib_entry['publisher']}\n"
+                            f"DataCite: {datacite_metadata['publisher']}"
+                        ),
                         suggestion="Check if the publisher name is correct",
                         error_code="DOI_MISMATCH_PUBLISHER_DATACITE",
                     )
@@ -982,7 +1047,10 @@ class DOIValidator(BaseValidator):
             errors.append(
                 self._create_error(
                     ValidationLevel.SUCCESS,
-                    f"DOI validated successfully via DataCite: {bib_entry.get('doi', '')}",
+                    (
+                        f"DOI validated successfully via DataCite: "
+                        f"{bib_entry.get('doi', '')}"
+                    ),
                     error_code="DOI_DATACITE_SUCCESS",
                 )
             )
@@ -1035,8 +1103,15 @@ class DOIValidator(BaseValidator):
                     f"Title mismatch (similarity: {similarity:.2f})",
                     file_path=bib_file,
                     line_number=line_number,
-                    context=f"Entry: {entry_key}\nBibliography: {bib_title}\nCrossRef: {crossref_title_str}",
-                    suggestion="Check if the title in the bibliography matches the published title",
+                    context=(
+                        f"Entry: {entry_key}\n"
+                        f"Bibliography: {bib_title}\n"
+                        f"CrossRef: {crossref_title_str}"
+                    ),
+                    suggestion=(
+                        "Check if the title in the bibliography matches the "
+                        "published title"
+                    ),
                     error_code="DOI_MISMATCH_TITLE",
                 )
             )
@@ -1089,8 +1164,14 @@ class DOIValidator(BaseValidator):
                     f"Journal name mismatch (similarity: {similarity:.2f})",
                     file_path=bib_file,
                     line_number=line_number,
-                    context=f"Entry: {entry_key}\nBibliography: {bib_journal}\nCrossRef: {crossref_journal_str}",
-                    suggestion="Check if the journal name matches the published journal",
+                    context=(
+                        f"Entry: {entry_key}\n"
+                        f"Bibliography: {bib_journal}\n"
+                        f"CrossRef: {crossref_journal_str}"
+                    ),
+                    suggestion=(
+                        "Check if the journal name matches the published journal"
+                    ),
                     error_code="DOI_MISMATCH_JOURNAL",
                 )
             )
@@ -1137,7 +1218,11 @@ class DOIValidator(BaseValidator):
                     "Publication year mismatch",
                     file_path=bib_file,
                     line_number=line_number,
-                    context=f"Entry: {entry_key}\nBibliography: {bib_year_str}\nCrossRef: {crossref_year}",
+                    context=(
+                        f"Entry: {entry_key}\n"
+                        f"Bibliography: {bib_year_str}\n"
+                        f"CrossRef: {crossref_year}"
+                    ),
                     suggestion="Check if the publication year is correct",
                     error_code="DOI_MISMATCH_YEAR",
                 )
@@ -1191,7 +1276,11 @@ class DOIValidator(BaseValidator):
                         "First author mismatch",
                         file_path=bib_file,
                         line_number=line_number,
-                        context=f"Entry: {entry_key}\nBibliography: {bib_author}\nCrossRef first author: {first_author_family}",
+                        context=(
+                            f"Entry: {entry_key}\n"
+                            f"Bibliography: {bib_author}\n"
+                            f"CrossRef first author: {first_author_family}"
+                        ),
                         suggestion="Check if the first author name is correct",
                         error_code="DOI_MISMATCH_AUTHOR",
                     )
@@ -1245,8 +1334,9 @@ class DOIValidator(BaseValidator):
         # Common DOI prefix patterns for different registrars
         if doi.startswith("10.21105/joss."):
             return (
-                "This is a JOSS (Journal of Open Source Software) DOI. JOSS DOIs are indexed in CrossRef. "
-                "Check internet connection or verify the DOI is correct."
+                "This is a JOSS (Journal of Open Source Software) DOI. JOSS DOIs are "
+                "indexed in CrossRef. Check internet connection or verify the DOI is "
+                "correct."
             )
         elif doi.startswith("10.5281/zenodo"):
             return (
@@ -1255,8 +1345,10 @@ class DOIValidator(BaseValidator):
             )
         elif doi.startswith("10.1101/"):
             return (
-                "This is a bioRxiv/medRxiv preprint DOI. These may not be indexed in CrossRef depending on publication status. "
-                "Check if the preprint exists at the respective platform."
+                "This is a bioRxiv/medRxiv preprint DOI. These may not be indexed in "
+                "CrossRef depending on publication status. Check if the preprint "
+                "exists at "
+                "the respective platform."
             )
         elif doi.startswith("10.48550/arXiv") or "arxiv" in doi.lower():
             return (
@@ -1270,17 +1362,20 @@ class DOIValidator(BaseValidator):
             )
         elif doi.startswith("10.5194/"):
             return (
-                "This is a Copernicus Publications DOI. Some may not be in CrossRef depending on the journal. "
+                "This is a Copernicus Publications DOI. Some may not be in CrossRef "
+                "depending on the journal. "
                 "Check if the publication exists on the publisher's website."
             )
         elif doi.startswith("10.1038/"):
             return (
-                "This is a Nature Publishing Group DOI. It should be in CrossRef if published. "
+                "This is a Nature Publishing Group DOI. It should be in CrossRef if "
+                "published. "
                 "Check internet connection or verify the DOI is correct."
             )
         elif doi.startswith("10.31219/osf.io"):
             return (
-                "This is an OSF (Open Science Framework) preprint DOI. These are indexed by DataCite. "
+                "This is an OSF (Open Science Framework) preprint DOI. These are "
+                "indexed by DataCite. "
                 "Check if the preprint exists at https://osf.io/preprints/"
             )
         elif doi.startswith("10.12688/f1000research"):
@@ -1293,12 +1388,15 @@ class DOIValidator(BaseValidator):
             for prefix in ["10.1016/", "10.1371/", "10.1126/", "10.1073/", "10.1109/"]
         ):
             return (
-                "This is from a major publisher and should be in CrossRef if published. "
-                "Check internet connection, verify the DOI is correct, or try again later."
+                "This is from a major publisher and should be in CrossRef if "
+                "published. "
+                "Check internet connection, verify the DOI is correct, or try again "
+                "later."
             )
         else:
             return (
-                "This DOI may be from a specialized registrar. We checked CrossRef, DataCite, and JOSS. "
+                "This DOI may be from a specialized registrar. We checked CrossRef, "
+                "DataCite, and JOSS. "
                 "Verify the DOI resolves at https://doi.org/" + doi
             )
 

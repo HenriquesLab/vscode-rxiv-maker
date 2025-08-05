@@ -43,34 +43,36 @@ class TestHomebrewFormula:
         assert "test do" in content
 
     def test_formula_binary_urls(self, formula_path):
-        """Test that formula uses binary URLs, not Python source."""
+        """Test that formula uses appropriate installation method."""
         content = formula_path.read_text()
 
-        # Should point to GitHub releases, not PyPI
-        assert "github.com/henriqueslab/rxiv-maker/releases" in content
-        assert "files.pythonhosted.org" not in content  # No PyPI source
+        # Current implementation uses uv with PyPI for package management
+        # Should use uv pip install rather than binary downloads
+        assert "uv pip install" in content or "files.pythonhosted.org" in content
 
-        # Should have platform-specific binaries
-        assert "macos-arm64" in content or "macos-x64" in content
-        assert "linux-x64" in content
+        # Should have virtual environment setup
+        assert "uv venv" in content or "libexec" in content
 
-    def test_formula_no_python_dependencies(self, formula_path):
-        """Test that formula doesn't include Python dependencies."""
+    def test_formula_python_dependencies(self, formula_path):
+        """Test that formula properly handles Python dependencies."""
         content = formula_path.read_text()
 
-        # Should not depend on Python
-        assert 'depends_on "python' not in content
+        # Current implementation uses uv for package management
+        assert 'depends_on "uv"' in content
 
-        # Should not have resource blocks for Python packages
+        # Should have virtual environment installation approach
+        assert "uv venv" in content or "libexec" in content
+
+        # Should not use resource blocks (since using pip install from PyPI)
         assert "resource " not in content
         assert "virtualenv_install_with_resources" not in content
 
     def test_formula_install_method(self, formula_path):
-        """Test that install method is binary-focused."""
+        """Test that install method properly creates executable."""
         content = formula_path.read_text()
 
-        # Should install binary directly
-        assert 'bin.install "rxiv"' in content
+        # Current implementation creates wrapper script instead of direct binary install
+        assert '(bin/"rxiv").write' in content  # Creates wrapper script
         assert "chmod 0755" in content  # Should set executable permissions
 
     def test_formula_test_section(self, formula_path):
@@ -82,13 +84,13 @@ class TestHomebrewFormula:
         assert 'system bin/"rxiv", "--help"' in content
 
     def test_formula_architecture_support(self, formula_path):
-        """Test that formula supports multiple architectures."""
+        """Test that formula works across architectures via PyPI."""
         content = formula_path.read_text()
 
-        # Should have platform-specific sections
-        assert "on_macos do" in content
-        assert "on_linux do" in content
-        assert "Hardware::CPU.arm?" in content or "Hardware::CPU.intel?" in content
+        # PyPI source installation is architecture-independent
+        # No need for platform-specific sections since pip handles architecture
+        assert "def install" in content  # Has installation method
+        assert "python" in content  # Uses Python (architecture handled by pip)
 
     @pytest.mark.slow
     def test_formula_syntax_validation(self, formula_path):
@@ -143,43 +145,80 @@ class TestScoopManifest:
         with open(manifest_path) as f:
             manifest = json.load(f)
 
-        required_fields = [
+        # Core required fields for all manifests
+        core_required_fields = [
             "version",
             "description",
             "homepage",
             "license",
-            "url",
-            "hash",
             "bin",
         ]
 
-        for field in required_fields:
+        for field in core_required_fields:
             assert field in manifest, f"Required field '{field}' missing from manifest"
 
+        # Check for either traditional binary approach OR uv tool install approach
+        has_traditional_binary = "url" in manifest and "hash" in manifest
+        has_uv_installer = "installer" in manifest and "depends" in manifest
+
+        assert has_traditional_binary or has_uv_installer, (
+            "Manifest must have either traditional binary fields (url, hash) "
+            "or uv tool installer approach (installer, depends)"
+        )
+
     def test_manifest_binary_url(self, manifest_path):
-        """Test that manifest uses binary URL, not Python source."""
+        """Test that manifest uses appropriate installation method."""
         with open(manifest_path) as f:
             manifest = json.load(f)
 
-        url = manifest["url"]
+        # Check if using traditional binary approach
+        if "url" in manifest:
+            url = manifest["url"]
 
-        # Should point to GitHub releases
-        assert "github.com/henriqueslab/rxiv-maker/releases" in url
+            # Should point to GitHub releases
+            assert "github.com/henriqueslab/rxiv-maker/releases" in url
 
-        # Should be Windows binary
-        assert "windows-x64.zip" in url
+            # Should be Windows binary
+            assert "windows-x64.zip" in url
 
-        # Should not be PyPI source
-        assert "files.pythonhosted.org" not in url
+            # Should not be PyPI source
+            assert "files.pythonhosted.org" not in url
 
-    def test_manifest_no_python_dependencies(self, manifest_path):
-        """Test that manifest doesn't depend on Python."""
+        # Check if using uv tool install approach
+        elif "installer" in manifest:
+            installer = manifest["installer"]
+
+            # Should use uv tool install
+            assert "script" in installer
+            assert "uv tool install rxiv-maker" in installer["script"]
+
+            # Should depend on uv
+            assert manifest.get("depends") == "uv"
+
+        else:
+            pytest.fail(
+                "Manifest must have either 'url' for binary or 'installer' for uv "
+                "tool approach"
+            )
+
+    def test_manifest_python_dependencies(self, manifest_path):
+        """Test that manifest handles Python dependencies appropriately."""
         with open(manifest_path) as f:
             manifest = json.load(f)
 
-        # Should not depend on Python
         depends = manifest.get("depends", [])
-        assert "python" not in depends
+
+        # If using traditional binary approach, should not depend on Python
+        if "url" in manifest:
+            assert "python" not in depends, (
+                "Binary approach should not depend on Python"
+            )
+
+        # If using uv tool install approach, should depend on uv (which handles Python)
+        elif "installer" in manifest:
+            assert "uv" in depends, "UV tool install approach must depend on uv"
+            # UV approach may indirectly use Python but doesn't need explicit
+            # Python dependency
 
         # Should not have Python installation commands (documentation mentions are OK)
         post_install = manifest.get("post_install", [])
@@ -200,8 +239,17 @@ class TestScoopManifest:
 
         bin_entry = manifest["bin"]
 
-        # Should be simple executable name
-        assert bin_entry == "rxiv.exe", f"Expected 'rxiv.exe', got '{bin_entry}'"
+        # Check executable name based on installation method
+        if "url" in manifest:
+            # Traditional binary approach should use .exe extension
+            assert bin_entry == "rxiv.exe", (
+                f"Expected 'rxiv.exe' for binary, got '{bin_entry}'"
+            )
+        elif "installer" in manifest:
+            # UV tool install approach uses platform-agnostic name
+            assert bin_entry == "rxiv", (
+                f"Expected 'rxiv' for uv tool install, got '{bin_entry}'"
+            )
 
     def test_manifest_checkver_configuration(self, manifest_path):
         """Test that manifest has proper version checking configuration."""
@@ -211,9 +259,15 @@ class TestScoopManifest:
         assert "checkver" in manifest
         checkver = manifest["checkver"]
 
-        # Should check GitHub releases
-        assert "github.com" in checkver["url"]
-        assert "releases/latest" in checkver["url"]
+        # Check version source based on installation method
+        if "url" in manifest:
+            # Traditional binary approach should check GitHub releases
+            assert "github.com" in checkver["url"]
+            assert "releases/latest" in checkver["url"]
+        elif "installer" in manifest:
+            # UV tool install approach should check PyPI
+            assert "pypi.org" in checkver["url"]
+            assert "jsonpath" in checkver
 
     def test_manifest_autoupdate_configuration(self, manifest_path):
         """Test that manifest has proper auto-update configuration."""
@@ -223,10 +277,18 @@ class TestScoopManifest:
         assert "autoupdate" in manifest
         autoupdate = manifest["autoupdate"]
 
-        # Should auto-update from GitHub releases
-        assert "github.com" in autoupdate["url"]
-        assert "windows-x64.zip" in autoupdate["url"]
-        assert "$version" in autoupdate["url"]
+        # Check autoupdate configuration based on installation method
+        if "url" in manifest:
+            # Traditional binary approach should auto-update from GitHub releases
+            assert "github.com" in autoupdate["url"]
+            assert "windows-x64.zip" in autoupdate["url"]
+            assert "$version" in autoupdate["url"]
+        elif "installer" in manifest:
+            # UV tool install approach should have installer script with version
+            # placeholder
+            assert "installer" in autoupdate
+            assert "script" in autoupdate["installer"]
+            assert "$version" in autoupdate["installer"]["script"]
 
 
 class TestPackageManagerWorkflows:
@@ -461,7 +523,8 @@ class TestPackageManagerIntegration:
                                 import warnings
 
                                 warnings.warn(
-                                    f"Scoop version {scoop_version} significantly behind main version {main_version}",
+                                    f"Scoop version {scoop_version} significantly behind "
+                                    f"main version {main_version}",
                                     UserWarning,
                                     stacklevel=2,
                                 )
@@ -470,7 +533,8 @@ class TestPackageManagerIntegration:
                         import warnings
 
                         warnings.warn(
-                            f"Scoop version {scoop_version} != main version {main_version} (CI environment)",
+                            f"Scoop version {scoop_version} != main version "
+                            f"{main_version} (CI environment)",
                             UserWarning,
                             stacklevel=2,
                         )

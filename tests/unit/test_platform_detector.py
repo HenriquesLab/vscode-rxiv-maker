@@ -102,14 +102,16 @@ class TestPlatformDetector(unittest.TestCase):
         """Test Python command detection with venv on Windows."""
         mock_exists.return_value = True
 
-        with patch.object(PlatformDetector, "is_windows", return_value=True):
-            with patch.object(
+        with (
+            patch.object(PlatformDetector, "is_windows", return_value=True),
+            patch.object(
                 PlatformDetector,
                 "get_venv_python_path",
                 return_value=".venv\\Scripts\\python.exe",
-            ):
-                detector = PlatformDetector()
-                self.assertEqual(detector.python_cmd, ".venv\\Scripts\\python.exe")
+            ),
+        ):
+            detector = PlatformDetector()
+            self.assertEqual(detector.python_cmd, ".venv\\Scripts\\python.exe")
 
     @patch("shutil.which", return_value=None)
     @patch("pathlib.Path.exists")
@@ -117,54 +119,62 @@ class TestPlatformDetector(unittest.TestCase):
         """Test Python command detection with venv on Unix."""
         mock_exists.return_value = True
 
-        with patch.object(PlatformDetector, "is_windows", return_value=False):
-            with patch.object(
+        with (
+            patch.object(PlatformDetector, "is_windows", return_value=False),
+            patch.object(
                 PlatformDetector,
                 "get_venv_python_path",
                 return_value=".venv/bin/python",
-            ):
-                detector = PlatformDetector()
-                self.assertEqual(detector.python_cmd, ".venv/bin/python")
+            ),
+        ):
+            detector = PlatformDetector()
+            self.assertEqual(detector.python_cmd, ".venv/bin/python")
 
     @patch("shutil.which", return_value=None)
     def test_python_command_fallback_windows(self, mock_which):
         """Test Python command fallback on Windows."""
-        with patch.object(PlatformDetector, "is_windows", return_value=True):
-            with patch.object(
-                PlatformDetector, "get_venv_python_path", return_value=None
-            ):
-                detector = PlatformDetector()
-                self.assertEqual(detector.python_cmd, "python")
+        with (
+            patch.object(PlatformDetector, "is_windows", return_value=True),
+            patch.object(PlatformDetector, "get_venv_python_path", return_value=None),
+        ):
+            detector = PlatformDetector()
+            self.assertEqual(detector.python_cmd, "python")
 
     @patch("shutil.which", return_value=None)
     def test_python_command_fallback_unix(self, mock_which):
         """Test Python command fallback on Unix."""
-        with patch.object(PlatformDetector, "is_windows", return_value=False):
-            with patch.object(
-                PlatformDetector, "get_venv_python_path", return_value=None
-            ):
-                detector = PlatformDetector()
-                self.assertEqual(detector.python_cmd, "python3")
+        with (
+            patch.object(PlatformDetector, "is_windows", return_value=False),
+            patch.object(PlatformDetector, "get_venv_python_path", return_value=None),
+        ):
+            detector = PlatformDetector()
+            self.assertEqual(detector.python_cmd, "python3")
 
     def test_venv_python_path_windows(self):
         """Test virtual environment Python path on Windows."""
-        with patch.object(self.detector, "is_windows", return_value=True):
+        with (
+            patch.object(self.detector, "is_windows", return_value=True),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
             # Mock both venv_dir.exists() and python_path.exists() calls
-            with patch("pathlib.Path.exists", return_value=True):
-                result = self.detector.get_venv_python_path()
-                # The actual implementation returns string representation which uses OS path separators
-                expected = str(Path(".venv") / "Scripts" / "python.exe")
-                self.assertEqual(result, expected)
+            result = self.detector.get_venv_python_path()
+            # The actual implementation returns string representation which uses
+            # OS path separators
+            expected = str(Path(".venv") / "Scripts" / "python.exe")
+            self.assertEqual(result, expected)
 
     def test_venv_python_path_unix(self):
         """Test virtual environment Python path on Unix."""
-        with patch.object(self.detector, "is_windows", return_value=False):
+        with (
+            patch.object(self.detector, "is_windows", return_value=False),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
             # Mock both venv_dir.exists() and python_path.exists() calls
-            with patch("pathlib.Path.exists", return_value=True):
-                result = self.detector.get_venv_python_path()
-                # The actual implementation returns string representation which uses OS path separators
-                expected = str(Path(".venv") / "bin" / "python")
-                self.assertEqual(result, expected)
+            result = self.detector.get_venv_python_path()
+            # The actual implementation returns string representation which uses
+            # OS path separators
+            expected = str(Path(".venv") / "bin" / "python")
+            self.assertEqual(result, expected)
 
     @patch("pathlib.Path.exists", return_value=False)
     def test_venv_python_path_not_exists(self, mock_exists):
@@ -179,7 +189,8 @@ class TestPlatformDetector(unittest.TestCase):
             patch("pathlib.Path.exists", return_value=True),
         ):
             result = self.detector.get_venv_activate_path()
-            # The actual implementation returns string representation which uses OS path separators
+            # The actual implementation returns string representation which uses
+            # OS path separators
             expected = str(Path(".venv") / "Scripts" / "activate")
             self.assertEqual(result, expected)
 
@@ -190,7 +201,8 @@ class TestPlatformDetector(unittest.TestCase):
             patch("pathlib.Path.exists", return_value=True),
         ):
             result = self.detector.get_venv_activate_path()
-            # The actual implementation returns string representation which uses OS path separators
+            # The actual implementation returns string representation which uses
+            # OS path separators
             expected = str(Path(".venv") / "bin" / "activate")
             self.assertEqual(result, expected)
 
@@ -242,12 +254,18 @@ class TestPlatformDetector(unittest.TestCase):
     def test_env_file_content_exists(self):
         """Test reading environment file content."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
-            f.write("VAR1=value1\n")
-            f.write("VAR2=value2\n")
-            f.write("# Comment line\n")
-            f.write("VAR3=value3=with=equals\n")
-            f.write("INVALID_LINE\n")
-            f.write("\n")
+            f.write("VAR1=value1
+")
+            f.write("VAR2=value2
+")
+            f.write("# Comment line
+")
+            f.write("VAR3=value3=with=equals
+")
+            f.write("INVALID_LINE
+")
+            f.write("
+")
             env_file = Path(f.name)
 
         try:
@@ -437,11 +455,16 @@ class TestPlatformDetectorEdgeCases(unittest.TestCase):
         detector = PlatformDetector()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
-            f.write("VALID=value\n")
-            f.write("NO_EQUALS_SIGN\n")
-            f.write("=EMPTY_KEY\n")
-            f.write("SPACE_IN_KEY =value\n")
-            f.write("KEY= VALUE_WITH_SPACES \n")
+            f.write("VALID=value
+")
+            f.write("NO_EQUALS_SIGN
+")
+            f.write("=EMPTY_KEY
+")
+            f.write("SPACE_IN_KEY =value
+")
+            f.write("KEY= VALUE_WITH_SPACES 
+")
             env_file = Path(f.name)
 
         try:
@@ -473,10 +496,12 @@ class TestPlatformDetectorEdgeCases(unittest.TestCase):
         # Test when uv exists but venv python doesn't
         mock_which.return_value = None
 
-        with patch.object(PlatformDetector, "get_venv_python_path", return_value=None):
-            with patch.object(PlatformDetector, "is_windows", return_value=False):
-                detector = PlatformDetector()
-                self.assertEqual(detector.python_cmd, "python3")
+        with (
+            patch.object(PlatformDetector, "get_venv_python_path", return_value=None),
+            patch.object(PlatformDetector, "is_windows", return_value=False),
+        ):
+            detector = PlatformDetector()
+            self.assertEqual(detector.python_cmd, "python3")
 
     def test_venv_path_with_missing_executable(self):
         """Test venv path detection when directory exists but executable is missing."""

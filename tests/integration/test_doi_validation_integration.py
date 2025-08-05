@@ -21,9 +21,15 @@ except ImportError:
     pytest = MockPytest()
 
 try:
+    # Check if CitationValidator is available using importlib to avoid F401
+    import importlib.util
+
     from rxiv_maker.commands.validate import UnifiedValidator
-    from rxiv_maker.validators.citation_validator import CitationValidator
     from rxiv_maker.validators.doi_validator import DOIValidator
+
+    citation_validator_available = (
+        importlib.util.find_spec("rxiv_maker.validators.citation_validator") is not None
+    )
 
     INTEGRATION_AVAILABLE = True
 except ImportError:
