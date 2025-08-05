@@ -132,7 +132,7 @@ Write-Host "Skipped: $($testResult.SkippedCount)" -ForegroundColor Yellow
 
 if ($testResult.FailedCount -gt 0) {
     Write-Host "`n❌ Tests failed!" -ForegroundColor Red
-
+    
     # Display failed tests
     Write-Host "`nFailed Tests:" -ForegroundColor Red
     foreach ($test in $testResult.Failed) {
@@ -141,7 +141,7 @@ if ($testResult.FailedCount -gt 0) {
             Write-Host "    Error: $($test.ErrorRecord.Exception.Message)" -ForegroundColor DarkRed
         }
     }
-
+    
     if ($PassThru) {
         return $testResult
     }

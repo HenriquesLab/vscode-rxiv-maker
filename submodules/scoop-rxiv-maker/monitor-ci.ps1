@@ -32,16 +32,16 @@
 param(
     [Parameter(ParameterSetName = 'Watch')]
     [switch]$Watch,
-
+    
     [Parameter(ParameterSetName = 'Once')]
     [switch]$Once,
-
+    
     [Parameter()]
     [switch]$Interactive,
-
+    
     [Parameter()]
     [int]$RefreshInterval = 30,
-
+    
     [Parameter()]
     [int]$MaxRuntime = 3600
 )
@@ -66,7 +66,7 @@ function Write-Status {
         [string]$Status,
         [string]$Message
     )
-
+    
     $color = switch ($Status) {
         "SUCCESS" { $Colors.Green }
         "FAILURE" { $Colors.Red }
@@ -75,18 +75,18 @@ function Write-Status {
         "RUNNING" { $Colors.Cyan }
         default   { $Colors.Reset }
     }
-
+    
     Write-Host "${color}[$Status]$($Colors.Reset) $Message"
 }
 
 # Function to format duration
 function Format-Duration {
     param([int]$Seconds)
-
+    
     $hours = [math]::Floor($Seconds / 3600)
     $minutes = [math]::Floor(($Seconds % 3600) / 60)
     $secs = $Seconds % 60
-
+    
     if ($hours -gt 0) {
         return "{0}h {1:D2}m {2:D2}s" -f $hours, $minutes, $secs
     } elseif ($minutes -gt 0) {
@@ -99,7 +99,7 @@ function Format-Duration {
 # Function to calculate runtime
 function Get-Runtime {
     param([string]$StartTime)
-
+    
     try {
         $start = [DateTime]::Parse($StartTime).ToUniversalTime()
         $runtime = ([DateTime]::UtcNow - $start).TotalSeconds
@@ -125,12 +125,12 @@ function Test-GHCLIAvailable {
 function Get-WorkflowRuns {
     try {
         $runs = gh run list --repo "henriqueslab/$RepoName" --limit 10 --json status,conclusion,startedAt,displayTitle,workflowName,databaseId,url,createdAt,updatedAt 2>&1
-
+        
         if ($LASTEXITCODE -ne 0) {
             Write-Status "FAILURE" "Failed to fetch workflow runs. Make sure you're authenticated with 'gh auth login'"
             return $null
         }
-
+        
         return $runs | ConvertFrom-Json
     } catch {
         Write-Status "FAILURE" "Error parsing workflow data: $_"
@@ -141,7 +141,7 @@ function Get-WorkflowRuns {
 # Function to get job details
 function Get-JobDetails {
     param([string]$RunId)
-
+    
     try {
         $jobs = gh run view $RunId --repo "henriqueslab/$RepoName" --json jobs 2>&1
         if ($LASTEXITCODE -eq 0) {
@@ -159,7 +159,7 @@ function Show-RunStatus {
         [PSCustomObject]$Run,
         [switch]$InteractiveMode
     )
-
+    
     $status = $Run.status
     $conclusion = $Run.conclusion
     $title = $Run.displayTitle
@@ -167,10 +167,10 @@ function Show-RunStatus {
     $runId = $Run.databaseId
     $url = $Run.url
     $startTime = $Run.startedAt
-
+    
     # Calculate runtime
     $runtime = if ($startTime) { Get-Runtime $startTime } else { 0 }
-
+    
     # Status indicator
     switch ($status) {
         "in_progress" {
@@ -191,17 +191,17 @@ function Show-RunStatus {
         "queued" { Write-Status "PENDING" "⏳ QUEUED - $workflow" }
         default { Write-Status "INFO" "⚪ $status - $workflow" }
     }
-
+    
     # Run details
     Write-Host "   ID: $runId"
     Write-Host "   Title: $title"
     Write-Host "   Runtime: $(Format-Duration $runtime)"
     Write-Host "   URL: $url"
-
+    
     # Job details for running jobs
     if ($status -eq "in_progress") {
         Write-Host "   Jobs:"
-
+        
         $jobs = Get-JobDetails -RunId $runId
         if ($jobs) {
             foreach ($job in $jobs) {
@@ -220,7 +220,7 @@ function Show-RunStatus {
                 Write-Host "     $jobStatus"
             }
         }
-
+        
         # Check if job should be cancelled
         if ($InteractiveMode -and $runtime -gt $MaxRuntime) {
             Write-Host ""
@@ -231,22 +231,22 @@ function Show-RunStatus {
             }
         }
     }
-
+    
     Write-Host ""
 }
 
 # Function to show summary
 function Show-Summary {
     param([array]$Runs)
-
+    
     if (-not $Runs) { return }
-
+    
     $totalRuns = $Runs.Count
     $runningRuns = @($Runs | Where-Object { $_.status -eq "in_progress" }).Count
     $queuedRuns = @($Runs | Where-Object { $_.status -eq "queued" }).Count
     $successRuns = @($Runs | Where-Object { $_.status -eq "completed" -and $_.conclusion -eq "success" }).Count
     $failedRuns = @($Runs | Where-Object { $_.status -eq "completed" -and $_.conclusion -eq "failure" }).Count
-
+    
     Write-Host ("=" * 70)
     Write-Host "CI MONITORING SUMMARY - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     Write-Host ("=" * 70)
@@ -259,25 +259,25 @@ function Show-Summary {
 # Function to monitor continuously
 function Start-ContinuousMonitoring {
     param([switch]$InteractiveMode)
-
+    
     while ($true) {
         Clear-Host
-
+        
         $runs = Get-WorkflowRuns
         if ($runs) {
             Show-Summary -Runs $runs
-
+            
             foreach ($run in $runs) {
                 Show-RunStatus -Run $run -InteractiveMode:$InteractiveMode
             }
         }
-
+        
         if ($InteractiveMode) {
             Write-Host "Press Ctrl+C to exit, or wait ${RefreshInterval}s for refresh..."
         } else {
             Write-Host "Refreshing in ${RefreshInterval}s... (Press Ctrl+C to exit)"
         }
-
+        
         Start-Sleep -Seconds $RefreshInterval
     }
 }
@@ -286,24 +286,24 @@ function Start-ContinuousMonitoring {
 function Stop-HangingJobs {
     $runs = Get-WorkflowRuns
     if (-not $runs) { return }
-
-    $hangingJobs = $runs | Where-Object {
-        $_.status -eq "in_progress" -and
-        $_.startedAt -and
-        (Get-Runtime $_.startedAt) -gt $MaxRuntime
+    
+    $hangingJobs = $runs | Where-Object { 
+        $_.status -eq "in_progress" -and 
+        $_.startedAt -and 
+        (Get-Runtime $_.startedAt) -gt $MaxRuntime 
     }
-
+    
     if ($hangingJobs.Count -eq 0) {
         Write-Status "INFO" "No hanging jobs found"
         return
     }
-
+    
     foreach ($job in $hangingJobs) {
         $runtime = Get-Runtime $job.startedAt
         Write-Status "PENDING" "Cancelling hanging job: $($job.displayTitle) (ID: $($job.databaseId), Runtime: $(Format-Duration $runtime))"
-
+        
         gh run cancel $job.databaseId --repo "henriqueslab/$RepoName"
-
+        
         if ($LASTEXITCODE -eq 0) {
             Write-Status "SUCCESS" "✓ Cancelled job $($job.databaseId)"
         } else {
@@ -315,52 +315,52 @@ function Stop-HangingJobs {
 # Function to get workflow performance metrics
 function Get-WorkflowMetrics {
     param([int]$Days = 7)
-
+    
     Write-Status "INFO" "Getting performance metrics for the last $Days days..."
-
+    
     # Get workflow runs for the specified period
     $runs = gh run list --repo "henriqueslab/$RepoName" --limit 100 --json status,conclusion,startedAt,updatedAt,createdAt 2>&1
-
+    
     if ($LASTEXITCODE -ne 0) {
         Write-Status "FAILURE" "Failed to fetch workflow runs for metrics"
         return
     }
-
+    
     $runsData = $runs | ConvertFrom-Json
-
+    
     # Filter runs from the last N days
     $cutoffDate = (Get-Date).AddDays(-$Days).ToUniversalTime()
-    $recentRuns = $runsData | Where-Object {
+    $recentRuns = $runsData | Where-Object { 
         $_.createdAt -and ([DateTime]::Parse($_.createdAt).ToUniversalTime() -gt $cutoffDate)
     }
-
+    
     if ($recentRuns.Count -eq 0) {
         Write-Status "INFO" "No runs found in the last $Days days"
         return
     }
-
+    
     # Calculate metrics
     $totalRuns = $recentRuns.Count
     $successRuns = @($recentRuns | Where-Object { $_.conclusion -eq "success" }).Count
     $failureRuns = @($recentRuns | Where-Object { $_.conclusion -eq "failure" }).Count
     $cancelledRuns = @($recentRuns | Where-Object { $_.conclusion -eq "cancelled" }).Count
     $successRate = if ($totalRuns -gt 0) { [math]::Round(($successRuns / $totalRuns) * 100, 1) } else { 0 }
-
+    
     # Calculate average duration for completed runs
-    $completedRuns = $recentRuns | Where-Object {
-        $_.status -eq "completed" -and $_.startedAt -and $_.updatedAt
+    $completedRuns = $recentRuns | Where-Object { 
+        $_.status -eq "completed" -and $_.startedAt -and $_.updatedAt 
     }
-
+    
     $totalDuration = 0
     foreach ($run in $completedRuns) {
         $duration = Get-Runtime $run.startedAt
         $totalDuration += $duration
     }
-
-    $avgDuration = if ($completedRuns.Count -gt 0) {
-        [int]($totalDuration / $completedRuns.Count)
+    
+    $avgDuration = if ($completedRuns.Count -gt 0) { 
+        [int]($totalDuration / $completedRuns.Count) 
     } else { 0 }
-
+    
     Write-Host ""
     Write-Host "📊 Metrics (last $Days days):"
     Write-Host "├── Total runs: $totalRuns"
@@ -376,12 +376,12 @@ function Main {
     Write-Host "🧪 Scoop rxiv-maker CI Monitor" -ForegroundColor Cyan
     Write-Host ("=" * 30) -ForegroundColor Cyan
     Write-Host ""
-
+    
     # Check if gh CLI is available
     if (-not (Test-GHCLIAvailable)) {
         exit 1
     }
-
+    
     # Handle different modes
     if ($Once) {
         $runs = Get-WorkflowRuns
@@ -390,7 +390,7 @@ function Main {
             foreach ($run in $runs) {
                 Show-RunStatus -Run $run
             }
-
+            
             # Show metrics
             Get-WorkflowMetrics -Days 7
         }

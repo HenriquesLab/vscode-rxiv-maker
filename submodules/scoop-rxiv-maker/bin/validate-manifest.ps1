@@ -4,7 +4,7 @@
 .SYNOPSIS
     Validate rxiv-maker Scoop manifest locally
 .DESCRIPTION
-    Validates the rxiv-maker.json manifest file including JSON syntax, required fields,
+    Validates the rxiv-maker.json manifest file including JSON syntax, required fields, 
     and network connectivity to download URLs.
 .PARAMETER ManifestPath
     Path to the manifest file (default: bucket/rxiv-maker.json)
@@ -13,7 +13,7 @@
 .EXAMPLE
     .\bin\validate-manifest.ps1
     Validate manifest with all tests
-
+    
 .EXAMPLE
     .\bin\validate-manifest.ps1 -SkipNetwork
     Validate manifest structure only, skip network tests
@@ -112,7 +112,7 @@ if ($manifest.bin -and $manifest.bin[0] -and $manifest.bin[0].Count -eq 3) {
 # Network tests (if not skipped)
 if (!$SkipNetwork) {
     Write-Host "`n🌐 Testing network connectivity..." -ForegroundColor Yellow
-
+    
     # Test download URL
     Write-Host "Testing download URL: $($manifest.url)"
     try {
@@ -127,7 +127,7 @@ if (!$SkipNetwork) {
         Write-Host "❌ Download URL test failed: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
     }
-
+    
     # Test PyPI version
     Write-Host "Testing PyPI version: $($manifest.version)"
     try {
@@ -143,7 +143,7 @@ if (!$SkipNetwork) {
         Write-Host "❌ PyPI version test failed: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
     }
-
+    
     # Test autoupdate URL pattern
     if ($manifest.autoupdate -and $manifest.autoupdate.url) {
         Write-Host "Testing autoupdate URL pattern..."

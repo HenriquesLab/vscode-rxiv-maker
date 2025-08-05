@@ -10,7 +10,7 @@ $ErrorActionPreference = "Stop"
 
 function Write-TestResult {
     param([string]$Message, [string]$Status = "INFO")
-
+    
     $color = switch ($Status) {
         "OK" { "Green" }
         "ERROR" { "Red" }
@@ -18,13 +18,13 @@ function Write-TestResult {
         "INFO" { "Cyan" }
         default { "White" }
     }
-
+    
     Write-Host "[$Status] $Message" -ForegroundColor $color
 }
 
 function Test-PythonInstallation {
     Write-TestResult "Testing Python installation..." "INFO"
-
+    
     try {
         $pythonVersion = python --version 2>&1
         Write-TestResult "Python found: $pythonVersion" "OK"
@@ -38,7 +38,7 @@ function Test-PythonInstallation {
 
 function Test-PipInstallation {
     Write-TestResult "Testing pip installation..." "INFO"
-
+    
     try {
         $pipVersion = python -m pip --version 2>&1
         Write-TestResult "Pip found: $pipVersion" "OK"
@@ -52,7 +52,7 @@ function Test-PipInstallation {
 
 function Test-RxivMakerModule {
     Write-TestResult "Testing rxiv-maker Python module..." "INFO"
-
+    
     try {
         $result = python -c "import rxiv_maker; print(f'rxiv-maker version: {rxiv_maker.__version__}')" 2>&1
         if ($LASTEXITCODE -eq 0) {
@@ -72,11 +72,11 @@ function Test-RxivMakerModule {
 
 function Test-RxivCommand {
     Write-TestResult "Testing rxiv CLI command..." "INFO"
-
+    
     try {
         $rxivPath = Get-Command rxiv -ErrorAction Stop
         Write-TestResult "rxiv command found at: $($rxivPath.Source)" "OK"
-
+        
         $version = rxiv --version 2>&1
         if ($LASTEXITCODE -eq 0) {
             Write-TestResult "rxiv version: $version" "OK"
@@ -95,10 +95,10 @@ function Test-RxivCommand {
 
 function Test-Dependencies {
     Write-TestResult "Testing Python dependencies..." "INFO"
-
+    
     $dependencies = @(
         "click",
-        "matplotlib",
+        "matplotlib", 
         "numpy",
         "pandas",
         "scipy",
@@ -110,15 +110,15 @@ function Test-Dependencies {
         "rich",
         "rich_click"
     )
-
+    
     $failed = @()
-
+    
     foreach ($dep in $dependencies) {
         try {
-            $importName = if ($dep -eq "PIL") { "PIL" }
-                         elseif ($dep -eq "yaml") { "yaml" }
+            $importName = if ($dep -eq "PIL") { "PIL" } 
+                         elseif ($dep -eq "yaml") { "yaml" } 
                          else { $dep }
-
+            
             python -c "import $importName" 2>&1 | Out-Null
             if ($LASTEXITCODE -eq 0) {
                 if ($Verbose) {
@@ -135,7 +135,7 @@ function Test-Dependencies {
             Write-TestResult "  - $dep (exception)" "ERROR"
         }
     }
-
+    
     if ($failed.Count -eq 0) {
         Write-TestResult "All dependencies installed correctly" "OK"
         return $true
@@ -148,7 +148,7 @@ function Test-Dependencies {
 
 function Test-PathConfiguration {
     Write-TestResult "Testing PATH configuration..." "INFO"
-
+    
     # Check if Python scripts directory is in PATH
     $pythonScripts = python -c "import site; print(site.USER_BASE + '\\Scripts')" 2>&1
     if ($LASTEXITCODE -eq 0) {
@@ -174,7 +174,7 @@ switch ($Action) {
     "test" {
         Write-TestResult "Running rxiv-maker environment tests..." "INFO"
         Write-Host ""
-
+        
         $results = @{
             Python = Test-PythonInstallation
             Pip = Test-PipInstallation
@@ -183,12 +183,12 @@ switch ($Action) {
             Dependencies = Test-Dependencies
             Path = Test-PathConfiguration
         }
-
+        
         Write-Host ""
         Write-TestResult "Test Summary:" "INFO"
         $passed = 0
         $failed = 0
-
+        
         foreach ($test in $results.GetEnumerator()) {
             if ($test.Value) {
                 Write-TestResult "  $($test.Key): PASSED" "OK"
@@ -199,7 +199,7 @@ switch ($Action) {
                 $failed++
             }
         }
-
+        
         Write-Host ""
         if ($failed -eq 0) {
             Write-TestResult "All tests passed!" "OK"
@@ -210,19 +210,19 @@ switch ($Action) {
             exit 1
         }
     }
-
+    
     "check-python" {
         if (Test-PythonInstallation) { exit 0 } else { exit 1 }
     }
-
+    
     "check-module" {
         if (Test-RxivMakerModule) { exit 0 } else { exit 1 }
     }
-
+    
     "check-command" {
         if (Test-RxivCommand) { exit 0 } else { exit 1 }
     }
-
+    
     default {
         Write-TestResult "Unknown action: $Action" "ERROR"
         Write-TestResult "Valid actions: test, check-python, check-module, check-command" "INFO"
