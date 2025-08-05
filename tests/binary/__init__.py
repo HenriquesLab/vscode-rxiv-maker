@@ -1,1 +1,0 @@
-"""Binary distribution testing package."""
