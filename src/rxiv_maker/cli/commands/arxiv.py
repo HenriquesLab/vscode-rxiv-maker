@@ -12,12 +12,8 @@ console = Console()
 
 
 @click.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
-@click.option(
-    "--output-dir", "-o", default="output", help="Output directory for generated files"
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
+@click.option("--output-dir", "-o", default="output", help="Output directory for generated files")
 @click.option("--arxiv-dir", "-a", help="Custom arXiv directory path")
 @click.option("--zip-filename", "-z", help="Custom zip filename")
 @click.option("--no-zip", is_flag=True, help="Don't create zip file")
@@ -58,11 +54,12 @@ def arxiv(
         )
         sys.exit(1)
 
-    # Set defaults
+    # Set defaults - paths should be relative to manuscript directory
+    manuscript_dir = Path(manuscript_path)
     if arxiv_dir is None:
-        arxiv_dir = str(Path(output_dir) / "arxiv_submission")
+        arxiv_dir = str(manuscript_dir / output_dir / "arxiv_submission")
     if zip_filename is None:
-        zip_filename = str(Path(output_dir) / "for_arxiv.zip")
+        zip_filename = str(manuscript_dir / output_dir / "for_arxiv.zip")
 
     try:
         with Progress(
@@ -73,7 +70,7 @@ def arxiv(
         ) as progress:
             # First, ensure PDF is built
             task = progress.add_task("Checking PDF exists...", total=None)
-            pdf_path = Path(output_dir) / f"{Path(manuscript_path).name}.pdf"
+            pdf_path = manuscript_dir / output_dir / f"{manuscript_dir.name}.pdf"
 
             if not pdf_path.exists():
                 progress.update(task, description="Building PDF first...")
@@ -84,7 +81,7 @@ def arxiv(
                     output_dir=output_dir,
                     verbose=verbose,
                 )
-                success = build_manager.build()
+                success = build_manager.run()
                 if not success:
                     console.print(
                         "❌ PDF build failed. Cannot prepare arXiv package.",
@@ -101,7 +98,7 @@ def arxiv(
             # Prepare arguments
             args = [
                 "--output-dir",
-                output_dir,
+                str(manuscript_dir / output_dir),
                 "--arxiv-dir",
                 arxiv_dir,
                 "--manuscript-path",
@@ -109,7 +106,7 @@ def arxiv(
             ]
 
             if not no_zip:
-                args.extend(["--zip-filename", zip_filename, "--zip"])
+                args.extend(["--zip-filename", zip_filename, "--create-zip"])
 
             if verbose:
                 args.append("--verbose")
@@ -135,17 +132,11 @@ def arxiv(
                             config = yaml.safe_load(f)
 
                         # Extract year and first author
-                        year = (
-                            config.get("date", "").split("-")[0]
-                            if config.get("date")
-                            else "2024"
-                        )
+                        year = config.get("date", "").split("-")[0] if config.get("date") else "2024"
                         authors = config.get("authors", [])
                         if authors:
                             first_author = (
-                                authors[0]["name"].split()[-1]
-                                if " " in authors[0]["name"]
-                                else authors[0]["name"]
+                                authors[0]["name"].split()[-1] if " " in authors[0]["name"] else authors[0]["name"]
                             )
                         else:
                             first_author = "Unknown"
@@ -160,16 +151,12 @@ def arxiv(
                         shutil.copy2(zip_filename, final_path)
                         console.print(f"📋 Copied to: {final_path}", style="green")
 
-                console.print(
-                    "📤 Upload the package to arXiv for submission", style="yellow"
-                )
+                console.print("📤 Upload the package to arXiv for submission", style="yellow")
 
             except SystemExit as e:
                 progress.update(task, description="❌ arXiv preparation failed")
                 if e.code != 0:
-                    console.print(
-                        "❌ arXiv preparation failed. See details above.", style="red"
-                    )
+                    console.print("❌ arXiv preparation failed. See details above.", style="red")
                     sys.exit(1)
 
             finally:
