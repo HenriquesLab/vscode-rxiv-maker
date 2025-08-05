@@ -2,7 +2,7 @@ name: Test Formula
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -90,11 +90,31 @@ jobs:
           echo "Formula version: $FORMULA_VERSION"
           echo "Package URL: $PACKAGE_URL"
 
-          # Verify URL is accessible
-          curl -I -f "$PACKAGE_URL" --max-time 30
+          # Verify URL is accessible with retries
+          for i in {1..3}; do
+            if curl -I -f "$PACKAGE_URL" --max-time 30; then
+              break
+            elif [ $i -eq 3 ]; then
+              echo "❌ Failed to verify URL after 3 attempts"
+              exit 1
+            else
+              echo "⚠️ URL verification attempt $i failed, retrying..."
+              sleep 5
+            fi
+          done
 
-          # Verify version exists on PyPI
-          curl -f "https://pypi.org/pypi/rxiv-maker/$FORMULA_VERSION/json" > /dev/null
+          # Verify version exists on PyPI with retries
+          for i in {1..3}; do
+            if curl -f "https://pypi.org/pypi/rxiv-maker/$FORMULA_VERSION/json" > /dev/null; then
+              break
+            elif [ $i -eq 3 ]; then
+              echo "❌ Failed to verify PyPI version after 3 attempts"
+              exit 1
+            else
+              echo "⚠️ PyPI verification attempt $i failed, retrying..."
+              sleep 5
+            fi
+          done
 
           echo "✅ PyPI package verification passed"
 
@@ -105,13 +125,11 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-13, macos-14]
+        os: [ubuntu-latest, macos-latest]
         include:
           - os: ubuntu-latest
             install-texlive: true
-          - os: macos-13
-            install-texlive: true
-          - os: macos-14
+          - os: macos-latest
             install-texlive: true
       fail-fast: false
 
@@ -153,15 +171,38 @@ jobs:
           echo "🔧 Installing rxiv-maker formula..."
 
           # Clean any existing installations
+          echo "🧹 Cleaning existing installations..."
           brew uninstall rxiv-maker --ignore-dependencies || true
           brew cleanup --prune=all
 
-          # Install formula
-          if [ "${{ inputs.force-install }}" = "true" ]; then
-            brew install --force --formula --verbose ./Formula/rxiv-maker.rb
-          else
-            brew install --formula --verbose ./Formula/rxiv-maker.rb
-          fi
+          # Install formula with retry logic
+          echo "🔧 Installing rxiv-maker formula..."
+          MAX_ATTEMPTS=2
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "📦 Installation attempt $attempt of $MAX_ATTEMPTS"
+
+            if [ "${{ inputs.force-install }}" = "true" ]; then
+              if brew install --force --formula --verbose ./Formula/rxiv-maker.rb; then
+                echo "✅ Formula installation succeeded on attempt $attempt"
+                break
+              fi
+            else
+              if brew install --formula --verbose ./Formula/rxiv-maker.rb; then
+                echo "✅ Formula installation succeeded on attempt $attempt"
+                break
+              fi
+            fi
+
+            if [ $attempt -eq $MAX_ATTEMPTS ]; then
+              echo "❌ Formula installation failed after $MAX_ATTEMPTS attempts"
+              exit 1
+            else
+              echo "⚠️ Installation attempt $attempt failed, cleaning up and retrying..."
+              brew uninstall rxiv-maker --ignore-dependencies || true
+              brew cleanup --prune=all
+              sleep 10
+            fi
+          done
 
           echo "✅ Formula installation completed"
 

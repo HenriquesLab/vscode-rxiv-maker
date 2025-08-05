@@ -2,7 +2,7 @@ name: Security Scanning
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
   pull_request:
     branches: [ main ]
   schedule:
@@ -25,22 +25,22 @@ jobs:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: python
           queries: security-extended,security-and-quality
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:python"
 
@@ -48,7 +48,7 @@ jobs:
     name: Secret Scanning
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,13 +60,13 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   formula-security-check:
     name: Formula Security Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -74,40 +74,40 @@ jobs:
       - name: Check for security issues in formula
         run: |
           echo "🔍 Checking formula for security issues..."
-          
+
           # Check for insecure URLs (HTTP instead of HTTPS)
           if grep -n "http://" Formula/rxiv-maker.rb; then
             echo "❌ Found insecure HTTP URLs in formula"
             exit 1
           fi
-          
+
           # Check for hardcoded secrets or tokens
           if grep -E "(password|token|secret|key)" Formula/rxiv-maker.rb | grep -v "# "; then
             echo "❌ Potential secrets found in formula"
             exit 1
           fi
-          
+
           # Check that SHA256 checksums are present and not placeholders
           if ! grep -q 'sha256 "[a-f0-9]\{64\}"' Formula/rxiv-maker.rb; then
             echo "❌ Missing or invalid SHA256 checksum in formula"
             exit 1
           fi
-          
+
           # Check for suspicious system commands
           if grep -E "(sudo|rm -rf|chmod 777)" Formula/rxiv-maker.rb; then
             echo "⚠️ Found potentially dangerous system commands"
             # Don't exit here as these might be legitimate in some contexts
           fi
-          
+
           echo "✅ Formula security check passed"
 
       - name: Validate download URLs are HTTPS
         run: |
           echo "🔍 Validating URL security..."
-          
+
           # Extract URLs from formula
           URLS=$(grep -E '^\s*url\s+' Formula/rxiv-maker.rb | sed 's/.*"\(.*\)".*/\1/')
-          
+
           for url in $URLS; do
             if [[ $url != https://* ]]; then
               echo "❌ Insecure URL found: $url"
@@ -115,14 +115,14 @@ jobs:
             fi
             echo "✅ Secure URL: $url"
           done
-          
+
           echo "✅ All URLs use HTTPS"
 
   workflow-security:
     name: Workflow Security Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -130,25 +130,25 @@ jobs:
       - name: Check workflow security
         run: |
           echo "🔍 Checking workflow security..."
-          
+
           # Check for workflows that might expose secrets
           if grep -r "secrets\." .github/workflows/ | grep -v "GITHUB_TOKEN"; then
             echo "⚠️ Found custom secrets usage in workflows"
             # Don't fail here as this might be legitimate
           fi
-          
+
           # Check for workflows with write permissions
           if grep -r "permissions:" .github/workflows/ | grep -q "write"; then
             echo "ℹ️ Found workflows with write permissions (review recommended)"
           fi
-          
+
           # Check for third-party actions (review needed)
           THIRD_PARTY_ACTIONS=$(grep -r "uses:" .github/workflows/ | grep -v "actions/" | grep -v "github/" | grep -v "Homebrew/")
           if [ ! -z "$THIRD_PARTY_ACTIONS" ]; then
             echo "ℹ️ Third-party actions found (review recommended):"
             echo "$THIRD_PARTY_ACTIONS"
           fi
-          
+
           echo "✅ Workflow security check completed"
 
   security-summary:
@@ -156,7 +156,7 @@ jobs:
     needs: [codeql-analysis, secret-scanning, formula-security-check, workflow-security]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Generate security summary
         run: |
@@ -165,7 +165,7 @@ jobs:
           echo "**Scan Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # CodeQL results
           if [ "${{ needs.codeql-analysis.result }}" = "success" ]; then
             echo "✅ **CodeQL Analysis**: No issues found" >> $GITHUB_STEP_SUMMARY
@@ -174,7 +174,7 @@ jobs:
           else
             echo "⏭️ **CodeQL Analysis**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Secret scanning results
           if [ "${{ needs.secret-scanning.result }}" = "success" ]; then
             echo "✅ **Secret Scanning**: No secrets found" >> $GITHUB_STEP_SUMMARY
@@ -183,7 +183,7 @@ jobs:
           else
             echo "⏭️ **Secret Scanning**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Formula security results
           if [ "${{ needs.formula-security-check.result }}" = "success" ]; then
             echo "✅ **Formula Security**: No issues found" >> $GITHUB_STEP_SUMMARY
@@ -192,7 +192,7 @@ jobs:
           else
             echo "⏭️ **Formula Security**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Workflow security results
           if [ "${{ needs.workflow-security.result }}" = "success" ]; then
             echo "✅ **Workflow Security**: Check completed" >> $GITHUB_STEP_SUMMARY
@@ -201,7 +201,7 @@ jobs:
           else
             echo "⏭️ **Workflow Security**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Overall Security Status**: " >> $GITHUB_STEP_SUMMARY
           if [ "${{ needs.codeql-analysis.result }}" = "success" ] && [ "${{ needs.secret-scanning.result }}" = "success" ] && [ "${{ needs.formula-security-check.result }}" = "success" ]; then

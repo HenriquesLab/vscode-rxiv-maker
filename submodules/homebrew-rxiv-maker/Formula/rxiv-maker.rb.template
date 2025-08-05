@@ -1,21 +1,19 @@
 class RxivMaker < Formula
   desc "Automated LaTeX article generation with modern CLI and figure support"
-  homepage "https://github.com/henriqueslab/rxiv-maker"
+  homepage "https://github.com/HenriquesLab/rxiv-maker"
   url "{{PYPI_URL}}"
   sha256 "{{PYPI_SHA256}}"
   license "MIT"
 
-  depends_on "python@3.12"
+  depends_on "uv"
   depends_on "texlive"
 
   def install
-    # Create virtual environment in libexec
-    python3 = which("python3.12")
-    system python3, "-m", "venv", libexec
+    # Create virtual environment using uv for fast isolation
+    system "uv", "venv", libexec
 
-    # Install rxiv-maker and all dependencies from PyPI
-    system libexec/"bin/pip", "install", "--upgrade", "pip"
-    system libexec/"bin/pip", "install", "rxiv-maker==#{version}"
+    # Install rxiv-maker and all dependencies using uv
+    system "uv", "pip", "install", "--python", libexec/"bin/python", "rxiv-maker==#{version}"
 
     # Create executable wrapper in bin
     (bin/"rxiv").write <<~EOS
@@ -42,9 +40,9 @@ class RxivMaker < Formula
         brew install node     # For Mermaid diagrams
         brew install r        # For R-based figures
 
-      📖 Documentation: https://github.com/henriqueslab/rxiv-maker#readme
+      📖 Documentation: https://github.com/HenriquesLab/rxiv-maker#readme
 
-      💡 Note: This Homebrew installation uses Python virtual environment isolation.
+      💡 Note: This Homebrew installation uses uv for fast Python package isolation.
           LaTeX (TeXLive) is automatically included for immediate PDF generation.
     EOS
   end
