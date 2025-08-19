@@ -27,10 +27,12 @@ The platform bridges the gap between **easy writing** (Markdown) and **beautiful
 ## VS Code Extension Features
 
 - **🎨 Syntax Highlighting**: Custom syntax highlighting for rxiv-maker markdown files (.rxm)
+- **🐍 Python Code Execution**: Full syntax highlighting for embedded Python code blocks and expressions
+- **📝 Blindtext Support**: Intelligent support for LaTeX blindtext placeholder commands
 - **💡 Citation Completion**: IntelliSense for bibliography entries from `03_REFERENCES.bib`
 - **🔗 Cross-reference Completion**: Autocompletion for `@fig:`, `@table:`, `@eq:`, `@snote:` references
 - **✅ YAML Validation**: Schema validation for `00_CONFIG.yml` configuration files
-- **⚡ Project Commands**: Insert citations, figure references, and validate project structure
+- **⚡ Smart Commands**: Insert Python blocks, blindtext, citations, and references with intelligent templates
 - **🏗️ Integrated Workflow**: Direct access to rxiv-maker build, validate, and clean commands
 
 ## Key Benefits for VS Code Users
@@ -80,6 +82,11 @@ The platform bridges the gap between **easy writing** (Markdown) and **beautiful
 | `<!-- comment -->` | `% comment` | Comments (converted to LaTeX style) |
 | `<newpage>` | `\newpage` | Manual page break control |
 | `<clearpage>` | `\clearpage` | Page break with float clearing |
+| **Custom Commands** | | |
+| `{{blindtext}}` | `\blindtext` | Short placeholder text for document testing |
+| `{{Blindtext}}` | `\Blindtext` | Paragraph placeholder text for document testing |
+| `{{py: code}}` | Executed Python code | Multi-line Python code execution with output |
+| `{py: expression}` | Executed expression | Inline Python expression evaluation |
 
 </details>
 
@@ -114,12 +121,22 @@ The extension automatically activates when it detects:
 
 Access these commands through the Command Palette (`Ctrl+Shift+P`):
 
+### Content Insertion
 - **`Rxiv-Maker: Insert Citation`** - Insert bibliography citation
 - **`Rxiv-Maker: Insert Figure Reference`** - Insert figure reference
+- **`Rxiv-Maker: Insert Table Reference`** - Insert table reference  
+- **`Rxiv-Maker: Insert Equation Reference`** - Insert equation reference
+- **`Rxiv-Maker: Insert blindtext placeholder`** - Insert short placeholder text
+- **`Rxiv-Maker: Insert blindtext paragraph`** - Insert paragraph placeholder text
+- **`Rxiv-Maker: Insert Python code block`** - Insert `{{py: code}}` template with syntax highlighting
+- **`Rxiv-Maker: Insert inline Python expression`** - Insert `{py: expression}` template
+
+### Project Management
 - **`Rxiv-Maker: Add Bibliography Entry by DOI`** - Add new bibliography entry
 - **`Rxiv-Maker: Validate`** - Check project structure and files
 - **`Rxiv-Maker: Build PDF`** - Generate PDF from manuscript
 - **`Rxiv-Maker: Clean`** - Clean build artifacts
+- **`Rxiv-Maker: Install rxiv-maker framework`** - Automated installation with dependency checking
 
 ## Project Structure
 

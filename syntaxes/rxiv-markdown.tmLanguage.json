@@ -265,6 +265,51 @@
       },
       "contentName": "markup.math.inline.rxiv",
       "comment": "Inline math expressions $...$"
+    },
+    {
+      "name": "meta.embedded.block.python.rxiv",
+      "begin": "\\{\\{py:",
+      "end": "\\}\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.python.embedded.rxiv",
+      "comment": "Python code execution blocks {{py: code}}",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.inline.python.rxiv",
+      "begin": "\\{py:",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.python.embedded.rxiv",
+      "comment": "Inline Python code execution {py: expression}",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
+      "name": "keyword.control.placeholder.blindtext.rxiv",
+      "match": "\\{\\{\\s*(blindtext|Blindtext)\\s*\\}\\}",
+      "captures": {
+        "0": {"name": "keyword.control.placeholder.blindtext.rxiv"},
+        "1": {"name": "entity.name.function.blindtext.rxiv"}
+      },
+      "comment": "Blindtext placeholder commands {{blindtext}} and {{Blindtext}}"
     }
   ]
 }

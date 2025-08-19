@@ -4,6 +4,37 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.0] - 2025-01-18
+
+### Added
+- **🐍 Python Code Execution Support** - Full syntax highlighting for Python execution commands
+  - **Block Execution**: `{{py: code}}` with multi-line Python syntax highlighting
+  - **Inline Execution**: `{py: expression}` with embedded Python expression support
+  - **Smart Commands**: Insert Python block/inline commands with automatic code wrapping
+  - **Snippet Support**: Template insertion with cursor placeholders for new code blocks
+
+- **📝 Blindtext Placeholder Support** - Enhanced support for LaTeX blindtext commands  
+  - **Blindtext Commands**: `{{blindtext}}` and `{{Blindtext}}` with dedicated syntax highlighting
+  - **Quick Insert**: Command palette options for inserting placeholder text
+  - **Custom Styling**: Purple theme highlighting for blindtext commands
+
+- **🎨 Enhanced Syntax Highlighting** - Comprehensive theming for new semantic features
+  - **Python Code**: Full Python syntax highlighting within embedded blocks
+  - **Command Brackets**: Distinctive styling for `{{}}` and `{}` command delimiters
+  - **Function Names**: Proper highlighting for command functions like `blindtext` and `py`
+  - **Error-Safe**: Syntax highlighting works regardless of Python language server availability
+
+- **⚡ Improved Editor Experience**
+  - **Auto-Closing Pairs**: `{{` automatically closes with `}}`  
+  - **Smart Selection**: Commands properly handle selected text for wrapping workflows
+  - **Language Integration**: Enhanced language configuration for better code editing
+
+### Enhanced
+- **📦 Updated Extension Metadata**
+  - **Keywords**: Added `python`, `dynamic-content`, and `blindtext` for better discoverability
+  - **Description**: Updated to reflect Python execution and blindtext capabilities
+  - **Version**: Bumped to 0.1.0 for major feature release
+
 ## [0.0.3] - 2025-01-10
 
 ### Added

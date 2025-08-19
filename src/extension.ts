@@ -536,6 +536,67 @@ export function activate(context: vscode.ExtensionContext) {
 		terminal.sendText(`make add-bibliography ${cleanDoi} MANUSCRIPT_PATH="${result.manuscriptPath}"`);
 	});
 
+	// New custom command insertions
+	const insertBlindtextCommand = vscode.commands.registerCommand('rxiv-maker.insertBlindtext', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			await editor.edit(editBuilder => {
+				editBuilder.insert(position, '{{blindtext}}');
+			});
+		}
+	});
+
+	const insertBlindtextParagraphCommand = vscode.commands.registerCommand('rxiv-maker.insertBlindtextParagraph', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			await editor.edit(editBuilder => {
+				editBuilder.insert(position, '{{Blindtext}}');
+			});
+		}
+	});
+
+	const insertPythonBlockCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonBlock', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const selection = editor.selection;
+			
+			if (selection.isEmpty) {
+				// Insert template with cursor placeholder
+				const snippet = new vscode.SnippetString('{{py:\n$1\n}}');
+				await editor.insertSnippet(snippet, position);
+			} else {
+				// Wrap selected code in Python block
+				const selectedText = editor.document.getText(selection);
+				await editor.edit(editBuilder => {
+					editBuilder.replace(selection, `{{py:\n${selectedText}\n}}`);
+				});
+			}
+		}
+	});
+
+	const insertPythonInlineCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonInline', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const selection = editor.selection;
+			
+			if (selection.isEmpty) {
+				// Insert template with cursor placeholder
+				const snippet = new vscode.SnippetString('{py: $1}');
+				await editor.insertSnippet(snippet, position);
+			} else {
+				// Wrap selected code in inline Python
+				const selectedText = editor.document.getText(selection);
+				await editor.edit(editBuilder => {
+					editBuilder.replace(selection, `{py: ${selectedText}}`);
+				});
+			}
+		}
+	});
+
 	context.subscriptions.push(
 		fileDetector,
 		citationProvider,
@@ -548,7 +609,11 @@ export function activate(context: vscode.ExtensionContext) {
 		makeValidateCommand,
 		makePdfCommand,
 		makeCleanCommand,
-		makeAddBibliographyCommand
+		makeAddBibliographyCommand,
+		insertBlindtextCommand,
+		insertBlindtextParagraphCommand,
+		insertPythonBlockCommand,
+		insertPythonInlineCommand
 	);
 }
 
