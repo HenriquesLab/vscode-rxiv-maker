@@ -4,6 +4,26 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] - 2025-08-29
+
+### Security
+- **🛡️ Vulnerability Fixes** - Resolved all npm audit security issues
+  - **Fixed @eslint/plugin-kit** Regular Expression DoS vulnerability (GHSA-xffm-g5w8-qvg7)  
+  - **Fixed tmp package** arbitrary file write vulnerability (GHSA-52f5-9888-hmc6)
+  - **Updated 3 critical packages** via npm audit fix
+
+- **📦 Comprehensive Dependency Updates** - Enhanced security through package updates
+  - **Updated TypeScript ecosystem**: @typescript-eslint/eslint-plugin, @typescript-eslint/parser
+  - **Updated build tools**: esbuild 0.25.6 → 0.25.9, typescript 5.8.3 → 5.9.2
+  - **Updated VS Code types**: @types/vscode 1.101.0 → 1.103.0, @types/node to latest
+  - **Updated ESLint**: 9.30.1 → 9.34.0 for improved code quality
+
+### Enhanced
+- **🔧 Automated Marketplace Publishing** - VSCE_PAT integration for GitHub Actions
+  - **Seamless releases**: Automated publishing to VS Code Marketplace via CI/CD
+  - **Enhanced security**: All package vulnerabilities resolved (0 vulnerabilities)
+  - **Build validation**: All tests pass with updated dependencies
+
 ## [0.2.1] - 2025-08-29
 
 ### Added
