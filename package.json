@@ -2,7 +2,7 @@
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
   "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution and blindtext support",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -123,6 +123,89 @@
         "settings": {
           "foreground": "#D4D4D4"
         }
+      },
+      {
+        "scope": "keyword.control.import.python.rxiv",
+        "settings": {
+          "foreground": "#C586C0",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "entity.name.type.module.python.rxiv",
+        "settings": {
+          "foreground": "#4FC1FF"
+        }
+      },
+      {
+        "scope": "keyword.control.variable.set.python.rxiv",
+        "settings": {
+          "foreground": "#9CDCFE",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "keyword.control.variable.get.python.rxiv",
+        "settings": {
+          "foreground": "#DCDCAA",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "keyword.control.variable.global.python.rxiv",
+        "settings": {
+          "foreground": "#FF6B6B",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "variable.other.readwrite.python.rxiv",
+        "settings": {
+          "foreground": "#9CDCFE"
+        }
+      },
+      {
+        "scope": "variable.other.readwrite.global.python.rxiv",
+        "settings": {
+          "foreground": "#FF8C94"
+        }
+      },
+      {
+        "scope": "keyword.operator.assignment.python.rxiv",
+        "settings": {
+          "foreground": "#D4D4D4"
+        }
+      },
+      {
+        "scope": "string.quoted.context.name.python.rxiv",
+        "settings": {
+          "foreground": "#CE9178"
+        }
+      },
+      {
+        "scope": "string.quoted.format.spec.python.rxiv",
+        "settings": {
+          "foreground": "#D7BA7D"
+        }
+      },
+      {
+        "scope": "keyword.control.conditional.python.rxiv",
+        "settings": {
+          "foreground": "#C586C0",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "string.quoted.double.conditional.python.rxiv",
+        "settings": {
+          "foreground": "#98C379"
+        }
+      },
+      {
+        "scope": "punctuation.separator.conditional.python.rxiv",
+        "settings": {
+          "foreground": "#D4D4D4"
+        }
       }
     ],
     "jsonValidation": [
@@ -195,6 +278,46 @@
       {
         "command": "rxiv-maker.insertPythonInline",
         "title": "Insert inline Python expression",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonImport",
+        "title": "Insert Python module import",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonFromImport",
+        "title": "Insert Python from-import statement",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonSet",
+        "title": "Insert Python variable assignment",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonGet",
+        "title": "Insert Python variable retrieval",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonContext",
+        "title": "Insert Python context execution",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonFormat",
+        "title": "Insert Python formatted output",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonGlobal",
+        "title": "Insert Python global variable",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertPythonIf",
+        "title": "Insert Python conditional statement",
         "category": "Rxiv-Maker"
       }
     ]

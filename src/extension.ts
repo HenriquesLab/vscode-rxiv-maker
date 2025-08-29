@@ -597,6 +597,132 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	// New Python inline code commands
+	const insertPythonImportCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonImport', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			
+			// Show common modules as suggestions
+			const commonModules = [
+				{ label: 'datetime', detail: 'Date and time operations' },
+				{ label: 'math', detail: 'Mathematical functions' },
+				{ label: 'statistics', detail: 'Statistical functions' },
+				{ label: 'json', detail: 'JSON encoder/decoder' },
+				{ label: 'csv', detail: 'CSV file reading/writing' },
+				{ label: 'random', detail: 'Generate random numbers' },
+				{ label: 'collections', detail: 'Specialized container datatypes' },
+				{ label: 'itertools', detail: 'Iterator building blocks' },
+				{ label: 'functools', detail: 'Higher-order functions and operations on functions' }
+			];
+
+			const selected = await vscode.window.showQuickPick(commonModules, {
+				placeHolder: 'Select a module to import (or type a custom module name)'
+			});
+
+			if (selected) {
+				const snippet = new vscode.SnippetString(`{py:import ${selected.label}}`);
+				await editor.insertSnippet(snippet, position);
+			} else {
+				// Allow custom module input
+				const customModule = await vscode.window.showInputBox({
+					prompt: 'Enter module name to import',
+					placeHolder: 'e.g., datetime'
+				});
+				
+				if (customModule) {
+					const snippet = new vscode.SnippetString(`{py:import ${customModule}}`);
+					await editor.insertSnippet(snippet, position);
+				}
+			}
+		}
+	});
+
+	const insertPythonFromImportCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonFromImport', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const snippet = new vscode.SnippetString('{py:from ${1:module} import ${2:item}}');
+			await editor.insertSnippet(snippet, position);
+		}
+	});
+
+	const insertPythonSetCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonSet', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const snippet = new vscode.SnippetString('{py:set ${1:variable_name} = ${2:"value"}}');
+			await editor.insertSnippet(snippet, position);
+		}
+	});
+
+	const insertPythonGetCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonGet', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const snippet = new vscode.SnippetString('{py:get ${1:variable_name}}');
+			await editor.insertSnippet(snippet, position);
+		}
+	});
+
+	const insertPythonContextCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonContext', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const snippet = new vscode.SnippetString('{py:context="${1:context_name}" ${2:code}}');
+			await editor.insertSnippet(snippet, position);
+		}
+	});
+
+	const insertPythonFormatCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonFormat', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			
+			// Show common format types as suggestions
+			const formatTypes = [
+				{ label: 'number,2', detail: 'Format number with 2 decimal places' },
+				{ label: 'percentage,1', detail: 'Format as percentage with 1 decimal place' },
+				{ label: 'currency', detail: 'Format as currency' },
+				{ label: 'scientific,3', detail: 'Format in scientific notation with 3 decimal places' },
+				{ label: 'date,%Y-%m-%d', detail: 'Format date as YYYY-MM-DD' },
+				{ label: 'date,%B %d, %Y', detail: 'Format date as "Month DD, YYYY"' },
+				{ label: 'comma', detail: 'Add thousand separators' }
+			];
+
+			const selected = await vscode.window.showQuickPick(formatTypes, {
+				placeHolder: 'Select a format specification'
+			});
+
+			if (selected) {
+				const snippet = new vscode.SnippetString(`{py:format="${selected.label}" \${1:expression}}`);
+				await editor.insertSnippet(snippet, position);
+			} else {
+				// Allow custom format input
+				const snippet = new vscode.SnippetString('{py:format="${1:format_spec}" ${2:expression}}');
+				await editor.insertSnippet(snippet, position);
+			}
+		}
+	});
+
+	const insertPythonGlobalCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonGlobal', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const snippet = new vscode.SnippetString('{py:global ${1:variable_name} = ${2:"value"}}');
+			await editor.insertSnippet(snippet, position);
+		}
+	});
+
+	const insertPythonIfCommand = vscode.commands.registerCommand('rxiv-maker.insertPythonIf', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const snippet = new vscode.SnippetString('{py:if ${1:condition}: "${2:true_value}" else: "${3:false_value}"}');
+			await editor.insertSnippet(snippet, position);
+		}
+	});
+
 	context.subscriptions.push(
 		fileDetector,
 		citationProvider,
@@ -613,7 +739,15 @@ export function activate(context: vscode.ExtensionContext) {
 		insertBlindtextCommand,
 		insertBlindtextParagraphCommand,
 		insertPythonBlockCommand,
-		insertPythonInlineCommand
+		insertPythonInlineCommand,
+		insertPythonImportCommand,
+		insertPythonFromImportCommand,
+		insertPythonSetCommand,
+		insertPythonGetCommand,
+		insertPythonContextCommand,
+		insertPythonFormatCommand,
+		insertPythonGlobalCommand,
+		insertPythonIfCommand
 	);
 }
 

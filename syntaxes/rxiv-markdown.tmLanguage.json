@@ -285,6 +285,204 @@
       ]
     },
     {
+      "name": "meta.embedded.inline.python.import.rxiv",
+      "begin": "\\{(py:(import|from))\\s+",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
+        "1": {"name": "keyword.control.embedded.python.rxiv"},
+        "2": {"name": "keyword.control.import.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "meta.import.python.embedded.rxiv",
+      "comment": "Python import statements {py:import module} and {py:from module import item}",
+      "patterns": [
+        {
+          "name": "entity.name.type.module.python.rxiv",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*\\b",
+          "comment": "Module names"
+        },
+        {
+          "name": "keyword.control.import.python.rxiv",
+          "match": "\\b(import|from|as)\\b",
+          "comment": "Import keywords"
+        },
+        {
+          "name": "punctuation.separator.import.python.rxiv",
+          "match": ",",
+          "comment": "Import separators"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.inline.python.variable.set.rxiv",
+      "begin": "\\{(py:set)\\s+",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
+        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.variable.set.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "meta.variable.set.python.embedded.rxiv",
+      "comment": "Python variable assignment {py:set var = value}",
+      "patterns": [
+        {
+          "name": "variable.other.readwrite.python.rxiv",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*=)",
+          "comment": "Variable names"
+        },
+        {
+          "name": "keyword.operator.assignment.python.rxiv",
+          "match": "=",
+          "comment": "Assignment operator"
+        },
+        {
+          "name": "string.quoted.double.python.rxiv",
+          "begin": "\"",
+          "end": "\"",
+          "comment": "Double quoted strings"
+        },
+        {
+          "name": "string.quoted.single.python.rxiv",
+          "begin": "'",
+          "end": "'",
+          "comment": "Single quoted strings"
+        },
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.inline.python.variable.get.rxiv",
+      "begin": "\\{(py:get)\\s+",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
+        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.variable.get.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "meta.variable.get.python.embedded.rxiv",
+      "comment": "Python variable retrieval {py:get var}",
+      "patterns": [
+        {
+          "name": "variable.other.readwrite.python.rxiv",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
+          "comment": "Variable names"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.inline.python.context.rxiv",
+      "begin": "\\{(py:context)\\s*=\\s*[\"']([^\"']+)[\"']\\s+",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
+        "1": {"name": "keyword.control.embedded.python.rxiv"},
+        "2": {"name": "string.quoted.context.name.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.python.embedded.context.rxiv",
+      "comment": "Python context execution {py:context=\"name\" code}",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.inline.python.format.rxiv",
+      "begin": "\\{(py:format)\\s*=\\s*[\"']([^\"']+)[\"']\\s+",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
+        "1": {"name": "keyword.control.embedded.python.rxiv"},
+        "2": {"name": "string.quoted.format.spec.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.python.embedded.format.rxiv",
+      "comment": "Python format execution {py:format=\"spec\" code}",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.inline.python.global.rxiv",
+      "begin": "\\{(py:global)\\s+",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
+        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.variable.global.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "meta.variable.global.python.embedded.rxiv",
+      "comment": "Python global variable {py:global var = value}",
+      "patterns": [
+        {
+          "name": "variable.other.readwrite.global.python.rxiv",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*=)",
+          "comment": "Global variable names"
+        },
+        {
+          "name": "keyword.operator.assignment.python.rxiv",
+          "match": "=",
+          "comment": "Assignment operator"
+        },
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.inline.python.conditional.rxiv",
+      "begin": "\\{(py:if)\\s+",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
+        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.conditional.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "meta.conditional.python.embedded.rxiv",
+      "comment": "Python conditional {py:if condition: \"true\" else: \"false\"}",
+      "patterns": [
+        {
+          "name": "keyword.control.conditional.python.rxiv",
+          "match": "\\b(if|else)\\b",
+          "comment": "Conditional keywords"
+        },
+        {
+          "name": "punctuation.separator.conditional.python.rxiv",
+          "match": ":",
+          "comment": "Colon separator"
+        },
+        {
+          "name": "string.quoted.double.conditional.python.rxiv",
+          "begin": "\"",
+          "end": "\"",
+          "comment": "Conditional result strings"
+        },
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
       "name": "meta.embedded.inline.python.rxiv",
       "begin": "\\{py:",
       "end": "\\}",
@@ -295,7 +493,7 @@
         "0": {"name": "punctuation.definition.embedded.end.rxiv"}
       },
       "contentName": "source.python.embedded.rxiv",
-      "comment": "Inline Python code execution {py: expression}",
+      "comment": "General inline Python code execution {py: expression}",
       "patterns": [
         {
           "include": "source.python"

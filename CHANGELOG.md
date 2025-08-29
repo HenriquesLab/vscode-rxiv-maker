@@ -4,7 +4,36 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] - 2025-01-18
+## [0.2.0] - 2025-08-29
+
+### Added
+- **🎨 Enhanced Python Inline Syntax Highlighting** - Consistent styling for all `{py:...}` commands
+  - **Fixed TextMate Grammar Patterns** - Added proper capture groups for all Python inline commands
+  - **Unified Token Coloring** - All `py:` commands now use consistent teal highlighting (#4EC9B0)
+  - **Comprehensive Command Support** - Proper highlighting for import, set, get, global, context, format, and conditional commands
+
+- **⚡ 8 New Command Palette Options** - Quick insertion commands for Python inline syntax
+  - **Insert Python module import** - Smart module selection with common suggestions
+  - **Insert Python from-import statement** - Template with placeholders for module and items
+  - **Insert Python variable assignment** - Variable name and value placeholders
+  - **Insert Python variable retrieval** - Variable name completion
+  - **Insert Python context execution** - Context name and code placeholders
+  - **Insert Python formatted output** - Format type suggestions (.2f, .0%, etc.)
+  - **Insert Python global variable** - Global variable assignment template
+  - **Insert Python conditional statement** - If-else condition template
+
+### Fixed
+- **Inconsistent syntax highlighting** - `{py:get}`, `{py:set}`, and other Python commands now have proper coloring
+- **Missing capture groups** in regex patterns that prevented keyword highlighting from working
+- **Token scope issues** - beginCaptures now properly reference existing capture groups
+- **Command registration** - All new Python inline commands properly registered in VS Code
+
+### Enhanced
+- **User Experience** - Intelligent snippets with contextual suggestions for common use cases
+- **Visual Consistency** - All Python inline commands now share the same bold teal styling
+- **Command Palette Integration** - Easy access to all Python inline syntax through VS Code commands
+
+## [0.1.0] - 2025-08-19
 
 ### Added
 - **🐍 Python Code Execution Support** - Full syntax highlighting for Python execution commands
@@ -35,7 +64,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/), and this 
   - **Description**: Updated to reflect Python execution and blindtext capabilities
   - **Version**: Bumped to 0.1.0 for major feature release
 
-## [0.0.3] - 2025-01-10
+## [0.0.3] - 2025-08-06
 
 ### Added
 - **Insert Table Reference command** - Find and insert references to tables with `@table:` or `@stable:` syntax
@@ -63,7 +92,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/), and this 
 - **Improved search logic** - Robust file discovery with fallback paths for different project structures
 - **Better error messaging** - User-friendly error messages with specific guidance for resolution
 
-## [0.0.2] - 2025-01-08
+## [0.0.2] - 2025-08-05
 
 ### Added
 - Comprehensive README with detailed extension features and usage instructions
@@ -87,7 +116,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/), and this 
 - Color theme functionality (themes directory and theme configuration)
 - Unused theme files and related package.json entries
 
-## [0.0.1] - 2025-01-08
+## [0.0.1] - 2025-08-05
 
 ### Added
 - Initial release of Rxiv-Maker VS Code extension
