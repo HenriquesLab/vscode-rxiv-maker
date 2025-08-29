@@ -1,0 +1,162 @@
+name: Release VS Code Extension
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v0.2.0, etc.
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      version:
+        description: 'Version to release (e.g., v0.2.1)'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating releases
+      actions: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for changelog generation
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get version from tag or input
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - name: Verify package.json version matches tag
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${{ steps.version.outputs.version_number }}"
+          echo "Package version: $PACKAGE_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch: package.json ($PACKAGE_VERSION) != tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✅ Version verification passed"
+
+      - name: Lint and type check
+        run: |
+          npm run check-types
+          npm run lint
+
+      - name: Build extension
+        run: npm run package
+
+      - name: Package extension
+        run: npx vsce package --out "rxiv-maker-${{ steps.version.outputs.version_number }}.vsix"
+
+      - name: Generate changelog for this version
+        id: changelog
+        run: |
+          # Extract changelog for current version
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Extracting changelog for $VERSION..."
+          
+          # Get changelog section between current version and next version
+          changelog=$(awk "
+            /^## \[$(echo $VERSION | sed 's/v//')\]/ { found=1; next }
+            found && /^## \[/ { found=0 }
+            found && !/^## \[/ { print }
+          " CHANGELOG.md | sed '/^$/d' | head -50)
+          
+          if [ -z "$changelog" ]; then
+            changelog="Release $VERSION - See CHANGELOG.md for details"
+          fi
+          
+          # Save to file for GitHub release
+          echo "$changelog" > changelog_excerpt.md
+          echo "Changelog excerpt:"
+          cat changelog_excerpt.md
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: 'VS Code Extension ${{ steps.version.outputs.version }}'
+          body_path: changelog_excerpt.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
+
+      - name: Upload .vsix to GitHub Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./rxiv-maker-${{ steps.version.outputs.version_number }}.vsix
+          asset_name: rxiv-maker-${{ steps.version.outputs.version_number }}.vsix
+          asset_content_type: application/zip
+
+      - name: Publish to VS Code Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "⚠️  VSCE_PAT secret not found. Skipping marketplace publication."
+            echo "To enable automatic marketplace publishing, add your Personal Access Token as VSCE_PAT secret."
+          else
+            echo "📦 Publishing to VS Code Marketplace..."
+            npx vsce publish --pat $VSCE_PAT
+            echo "✅ Successfully published to marketplace!"
+          fi
+
+      - name: Create summary
+        run: |
+          echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Extension Package:** \`rxiv-maker-${{ steps.version.outputs.version_number }}.vsix\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release](${{ steps.create_release.outputs.html_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Changelog" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat changelog_excerpt.md >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Optional: Add a job to test the published extension
+  test-published-extension:
+    runs-on: ubuntu-latest
+    needs: release
+    if: always() && needs.release.result == 'success'
+    
+    steps:
+      - name: Wait for marketplace propagation
+        run: sleep 60  # Wait 1 minute for marketplace to update
+        
+      - name: Test extension installation
+        run: |
+          # This would be expanded with actual VS Code extension testing
+          echo "🧪 Testing published extension..."
+          echo "Extension should be available at: https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker"

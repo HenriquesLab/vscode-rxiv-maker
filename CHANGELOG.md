@@ -4,6 +4,32 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2025-08-29
+
+### Added
+- **🔄 GitHub Actions Release Workflow** - Automated release pipeline for VS Code extension
+  - **Tag-triggered releases** - Automatic releases when version tags are pushed
+  - **GitHub Release creation** - Automatic release notes from changelog
+  - **VS Code Marketplace publishing** - Automated extension publication
+  - **Release asset upload** - .vsix file attached to GitHub releases
+  - **Manual release trigger** - Workflow dispatch for manual releases
+
+- **🧪 Continuous Integration Workflow** - Automated testing and validation
+  - **Code quality checks** - Linting and type checking on every commit
+  - **Build validation** - Ensure extension packages successfully
+  - **Multi-branch testing** - CI runs on main and develop branches
+
+### Enhanced
+- **📦 Release Process** - Streamlined and automated release management
+  - **Version verification** - Automatic validation that package.json matches git tag
+  - **Changelog extraction** - Automatic release notes from CHANGELOG.md
+  - **Marketplace integration** - Seamless publishing to VS Code Marketplace
+
+### Technical Improvements
+- **Repository structure** - Added .github/workflows for GitHub Actions
+- **Build artifacts management** - .vsix files properly ignored and managed
+- **Release documentation** - Comprehensive workflow documentation and summaries
+
 ## [0.2.0] - 2025-08-29
 
 ### Added
