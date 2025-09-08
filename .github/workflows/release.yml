@@ -94,27 +94,49 @@ jobs:
           echo "Changelog excerpt:"
           cat changelog_excerpt.md
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Create or Update GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: 'VS Code Extension ${{ steps.version.outputs.version }}'
-          body_path: changelog_excerpt.md
-          draft: false
-          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
-
-      - name: Upload .vsix to GitHub Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rxiv-maker-${{ steps.version.outputs.version_number }}.vsix
-          asset_name: rxiv-maker-${{ steps.version.outputs.version_number }}.vsix
-          asset_content_type: application/zip
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          EXTENSION_FILE="rxiv-maker-${{ steps.version.outputs.version_number }}.vsix"
+          PRERELEASE_FLAG=""
+          
+          # Check if this is a prerelease
+          if [[ "$VERSION" == *"beta"* ]] || [[ "$VERSION" == *"alpha"* ]] || [[ "$VERSION" == *"rc"* ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          
+          # Check if release already exists
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "📝 Release $VERSION already exists. Updating with new assets..."
+            
+            # Update release notes
+            gh release edit "$VERSION" --notes-file changelog_excerpt.md
+            
+            # Upload asset if it doesn't exist
+            if ! gh release view "$VERSION" --json assets -q ".assets[].name" | grep -q "$EXTENSION_FILE"; then
+              echo "📦 Uploading extension asset..."
+              gh release upload "$VERSION" "$EXTENSION_FILE" --clobber
+            else
+              echo "📦 Extension asset already exists, replacing..."
+              gh release upload "$VERSION" "$EXTENSION_FILE" --clobber
+            fi
+            
+            echo "✅ Release $VERSION updated successfully"
+          else
+            echo "🚀 Creating new release $VERSION..."
+            gh release create "$VERSION" \
+              --title "VS Code Extension $VERSION" \
+              --notes-file changelog_excerpt.md \
+              $PRERELEASE_FLAG \
+              "$EXTENSION_FILE"
+            echo "✅ Release $VERSION created successfully"
+          fi
+          
+          # Get release URL for summary
+          RELEASE_URL=$(gh release view "$VERSION" --json url -q .url)
+          echo "release_url=$RELEASE_URL" >> $GITHUB_OUTPUT
 
       - name: Publish to VS Code Marketplace
         env:
@@ -131,13 +153,15 @@ jobs:
 
       - name: Create summary
         run: |
+          RELEASE_URL=$(gh release view "${{ steps.version.outputs.version }}" --json url -q .url)
+          
           echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Extension Package:** \`rxiv-maker-${{ steps.version.outputs.version_number }}.vsix\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          echo "- [GitHub Release](${{ steps.create_release.outputs.html_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release]($RELEASE_URL)" >> $GITHUB_STEP_SUMMARY
           echo "- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📋 Changelog" >> $GITHUB_STEP_SUMMARY
@@ -160,3 +184,14 @@ jobs:
           # This would be expanded with actual VS Code extension testing
           echo "🧪 Testing published extension..."
           echo "Extension should be available at: https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker"
+          
+      - name: Verify release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Use the tag name from the event trigger
+          VERSION="${{ github.ref_name }}"
+          echo "🔍 Verifying release $VERSION assets..."
+          gh release view "$VERSION" --json assets -q '.assets[].name' | while read asset; do
+            echo "✅ Asset found: $asset"
+          done
