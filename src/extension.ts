@@ -87,14 +87,47 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register completion provider for citations
 	const citationProvider = vscode.languages.registerCompletionItemProvider(
 		{ language: 'rxiv-markdown' },
-		new CitationCompletionProvider(),
+		{
+			async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
+				const linePrefix = document.lineAt(position).text.substr(0, position.character);
+				if (!linePrefix.endsWith('@')) {
+					return [];
+				}
+
+				const bibEntries = await getBibEntries();
+				return bibEntries.map(entry => {
+					const item = new vscode.CompletionItem(entry.key, vscode.CompletionItemKind.Reference);
+					item.detail = entry.title || entry.type;
+					item.documentation = entry.author || '';
+					item.insertText = entry.key;
+					return item;
+				});
+			}
+		},
 		'@'
 	);
 
 	// Register completion provider for cross-references
 	const referenceProvider = vscode.languages.registerCompletionItemProvider(
 		{ language: 'rxiv-markdown' },
-		new ReferenceCompletionProvider(),
+		{
+			async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
+				const linePrefix = document.lineAt(position).text.substr(0, position.character);
+				if (!linePrefix.endsWith('@')) {
+					return [];
+				}
+
+				const references = await getDocumentReferences();
+				return references.map(ref => {
+					const prefix = ref.supplementary ? `s${ref.type}:` : `${ref.type}:`;
+					const item = new vscode.CompletionItem(`${prefix}${ref.label}`, vscode.CompletionItemKind.Reference);
+					item.detail = `${ref.type.toUpperCase()} reference`;
+					item.documentation = `Line ${ref.line + 1}${ref.supplementary ? ' (Supplementary)' : ''}`;
+					item.insertText = `${prefix}${ref.label}`;
+					return item;
+				});
+			}
+		},
 		'@'
 	);
 

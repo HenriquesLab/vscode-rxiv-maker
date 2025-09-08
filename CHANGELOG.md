@@ -4,6 +4,39 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.6] - 2025-09-08
+
+### Fixed
+- **🐛 Critical Syntax Highlighting Fix** - Resolved complete syntax highlighting failure
+  - **JSON Grammar Error**: Fixed malformed JSON in syntax grammar file that prevented extension loading
+  - **Citation Highlighting**: Restored highlighting for complex citations like `[@izquierdo-martinez_chromosome_2025]`
+  - **LaTeX Block Highlighting**: Fixed `{{tex: ...}}` block syntax highlighting
+  - **Cross-Reference Highlighting**: Restored `@fig:label`, `@stable:data` reference highlighting
+  - **Completion Providers**: Fixed broken citation and reference auto-completion
+  - **Simplified Grammar**: Streamlined syntax patterns for better performance and reliability
+
+### Improved
+- **🔧 Enhanced Citation Support** - Better handling of complex citation patterns
+  - **Multi-Citation Support**: Proper highlighting for `[@ref1; @ref2; @ref3]` patterns
+  - **Complex Key Support**: Handles underscores, hyphens, and dots in citation keys
+  - **Bracket Citation Support**: Full syntax highlighting for bracketed citation groups
+
+## [0.2.5] - 2025-09-08
+
+### Added
+- **🎨 Enhanced Syntax Highlighting** - Comprehensive citation and LaTeX highlighting improvements
+  - **Citation Highlighting**: Added support for `[@key]` and `[@key1; @key2]` patterns
+  - **LaTeX Command Highlighting**: Inline LaTeX commands like `\textbf{}`, `\emph{}`
+  - **Math Mode Highlighting**: Proper highlighting for `$...$` inline math expressions
+  - **Table Syntax**: LaTeX table separators `&`, `\\`, `\hline` highlighting
+  - **Cross-Reference Highlighting**: Enhanced `@fig:`, `@table:`, `@eq:` reference patterns
+
+### Fixed
+- **🔧 Completion Provider Issues** - Resolved missing completion provider classes
+  - **Citation Completion**: Fixed missing `CitationCompletionProvider` implementation
+  - **Reference Completion**: Fixed missing `ReferenceCompletionProvider` implementation
+  - **Auto-completion**: Restored `@` trigger for citation and reference suggestions
+
 ## [0.2.3] - 2025-01-08
 
 ### Added

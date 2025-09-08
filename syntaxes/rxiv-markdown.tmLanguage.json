@@ -17,13 +17,35 @@
       "comment": "HTML-style comments"
     },
     {
+      "name": "entity.name.tag.citation.rxiv",
+      "match": "\\[(@[a-zA-Z0-9_.-]+(?:;\\s*@[a-zA-Z0-9_.-]+)*)\\]",
+      "captures": {
+        "1": {"name": "variable.other.constant.citation.rxiv"}
+      },
+      "comment": "Citations like [@key] or [@key1; @key2]"
+    },
+    {
+      "name": "entity.name.tag.citation.rxiv",
+      "match": "@[a-zA-Z0-9_.-]+",
+      "comment": "Individual citation keys like @key"
+    },
+    {
+      "name": "entity.name.tag.reference.rxiv",
+      "match": "@(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)",
+      "captures": {
+        "1": {"name": "keyword.other.supplementary.rxiv"},
+        "2": {"name": "entity.name.type.reference.rxiv"},
+        "4": {"name": "variable.other.constant.reference.rxiv"}
+      },
+      "comment": "Cross-references like @fig:label, @stable:label"
+    },
+    {
       "name": "markup.heading.1.markdown",
       "match": "^(#{1})\\s+(.*)$",
       "captures": {
         "1": {"name": "punctuation.definition.heading.markdown"},
         "2": {"name": "entity.name.section.markdown"}
-      },
-      "comment": "Heading level 1"
+      }
     },
     {
       "name": "markup.heading.2.markdown",
@@ -31,8 +53,7 @@
       "captures": {
         "1": {"name": "punctuation.definition.heading.markdown"},
         "2": {"name": "entity.name.section.markdown"}
-      },
-      "comment": "Heading level 2"
+      }
     },
     {
       "name": "markup.heading.3.markdown",
@@ -40,465 +61,7 @@
       "captures": {
         "1": {"name": "punctuation.definition.heading.markdown"},
         "2": {"name": "entity.name.section.markdown"}
-      },
-      "comment": "Heading level 3"
-    },
-    {
-      "name": "markup.heading.4.markdown",
-      "match": "^(#{4})\\s+(.*)$",
-      "captures": {
-        "1": {"name": "punctuation.definition.heading.markdown"},
-        "2": {"name": "entity.name.section.markdown"}
-      },
-      "comment": "Heading level 4"
-    },
-    {
-      "name": "markup.heading.5.markdown",
-      "match": "^(#{5})\\s+(.*)$",
-      "captures": {
-        "1": {"name": "punctuation.definition.heading.markdown"},
-        "2": {"name": "entity.name.section.markdown"}
-      },
-      "comment": "Heading level 5"
-    },
-    {
-      "name": "markup.heading.6.markdown",
-      "match": "^(#{6})\\s+(.*)$",
-      "captures": {
-        "1": {"name": "punctuation.definition.heading.markdown"},
-        "2": {"name": "entity.name.section.markdown"}
-      },
-      "comment": "Heading level 6"
-    },
-    {
-      "name": "markup.fenced_code.block.markdown",
-      "begin": "^\\s*```\\s*([a-zA-Z0-9_+-]*)",
-      "end": "^\\s*```\\s*$",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.markdown"},
-        "1": {"name": "fenced_code.block.language.markdown"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.markdown"}
-      },
-      "name": "markup.fenced_code.block.markdown",
-      "comment": "Fenced code blocks"
-    },
-    {
-      "name": "markup.inline.raw.string.markdown",
-      "begin": "`",
-      "end": "`",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.raw.markdown"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.raw.markdown"}
-      },
-      "contentName": "markup.inline.raw.string.markdown",
-      "comment": "Inline code"
-    },
-    {
-      "name": "markup.bold.markdown",
-      "match": "(\\*\\*|__)([^*_]+)(\\*\\*|__)",
-      "captures": {
-        "1": {"name": "punctuation.definition.bold.markdown"},
-        "2": {"name": "markup.bold.markdown"},
-        "3": {"name": "punctuation.definition.bold.markdown"}
-      },
-      "comment": "Bold text"
-    },
-    {
-      "name": "markup.italic.markdown",
-      "match": "(\\*|_)([^*_]+)(\\*|_)",
-      "captures": {
-        "1": {"name": "punctuation.definition.italic.markdown"},
-        "2": {"name": "markup.italic.markdown"},
-        "3": {"name": "punctuation.definition.italic.markdown"}
-      },
-      "comment": "Italic text"
-    },
-    {
-      "name": "markup.underline.link.markdown",
-      "match": "!?\\[([^\\]]*?)\\]\\(([^)]+)\\)",
-      "captures": {
-        "1": {"name": "string.other.link.title.markdown"},
-        "2": {"name": "markup.underline.link.markdown"}
-      },
-      "comment": "Links and images"
-    },
-    {
-      "name": "markup.list.unnumbered.markdown",
-      "match": "^\\s*([*+-])\\s+",
-      "captures": {
-        "1": {"name": "punctuation.definition.list.markdown"}
-      },
-      "comment": "Unordered lists"
-    },
-    {
-      "name": "markup.list.numbered.markdown",
-      "match": "^\\s*([0-9]+\\.)\\s+",
-      "captures": {
-        "1": {"name": "punctuation.definition.list.markdown"}
-      },
-      "comment": "Ordered lists"
-    },
-    {
-      "name": "markup.quote.markdown",
-      "match": "^\\s*(>)\\s*(.*)$",
-      "captures": {
-        "1": {"name": "punctuation.definition.quote.markdown"},
-        "2": {"name": "markup.quote.markdown"}
-      },
-      "comment": "Blockquotes"
-    },
-    {
-      "name": "meta.separator.markdown",
-      "match": "^\\s*(-{3,}|\\*{3,}|_{3,})\\s*$",
-      "comment": "Horizontal rules"
-    },
-    {
-      "name": "constant.numeric.subscript.rxiv",
-      "match": "~[^~]+~",
-      "comment": "Subscript notation with tilde syntax"
-    },
-    {
-      "name": "constant.numeric.subscript.rxiv",
-      "match": "<del>[^<>]+</del>",
-      "comment": "Subscript notation with del tag syntax"
-    },
-    {
-      "name": "keyword.operator.superscript.rxiv",
-      "match": "\\^[^\\^]+\\^",
-      "comment": "Superscript notation - supports x^2^ syntax"
-    },
-    {
-      "name": "keyword.control.newpage.rxiv",
-      "match": "<newpage>|<clearpage>",
-      "comment": "New page and clear page directives"
-    },
-    {
-      "name": "meta.figure.metadata.rxiv",
-      "begin": "\\{#",
-      "end": "\\}",
-      "comment": "Figure metadata block",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.metadata.begin.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.metadata.end.rxiv"}
-      },
-      "patterns": [
-        {
-          "name": "variable.other.constant.rxiv",
-          "match": "(fig|sfig|table|stable|eq|snote):[a-zA-Z0-9_-]+",
-          "comment": "Reference labels like fig:test"
-        },
-        {
-          "name": "entity.other.attribute-name.rxiv",
-          "match": "\\b(width|height|tex_position)\\b",
-          "comment": "Attribute names"
-        },
-        {
-          "name": "string.quoted.double.rxiv",
-          "match": "\"[^\"]*\"",
-          "comment": "Double quoted values"
-        },
-        {
-          "name": "string.quoted.single.rxiv",
-          "match": "'[^']*'",
-          "comment": "Single quoted values"
-        },
-        {
-          "name": "keyword.operator.assignment.rxiv",
-          "match": "=",
-          "comment": "Assignment operator"
-        }
-      ]
-    },
-    {
-      "name": "keyword.control.rxiv",
-      "match": "@eq:[a-zA-Z0-9_-]+",
-      "comment": "Equation references"
-    },
-    {
-      "name": "entity.name.function.rxiv",
-      "match": "@snote:[a-zA-Z0-9_-]+",
-      "comment": "Supplementary note references"
-    },
-    {
-      "name": "constant.numeric.rxiv",
-      "match": "@s?fig:[a-zA-Z0-9_-]+",
-      "comment": "Figure references"
-    },
-    {
-      "name": "variable.other.rxiv",
-      "match": "@s?table:[a-zA-Z0-9_-]+",
-      "comment": "Table references"
-    },
-    {
-      "name": "string.quoted.double.rxiv",
-      "match": "@[a-zA-Z0-9_]+",
-      "comment": "Citations"
-    },
-    {
-      "name": "string.other.math.block.rxiv",
-      "begin": "\\$\\$",
-      "end": "\\$\\$",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.math.begin.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.math.end.rxiv"}
-      },
-      "contentName": "markup.math.block.rxiv",
-      "comment": "Block math expressions $$...$$"
-    },
-    {
-      "name": "string.other.math.inline.rxiv",
-      "begin": "(?<!\\$)\\$(?!\\$)",
-      "end": "(?<!\\$)\\$(?!\\$)",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.math.begin.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.math.end.rxiv"}
-      },
-      "contentName": "markup.math.inline.rxiv",
-      "comment": "Inline math expressions $...$"
-    },
-    {
-      "name": "meta.embedded.block.python.rxiv",
-      "begin": "\\{\\{py:",
-      "end": "\\}\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "source.python.embedded.rxiv",
-      "comment": "Python code execution blocks {{py: code}}",
-      "patterns": [
-        {
-          "include": "source.python"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.import.rxiv",
-      "begin": "\\{(py:(import|from))\\s+",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
-        "1": {"name": "keyword.control.embedded.python.rxiv"},
-        "2": {"name": "keyword.control.import.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "meta.import.python.embedded.rxiv",
-      "comment": "Python import statements {py:import module} and {py:from module import item}",
-      "patterns": [
-        {
-          "name": "entity.name.type.module.python.rxiv",
-          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*\\b",
-          "comment": "Module names"
-        },
-        {
-          "name": "keyword.control.import.python.rxiv",
-          "match": "\\b(import|from|as)\\b",
-          "comment": "Import keywords"
-        },
-        {
-          "name": "punctuation.separator.import.python.rxiv",
-          "match": ",",
-          "comment": "Import separators"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.variable.set.rxiv",
-      "begin": "\\{(py:set)\\s+",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
-        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.variable.set.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "meta.variable.set.python.embedded.rxiv",
-      "comment": "Python variable assignment {py:set var = value}",
-      "patterns": [
-        {
-          "name": "variable.other.readwrite.python.rxiv",
-          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*=)",
-          "comment": "Variable names"
-        },
-        {
-          "name": "keyword.operator.assignment.python.rxiv",
-          "match": "=",
-          "comment": "Assignment operator"
-        },
-        {
-          "name": "string.quoted.double.python.rxiv",
-          "begin": "\"",
-          "end": "\"",
-          "comment": "Double quoted strings"
-        },
-        {
-          "name": "string.quoted.single.python.rxiv",
-          "begin": "'",
-          "end": "'",
-          "comment": "Single quoted strings"
-        },
-        {
-          "include": "source.python"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.variable.get.rxiv",
-      "begin": "\\{(py:get)\\s+",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
-        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.variable.get.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "meta.variable.get.python.embedded.rxiv",
-      "comment": "Python variable retrieval {py:get var}",
-      "patterns": [
-        {
-          "name": "variable.other.readwrite.python.rxiv",
-          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
-          "comment": "Variable names"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.context.rxiv",
-      "begin": "\\{(py:context)\\s*=\\s*[\"']([^\"']+)[\"']\\s+",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
-        "1": {"name": "keyword.control.embedded.python.rxiv"},
-        "2": {"name": "string.quoted.context.name.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "source.python.embedded.context.rxiv",
-      "comment": "Python context execution {py:context=\"name\" code}",
-      "patterns": [
-        {
-          "include": "source.python"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.format.rxiv",
-      "begin": "\\{(py:format)\\s*=\\s*[\"']([^\"']+)[\"']\\s+",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
-        "1": {"name": "keyword.control.embedded.python.rxiv"},
-        "2": {"name": "string.quoted.format.spec.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "source.python.embedded.format.rxiv",
-      "comment": "Python format execution {py:format=\"spec\" code}",
-      "patterns": [
-        {
-          "include": "source.python"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.global.rxiv",
-      "begin": "\\{(py:global)\\s+",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
-        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.variable.global.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "meta.variable.global.python.embedded.rxiv",
-      "comment": "Python global variable {py:global var = value}",
-      "patterns": [
-        {
-          "name": "variable.other.readwrite.global.python.rxiv",
-          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*=)",
-          "comment": "Global variable names"
-        },
-        {
-          "name": "keyword.operator.assignment.python.rxiv",
-          "match": "=",
-          "comment": "Assignment operator"
-        },
-        {
-          "include": "source.python"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.conditional.rxiv",
-      "begin": "\\{(py:if)\\s+",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv"},
-        "1": {"name": "keyword.control.embedded.python.rxiv keyword.control.conditional.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "meta.conditional.python.embedded.rxiv",
-      "comment": "Python conditional {py:if condition: \"true\" else: \"false\"}",
-      "patterns": [
-        {
-          "name": "keyword.control.conditional.python.rxiv",
-          "match": "\\b(if|else)\\b",
-          "comment": "Conditional keywords"
-        },
-        {
-          "name": "punctuation.separator.conditional.python.rxiv",
-          "match": ":",
-          "comment": "Colon separator"
-        },
-        {
-          "name": "string.quoted.double.conditional.python.rxiv",
-          "begin": "\"",
-          "end": "\"",
-          "comment": "Conditional result strings"
-        },
-        {
-          "include": "source.python"
-        }
-      ]
-    },
-    {
-      "name": "meta.embedded.inline.python.rxiv",
-      "begin": "\\{py:",
-      "end": "\\}",
-      "beginCaptures": {
-        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.python.rxiv"}
-      },
-      "endCaptures": {
-        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
-      },
-      "contentName": "source.python.embedded.rxiv",
-      "comment": "General inline Python code execution {py: expression}",
-      "patterns": [
-        {
-          "include": "source.python"
-        }
-      ]
+      }
     },
     {
       "name": "meta.embedded.block.tex.rxiv",
@@ -511,21 +74,42 @@
         "0": {"name": "punctuation.definition.embedded.end.rxiv"}
       },
       "contentName": "source.tex.embedded.rxiv",
-      "comment": "TeX code injection blocks {{tex: LaTeX code}}",
+      "comment": "TeX code injection blocks",
       "patterns": [
         {
-          "include": "source.latex"
+          "name": "keyword.control.latex.rxiv",
+          "match": "\\\\[a-zA-Z@]+\\*?",
+          "comment": "LaTeX commands"
+        },
+        {
+          "name": "keyword.operator.table.latex.rxiv",
+          "match": "&",
+          "comment": "Table column separator"
+        },
+        {
+          "name": "keyword.control.table.latex.rxiv",
+          "match": "\\\\\\\\",
+          "comment": "Table row separator"
         }
       ]
     },
     {
-      "name": "keyword.control.placeholder.blindtext.rxiv",
-      "match": "\\{\\{\\s*(blindtext|Blindtext)\\s*\\}\\}",
-      "captures": {
-        "0": {"name": "keyword.control.placeholder.blindtext.rxiv"},
-        "1": {"name": "entity.name.function.blindtext.rxiv"}
+      "name": "meta.embedded.block.python.rxiv",
+      "begin": "\\{\\{py:",
+      "end": "\\}\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.python.rxiv"}
       },
-      "comment": "Blindtext placeholder commands {{blindtext}} and {{Blindtext}}"
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.python.embedded.rxiv",
+      "comment": "Python code execution blocks",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
     }
   ]
 }
