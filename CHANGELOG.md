@@ -4,6 +4,45 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.3] - 2025-01-08
+
+### Added
+- **🔧 TeX Code Block Support** - Complete syntax highlighting and commands for LaTeX injection
+  - **TeX Block Syntax**: `{{tex: LaTeX code}}` with proper syntax highlighting
+  - **LaTeX Integration**: Full LaTeX syntax highlighting within `{{tex:}}` blocks
+  - **Insert TeX Block**: Command palette option for inserting multi-line TeX blocks
+  - **Insert Inline TeX**: Command palette option for inserting inline TeX code
+  - **Smart Text Wrapping**: Automatically wraps selected LaTeX code in TeX blocks
+
+- **⚡ Enhanced Reference Autocomplete** - Intelligent dropdown for cross-references
+  - **Partial Typing Support**: Type `@f` to see figure options, `@t` for tables, etc.
+  - **Smart Pattern Matching**: Enhanced detection of reference patterns during typing
+  - **Comprehensive Coverage**: Supports `@fig:`, `@sfig:`, `@table:`, `@stable:`, `@eq:`, `@snote:`
+  - **Context-Aware Filtering**: Shows only relevant references based on partial input
+  - **Priority Sorting**: Reference type suggestions appear first in completion list
+
+- **🎨 Enhanced Visual Experience** - Improved token coloring and syntax themes
+  - **TeX Highlighting**: Coral orange (#FF7F50) styling for TeX command keywords
+  - **LaTeX Content**: Proper syntax highlighting for LaTeX code within TeX blocks
+  - **Consistent Theming**: TeX blocks integrate seamlessly with existing Python/blindtext themes
+
+### Enhanced  
+- **🔍 Improved Discoverability** - Enhanced marketplace presence
+  - **Extended Keywords**: Added `tex`, `rxiv-maker`, `manuscript`, `references` for better search
+  - **Command Integration**: All TeX commands properly integrated with VS Code command palette
+  - **Language Support**: Enhanced language configuration for better TeX block editing
+
+- **📝 Reference System Improvements** - More responsive and intelligent completion
+  - **Better Trigger Detection**: Improved pattern matching for reference autocompletion  
+  - **Enhanced Documentation**: Completion items now show reference type and line numbers
+  - **Performance Optimization**: More efficient reference scanning and filtering
+
+### Technical Improvements
+- **TextMate Grammar**: Added comprehensive patterns for TeX block recognition
+- **Completion Providers**: Enhanced `ReferenceCompletionProvider` with partial matching logic
+- **Command Registration**: Proper registration of all TeX-related commands
+- **Extension Activation**: TeX support activated automatically in rxiv-maker projects
+
 ## [0.2.2] - 2025-08-29
 
 ### Security

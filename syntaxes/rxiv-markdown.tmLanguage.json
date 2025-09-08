@@ -501,6 +501,24 @@
       ]
     },
     {
+      "name": "meta.embedded.block.tex.rxiv",
+      "begin": "\\{\\{tex:",
+      "end": "\\}\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.tex.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.tex.embedded.rxiv",
+      "comment": "TeX code injection blocks {{tex: LaTeX code}}",
+      "patterns": [
+        {
+          "include": "source.latex"
+        }
+      ]
+    },
+    {
       "name": "keyword.control.placeholder.blindtext.rxiv",
       "match": "\\{\\{\\s*(blindtext|Blindtext)\\s*\\}\\}",
       "captures": {

@@ -723,6 +723,46 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	const insertTexBlockCommand = vscode.commands.registerCommand('rxiv-maker.insertTexBlock', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const selection = editor.selection;
+			
+			if (selection.isEmpty) {
+				// Insert template with cursor placeholder
+				const snippet = new vscode.SnippetString('{{tex:\n$1\n}}');
+				await editor.insertSnippet(snippet, position);
+			} else {
+				// Wrap selected code in TeX block
+				const selectedText = editor.document.getText(selection);
+				await editor.edit(editBuilder => {
+					editBuilder.replace(selection, `{{tex:\n${selectedText}\n}}`);
+				});
+			}
+		}
+	});
+
+	const insertTexInlineCommand = vscode.commands.registerCommand('rxiv-maker.insertTexInline', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const position = editor.selection.active;
+			const selection = editor.selection;
+			
+			if (selection.isEmpty) {
+				// Insert template with cursor placeholder
+				const snippet = new vscode.SnippetString('{{tex: $1}}');
+				await editor.insertSnippet(snippet, position);
+			} else {
+				// Wrap selected code in inline TeX
+				const selectedText = editor.document.getText(selection);
+				await editor.edit(editBuilder => {
+					editBuilder.replace(selection, `{{tex: ${selectedText}}}`);
+				});
+			}
+		}
+	});
+
 	context.subscriptions.push(
 		fileDetector,
 		citationProvider,
@@ -747,7 +787,9 @@ export function activate(context: vscode.ExtensionContext) {
 		insertPythonContextCommand,
 		insertPythonFormatCommand,
 		insertPythonGlobalCommand,
-		insertPythonIfCommand
+		insertPythonIfCommand,
+		insertTexBlockCommand,
+		insertTexInlineCommand
 	);
 }
 
@@ -787,31 +829,92 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 		const lineText = document.lineAt(position).text;
 		const beforeCursor = lineText.substring(0, position.character);
 
-		// Only provide reference completions for specific patterns, not general citations
-		if (!beforeCursor.match(/@s?fig:$|@s?table:$|@eq:$|@snote:$/)) {
+		// Enhanced pattern matching for better trigger detection
+		// Support patterns like: @fig:, @sfig:, @table:, @stable:, @eq:, @snote:
+		// Also support partial patterns like: @f, @sf, @t, @st, @e, @sn
+		const referenceMatch = beforeCursor.match(/@(s?)(fig|table|eq|snote)(:?)(.*)$/);
+		const partialMatch = beforeCursor.match(/@(s?)(f|t|e|sn)$/);
+		
+		if (!referenceMatch && !partialMatch) {
 			return [];
 		}
 
 		const references = await getDocumentReferences();
-		const referenceType = beforeCursor.match(/@(s?)(fig|table|eq|snote):$/)?.[2] as 'fig' | 'table' | 'eq' | 'snote';
-		const isSupplementary = beforeCursor.includes('@s');
+		let items: vscode.CompletionItem[] = [];
 
-		if (!referenceType) {
-			return [];
+		if (referenceMatch) {
+			// Complete reference pattern (e.g., @fig:, @table:)
+			const isSupplementary = referenceMatch[1] === 's';
+			const referenceType = referenceMatch[2] as 'fig' | 'table' | 'eq' | 'snote';
+			const hasColon = referenceMatch[3] === ':';
+			const labelPart = referenceMatch[4];
+
+			const filteredRefs = references.filter(ref =>
+				ref.type === referenceType &&
+				(isSupplementary ? ref.supplementary : !ref.supplementary) &&
+				(labelPart === '' || ref.label.toLowerCase().includes(labelPart.toLowerCase()))
+			);
+
+			items = filteredRefs.map(ref => {
+				const item = new vscode.CompletionItem(ref.label, vscode.CompletionItemKind.Reference);
+				item.detail = `${ref.supplementary ? 'Supplementary ' : ''}${ref.type.charAt(0).toUpperCase() + ref.type.slice(1)}`;
+				item.documentation = new vscode.MarkdownString(`Line ${ref.line + 1}`);
+				
+				if (hasColon) {
+					item.insertText = ref.label;
+				} else {
+					// Insert the complete reference format
+					const prefix = ref.supplementary ? `@s${ref.type}:` : `@${ref.type}:`;
+					item.insertText = `${prefix}${ref.label}`;
+					item.range = new vscode.Range(
+						position.with(position.line, beforeCursor.lastIndexOf('@')),
+						position
+					);
+				}
+				
+				return item;
+			});
+		} else if (partialMatch) {
+			// Partial pattern matching (e.g., @f -> show @fig: and @sfig: options)
+			const isSupplementary = partialMatch[1] === 's';
+			const partialType = partialMatch[2];
+			
+			// Map partial types to full types
+			const typeMap: Record<string, string[]> = {
+				'f': ['fig'],
+				't': ['table'],
+				'e': ['eq'],
+				'sn': ['snote']
+			};
+			
+			const possibleTypes = typeMap[partialType] || [];
+			
+			for (const refType of possibleTypes) {
+				const filteredRefs = references.filter(ref =>
+					ref.type === refType &&
+					(isSupplementary ? ref.supplementary : !ref.supplementary)
+				);
+				
+				if (filteredRefs.length > 0) {
+					// Add a completion item for the reference type
+					const typeItem = new vscode.CompletionItem(
+						`${isSupplementary ? 's' : ''}${refType}:`,
+						vscode.CompletionItemKind.Keyword
+					);
+					typeItem.detail = `${isSupplementary ? 'Supplementary ' : ''}${refType.charAt(0).toUpperCase() + refType.slice(1)} reference`;
+					typeItem.documentation = new vscode.MarkdownString(`Found ${filteredRefs.length} ${isSupplementary ? 'supplementary ' : ''}${refType} reference(s)`);
+					typeItem.insertText = `${isSupplementary ? 's' : ''}${refType}:`;
+					typeItem.range = new vscode.Range(
+						position.with(position.line, beforeCursor.lastIndexOf('@') + 1),
+						position
+					);
+					typeItem.sortText = '0'; // Priority sorting
+					items.push(typeItem);
+				}
+			}
 		}
 
-		const filteredRefs = references.filter(ref =>
-			ref.type === referenceType &&
-			(isSupplementary ? ref.supplementary : !ref.supplementary)
-		);
-
-		return filteredRefs.map(ref => {
-			const item = new vscode.CompletionItem(ref.label, vscode.CompletionItemKind.Reference);
-			item.detail = `${ref.supplementary ? 'Supplementary ' : ''}${ref.type}`;
-			item.documentation = new vscode.MarkdownString(`Line ${ref.line + 1}`);
-			item.insertText = ref.label;
-			return item;
-		});
+		return items;
 	}
 }
 

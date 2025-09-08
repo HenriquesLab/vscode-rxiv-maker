@@ -2,7 +2,7 @@
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
   "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution and blindtext support",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -21,6 +21,7 @@
   "keywords": [
     "markdown",
     "latex",
+    "tex",
     "academic",
     "scientific",
     "publishing",
@@ -28,7 +29,10 @@
     "bibliography",
     "python",
     "dynamic-content",
-    "blindtext"
+    "blindtext",
+    "rxiv-maker",
+    "manuscript",
+    "references"
   ],
   "repository": {
     "type": "git",
@@ -104,6 +108,19 @@
         "settings": {
           "foreground": "#4EC9B0",
           "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "keyword.control.embedded.tex.rxiv",
+        "settings": {
+          "foreground": "#FF7F50",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "source.tex.embedded.rxiv",
+        "settings": {
+          "foreground": "#D4D4D4"
         }
       },
       {
@@ -318,6 +335,16 @@
       {
         "command": "rxiv-maker.insertPythonIf",
         "title": "Insert Python conditional statement",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertTexBlock",
+        "title": "Insert TeX code block",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.insertTexInline",
+        "title": "Insert inline TeX code",
         "category": "Rxiv-Maker"
       }
     ]
