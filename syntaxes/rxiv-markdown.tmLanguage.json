@@ -52,6 +52,11 @@
       "comment": "Label definitions like {#fig:label}, {#stable:label .class}"
     },
     {
+      "name": "keyword.control.newpage.rxiv",
+      "match": "<newpage>",
+      "comment": "Page break directive for rxiv-maker documents"
+    },
+    {
       "name": "markup.heading.1.markdown",
       "match": "^(#{1})\\s+(.*)$",
       "captures": {
