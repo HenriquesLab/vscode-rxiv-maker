@@ -152,6 +152,8 @@ jobs:
           fi
 
       - name: Create summary
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           RELEASE_URL=$(gh release view "${{ steps.version.outputs.version }}" --json url -q .url)
           
