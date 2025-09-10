@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
 import * as os from 'os';
+import { RxivMarkdownDiagnosticsProvider } from './diagnostics';
 
 interface BibEntry {
 	key: string;
@@ -29,6 +30,10 @@ interface ManuscriptFolderResult {
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Rxiv-Maker extension is now active!');
 
+	// Initialize diagnostic provider for linting
+	const diagnosticsProvider = new RxivMarkdownDiagnosticsProvider();
+	context.subscriptions.push(diagnosticsProvider);
+
 	// Cached project detection
 	const projectCache = new Map<string, boolean>();
 
@@ -52,6 +57,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 				if (isRxivProject) {
 					await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
+					// Trigger validation for the newly detected document
+					await diagnosticsProvider.validateDocument(document);
 				}
 			}
 		}
@@ -78,6 +85,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 					if (isRxivProject) {
 						await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
+						// Trigger validation for already open documents
+						await diagnosticsProvider.validateDocument(document);
 					}
 				}
 			}
@@ -796,6 +805,29 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	// Command to manually validate current document
+	const validateDocumentCommand = vscode.commands.registerCommand('rxiv-maker.validateDocument', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			await diagnosticsProvider.validateDocument(editor.document);
+			vscode.window.showInformationMessage('Document validation completed');
+		} else {
+			vscode.window.showWarningMessage('No active document to validate');
+		}
+	});
+
+	// Command to clear all diagnostics
+	const clearDiagnosticsCommand = vscode.commands.registerCommand('rxiv-maker.clearDiagnostics', () => {
+		diagnosticsProvider.clearAllDiagnostics();
+		vscode.window.showInformationMessage('All diagnostics cleared');
+	});
+
+	// Command to validate all open documents
+	const validateAllCommand = vscode.commands.registerCommand('rxiv-maker.validateAllDocuments', async () => {
+		await diagnosticsProvider.validateAllOpenDocuments();
+		vscode.window.showInformationMessage('All documents validated');
+	});
+
 	context.subscriptions.push(
 		fileDetector,
 		citationProvider,
@@ -822,7 +854,10 @@ export function activate(context: vscode.ExtensionContext) {
 		insertPythonGlobalCommand,
 		insertPythonIfCommand,
 		insertTexBlockCommand,
-		insertTexInlineCommand
+		insertTexInlineCommand,
+		validateDocumentCommand,
+		clearDiagnosticsCommand,
+		validateAllCommand
 	);
 }
 
@@ -864,9 +899,9 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 
 		// Enhanced pattern matching for better trigger detection
 		// Support patterns like: @fig:, @sfig:, @table:, @stable:, @eq:, @snote:
-		// Also support partial patterns like: @f, @sf, @t, @st, @e, @sn
+		// Also support partial patterns like: @f, @sf, @fig, @sfig, @t, @st, @table, @stable, @e, @eq, @sn, @snote
 		const referenceMatch = beforeCursor.match(/@(s?)(fig|table|eq|snote)(:?)(.*)$/);
-		const partialMatch = beforeCursor.match(/@(s?)(f|t|e|sn)$/);
+		const partialMatch = beforeCursor.match(/@(s?)(f|fig|t|table|stable|e|eq|sn|snote)$/);
 		
 		if (!referenceMatch && !partialMatch) {
 			return [];
@@ -915,9 +950,14 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 			// Map partial types to full types
 			const typeMap: Record<string, string[]> = {
 				'f': ['fig'],
+				'fig': ['fig'],
 				't': ['table'],
+				'table': ['table'],
+				'stable': ['table'],
 				'e': ['eq'],
-				'sn': ['snote']
+				'eq': ['eq'],
+				'sn': ['snote'],
+				'snote': ['snote']
 			};
 			
 			const possibleTypes = typeMap[partialType] || [];

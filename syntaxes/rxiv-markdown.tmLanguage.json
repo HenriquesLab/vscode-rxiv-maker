@@ -40,6 +40,18 @@
       "comment": "Cross-references like @fig:label, @stable:label"
     },
     {
+      "name": "entity.name.tag.label-definition.rxiv",
+      "match": "\\{#(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)([^}]*)\\}",
+      "captures": {
+        "0": {"name": "meta.label-definition.rxiv"},
+        "1": {"name": "keyword.other.supplementary.rxiv"},
+        "2": {"name": "entity.name.type.label.rxiv"},
+        "4": {"name": "variable.other.constant.label.rxiv"},
+        "5": {"name": "string.other.label-attributes.rxiv"}
+      },
+      "comment": "Label definitions like {#fig:label}, {#stable:label .class}"
+    },
+    {
       "name": "markup.heading.1.markdown",
       "match": "^(#{1})\\s+(.*)$",
       "captures": {

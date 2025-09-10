@@ -1,8 +1,8 @@
 {
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
-  "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution and blindtext support",
-  "version": "0.2.6",
+  "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution, blindtext support, and comprehensive linting",
+  "version": "0.3.0",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -345,6 +345,21 @@
       {
         "command": "rxiv-maker.insertTexInline",
         "title": "Insert inline TeX code",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.validateDocument",
+        "title": "Validate current document",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.clearDiagnostics",
+        "title": "Clear all diagnostics",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.validateAllDocuments",
+        "title": "Validate all open documents",
         "category": "Rxiv-Maker"
       }
     ]
