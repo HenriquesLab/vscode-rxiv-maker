@@ -2,7 +2,7 @@
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
   "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution, blindtext support, and comprehensive linting",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -254,27 +254,28 @@
       },
       {
         "command": "rxiv-maker.installRxivMaker",
-        "title": "Install rxiv-maker framework",
+        "title": "Install rxiv-maker",
         "category": "Rxiv-Maker"
       },
       {
         "command": "rxiv-maker.makeValidate",
-        "title": "Validate",
+        "title": "Validate manuscript",
         "category": "Rxiv-Maker"
       },
       {
         "command": "rxiv-maker.makePdf",
-        "title": "Build PDF",
-        "category": "Rxiv-Maker"
+        "title": "Generate PDF",
+        "category": "Rxiv-Maker",
+        "icon": "$(file-pdf)"
       },
       {
         "command": "rxiv-maker.makeClean",
-        "title": "Clean",
+        "title": "Clean generated files",
         "category": "Rxiv-Maker"
       },
       {
         "command": "rxiv-maker.makeAddBibliography",
-        "title": "Add bibliography entry by DOI",
+        "title": "Add bibliography entry from DOI",
         "category": "Rxiv-Maker"
       },
       {
@@ -362,7 +363,26 @@
         "title": "Validate all open documents",
         "category": "Rxiv-Maker"
       }
-    ]
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceLangId == rxiv-markdown",
+          "command": "rxiv-maker.makePdf",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Rxiv-Maker",
+      "properties": {
+        "rxiv-maker.showStatusBarButton": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show PDF build button in status bar"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

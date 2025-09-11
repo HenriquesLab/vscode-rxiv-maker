@@ -23,7 +23,6 @@ interface ReferenceLabel {
 interface ManuscriptFolderResult {
 	success: boolean;
 	manuscriptPath?: string;
-	rxivMakerRoot?: string;
 	error?: string;
 }
 
@@ -36,6 +35,91 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Cached project detection
 	const projectCache = new Map<string, boolean>();
+
+	// Status bar button for PDF generation
+	let pdfStatusBarItem: vscode.StatusBarItem;
+
+	// Function to create and update status bar item
+	const createStatusBarItem = () => {
+		if (pdfStatusBarItem) {
+			pdfStatusBarItem.dispose();
+		}
+		
+		const config = vscode.workspace.getConfiguration('rxiv-maker');
+		if (!config.get('showStatusBarButton', true)) {
+			return;
+		}
+
+		pdfStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+		pdfStatusBarItem.command = 'rxiv-maker.makePdf';
+		pdfStatusBarItem.text = '$(file-pdf) PDF';
+		pdfStatusBarItem.tooltip = 'Build PDF with rxiv-maker';
+		context.subscriptions.push(pdfStatusBarItem);
+	};
+
+	// Function to update status bar visibility based on current file
+	const updateStatusBarVisibility = async (document?: vscode.TextDocument) => {
+		if (!pdfStatusBarItem) {
+			return;
+		}
+
+		if (!document) {
+			document = vscode.window.activeTextEditor?.document;
+		}
+
+		if (!document) {
+			pdfStatusBarItem.hide();
+			return;
+		}
+
+		const fileName = path.basename(document.fileName);
+		const isRxivFile = document.fileName.endsWith('.rxm') ||
+			fileName === '01_MAIN.md' ||
+			fileName === '02_SUPPLEMENTARY_INFO.md' ||
+			document.languageId === 'rxiv-markdown';
+
+		if (isRxivFile) {
+			const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+			if (workspaceFolder) {
+				const workspacePath = workspaceFolder.uri.fsPath;
+				let isRxivProject = projectCache.get(workspacePath);
+
+				if (isRxivProject === undefined) {
+					isRxivProject = await isRxivMakerProject(workspacePath);
+					projectCache.set(workspacePath, isRxivProject);
+				}
+
+				if (isRxivProject) {
+					pdfStatusBarItem.show();
+				} else {
+					pdfStatusBarItem.hide();
+				}
+			} else {
+				pdfStatusBarItem.hide();
+			}
+		} else {
+			pdfStatusBarItem.hide();
+		}
+	};
+
+	// Create status bar item
+	createStatusBarItem();
+
+	// Update visibility when active editor changes
+	vscode.window.onDidChangeActiveTextEditor((editor) => {
+		updateStatusBarVisibility(editor?.document);
+	}, null, context.subscriptions);
+
+	// Update visibility when document is opened
+	vscode.workspace.onDidOpenTextDocument(updateStatusBarVisibility, null, context.subscriptions);
+
+	// Update visibility when configuration changes
+	vscode.workspace.onDidChangeConfiguration((e) => {
+		if (e.affectsConfiguration('rxiv-maker.showStatusBarButton')) {
+			createStatusBarItem();
+			updateStatusBarVisibility();
+		}
+	}, null, context.subscriptions);
 
 	// Automatically detect and set language mode for rxiv-maker files
 	const fileDetector = vscode.workspace.onDidOpenTextDocument(async (document) => {
@@ -59,6 +143,8 @@ export function activate(context: vscode.ExtensionContext) {
 					await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
 					// Trigger validation for the newly detected document
 					await diagnosticsProvider.validateDocument(document);
+					// Update status bar visibility
+					await updateStatusBarVisibility(document);
 				}
 			}
 		}
@@ -87,6 +173,8 @@ export function activate(context: vscode.ExtensionContext) {
 						await vscode.languages.setTextDocumentLanguage(document, 'rxiv-markdown');
 						// Trigger validation for already open documents
 						await diagnosticsProvider.validateDocument(document);
+						// Update status bar visibility
+						await updateStatusBarVisibility(document);
 					}
 				}
 			}
@@ -307,106 +395,85 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const makeValidateCommand = vscode.commands.registerCommand('rxiv-maker.makeValidate', async () => {
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make validate MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv validate .`);
 	});
 
 	const makePdfCommand = vscode.commands.registerCommand('rxiv-maker.makePdf', async () => {
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make pdf MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv pdf .`);
 	});
 
 	const makeCleanCommand = vscode.commands.registerCommand('rxiv-maker.makeClean', async () => {
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make clean MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv clean .`);
 	});
 
 	const installRxivMakerCommand = vscode.commands.registerCommand('rxiv-maker.installRxivMaker', async () => {
-		// Show progress while checking dependencies
+		// Check if pipx is available first
 		await vscode.window.withProgress({
 			location: vscode.ProgressLocation.Notification,
-			title: "Checking dependencies...",
+			title: "Checking installation prerequisites...",
 			cancellable: false
 		}, async (progress) => {
-			const dependencies = [
-				{ name: 'git', command: 'git --version' },
-				{ name: 'make', command: 'make --version' },
-				{ name: 'python', command: os.platform() === 'win32' ? 'python --version' : 'python3 --version' },
-				{ name: 'latex', command: 'pdflatex --version' }
-			];
+			progress.report({
+				increment: 50,
+				message: 'Checking pipx availability...'
+			});
 
-			const missingDeps: string[] = [];
-			let completed = 0;
-
-			// Check each dependency
-			for (const dep of dependencies) {
-				progress.report({
-					increment: 25,
-					message: `Checking ${dep.name}...`
-				});
-
-				try {
-					await new Promise<void>((resolve, reject) => {
-						exec(dep.command, { timeout: 5000 }, (error, stdout, stderr) => {
-							if (error) {
-								missingDeps.push(dep.name);
-							}
-							resolve();
-						});
+			// Check for pipx
+			let hasPipx = false;
+			try {
+				await new Promise<void>((resolve, reject) => {
+					exec('pipx --version', { timeout: 5000 }, (error, stdout, stderr) => {
+						if (!error) {
+							hasPipx = true;
+						}
+						resolve();
 					});
-				} catch {
-					missingDeps.push(dep.name);
-				}
-				completed++;
+				});
+			} catch {
+				// pipx not available
 			}
 
-			if (missingDeps.length > 0) {
-				const installInstructions = {
-					git: 'Install Git from https://git-scm.com/',
-					make: os.platform() === 'win32'
-						? 'Install Visual Studio Build Tools or Git Bash'
-						: os.platform() === 'darwin'
-						? 'Run: xcode-select --install'
-						: 'Run: sudo apt install build-essential',
-					python: 'Install Python from https://python.org/',
-					latex: os.platform() === 'win32'
-						? 'Install MiKTeX from https://miktex.org/'
-						: os.platform() === 'darwin'
-						? 'Install MacTeX from https://tug.org/mactex/'
-						: 'Run: sudo apt install texlive-full'
-				};
-
-				const message = `Missing dependencies: ${missingDeps.join(', ')}\n\nInstallation instructions:\n${missingDeps.map(dep => `• ${dep}: ${installInstructions[dep as keyof typeof installInstructions]}`).join('\n')}`;
-
-				const choice = await vscode.window.showErrorMessage(
-					`Cannot install rxiv-maker. Missing dependencies: ${missingDeps.join(', ')}`,
-					'Show Instructions',
+			if (!hasPipx) {
+				const installPipx = await vscode.window.showWarningMessage(
+					'pipx is required to install rxiv-maker. Would you like to see installation instructions?',
+					{ modal: true },
+					'Show Installation Instructions',
 					'Cancel'
 				);
 
-				if (choice === 'Show Instructions') {
+				if (installPipx === 'Show Installation Instructions') {
+					const instructions = `# Install pipx (Python Package Manager)\n\n` +
+						`## macOS:\n\`\`\`bash\nbrew install pipx\n\`\`\`\n\n` +
+						`## Linux (Ubuntu/Debian):\n\`\`\`bash\nsudo apt update\nsudo apt install pipx\n\`\`\`\n\n` +
+						`## Linux (Other):\n\`\`\`bash\npython3 -m pip install --user pipx\npython3 -m pipx ensurepath\n\`\`\`\n\n` +
+						`## Windows:\n\`\`\`powershell\npip install --user pipx\n\`\`\`\n\n` +
+						`After installing pipx, restart VS Code and try again.`;
+
 					const doc = await vscode.workspace.openTextDocument({
-						content: message,
+						content: instructions,
 						language: 'markdown'
 					});
 					await vscode.window.showTextDocument(doc);
@@ -414,11 +481,9 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			// All dependencies are available, proceed with installation
-			const warningMessage = 'All required dependencies are installed. Would you like to clone the rxiv-maker repository and run setup?\n\nNote: The setup process will automatically create a Python virtual environment (.venv) if needed.';
-
+			// pipx is available, proceed with installation
 			const choice = await vscode.window.showInformationMessage(
-				warningMessage,
+				'Install rxiv-maker using pipx? This will install rxiv-maker globally and make it available from any terminal.',
 				{ modal: true },
 				'Yes, install rxiv-maker',
 				'No, cancel'
@@ -428,123 +493,24 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			// Build installation directory options
-			const installOptions: vscode.QuickPickItem[] = [];
-
-			// Add workspace folders as options
-			if (vscode.workspace.workspaceFolders) {
-				for (const folder of vscode.workspace.workspaceFolders) {
-					installOptions.push({
-						label: `$(folder) ${path.basename(folder.uri.fsPath)}`,
-						description: folder.uri.fsPath,
-						detail: 'Install in this workspace folder'
-					});
-				}
-			}
-
-			// Add common directories
-			const homeDir = os.homedir();
-			const commonPaths = [
-				{ path: path.join(homeDir, 'Documents', 'GitHub'), label: 'Documents/GitHub' },
-				{ path: path.join(homeDir, 'Documents'), label: 'Documents' },
-				{ path: path.join(homeDir, 'Desktop'), label: 'Desktop' },
-				{ path: homeDir, label: 'Home directory' }
-			];
-
-			for (const commonPath of commonPaths) {
-				// Only add if not already present from workspaces
-				if (!installOptions.some(opt => opt.description === commonPath.path)) {
-					installOptions.push({
-						label: `$(home) ${commonPath.label}`,
-						description: commonPath.path,
-						detail: 'Common installation location'
-					});
-				}
-			}
-
-			// Add custom option
-			installOptions.push({
-				label: '$(edit) Custom path...',
-				description: 'custom',
-				detail: 'Enter a custom installation path'
-			});
-
-			const selectedOption = await vscode.window.showQuickPick(installOptions, {
-				placeHolder: 'Select where to install rxiv-maker',
-				matchOnDescription: true
-			});
-
-			if (!selectedOption) {
-				return;
-			}
-
-			let installDir: string;
-			if (selectedOption.description === 'custom') {
-				const customDir = await vscode.window.showInputBox({
-					prompt: 'Enter custom directory where you want to install rxiv-maker',
-					value: path.join(homeDir, 'Documents', 'GitHub'),
-					validateInput: (value) => {
-						if (!value) {
-							return 'Installation directory is required';
-						}
-						return undefined;
-					}
-				});
-
-				if (!customDir) {
-					return;
-				}
-				installDir = customDir;
-			} else {
-				installDir = selectedOption.description!;
-			}
-
-			if (!installDir) {
-				return;
-			}
-
-			// Expand home directory if needed
-			const expandedDir = installDir.startsWith('~')
-				? path.join(os.homedir(), installDir.slice(1))
-				: installDir;
-
-			// Ensure the installation directory exists
-			try {
-				await fs.promises.mkdir(expandedDir, { recursive: true });
-			} catch (error) {
-				vscode.window.showErrorMessage(`Failed to create installation directory: ${expandedDir}\n${error}`);
-				return;
-			}
-
 			// Create installation terminal
 			const installTerminal = vscode.window.createTerminal({
-				name: 'rxiv-maker-install',
-				cwd: expandedDir
+				name: 'rxiv-maker-install'
 			});
 
 			installTerminal.show();
 
-			// Simple installation commands - Makefile handles virtual environment automatically
-			if (os.platform() === 'win32') {
-				installTerminal.sendText('echo Installing rxiv-maker...');
-				installTerminal.sendText('git clone https://github.com/HenriquesLab/rxiv-maker.git');
-				installTerminal.sendText('cd rxiv-maker');
-				installTerminal.sendText('make setup');
-				installTerminal.sendText('echo rxiv-maker installation complete!');
-			} else {
-				installTerminal.sendText('echo "Installing rxiv-maker..."');
-				installTerminal.sendText('git clone https://github.com/HenriquesLab/rxiv-maker.git');
-				installTerminal.sendText('cd rxiv-maker');
-				installTerminal.sendText('make setup');
-				installTerminal.sendText('echo "rxiv-maker installation complete!"');
-				installTerminal.sendText('echo "You can now create manuscripts using the rxiv-maker framework."');
-			}
+			// Simple pipx installation
+			installTerminal.sendText('echo "Installing rxiv-maker with pipx..."');
+			installTerminal.sendText('pipx install rxiv-maker');
+			installTerminal.sendText('echo "Installation complete! You can now use rxiv commands."');
+			installTerminal.sendText('rxiv --version');
 		});
 	});
 
 	const makeAddBibliographyCommand = vscode.commands.registerCommand('rxiv-maker.makeAddBibliography', async () => {
 		const result = await findManuscriptFolder();
-		if (!result.success || !result.rxivMakerRoot) {
+		if (!result.success || !result.manuscriptPath) {
 			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
 			return;
 		}
@@ -573,9 +539,9 @@ export function activate(context: vscode.ExtensionContext) {
 		// Clean up DOI - remove URL parts if present
 		const cleanDoi = doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, '');
 
-		const terminal = getRxivMakerTerminal(result.rxivMakerRoot);
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
 		terminal.show();
-		terminal.sendText(`make add-bibliography ${cleanDoi} MANUSCRIPT_PATH="${result.manuscriptPath}"`);
+		terminal.sendText(`rxiv bibliography add --manuscript-path . ${cleanDoi}`);
 	});
 
 	// New custom command insertions
@@ -1264,40 +1230,9 @@ async function findManuscriptFolder(): Promise<ManuscriptFolderResult> {
 		manuscriptPath = foundManuscriptPath;
 	}
 
-	// Now find the rxiv-maker root directory (where Makefile is located)
-	let rxivMakerRoot: string | null = null;
-	let searchDir = manuscriptPath;
-
-	// Search up the directory tree for Makefile
-	while (searchDir !== path.dirname(searchDir)) { // Stop at filesystem root
-		try {
-			await fs.promises.access(path.join(searchDir, 'Makefile'));
-			// Check if this Makefile contains rxiv-maker content
-			const makefileContent = await fs.promises.readFile(path.join(searchDir, 'Makefile'), 'utf8');
-			if (makefileContent.includes('Rxiv-Maker') || makefileContent.includes('MANUSCRIPT_PATH')) {
-				rxivMakerRoot = searchDir;
-				break;
-			}
-		} catch {
-			// Makefile not found in this directory, continue searching
-		}
-		searchDir = path.dirname(searchDir);
-	}
-
-	if (!rxivMakerRoot) {
-		return {
-			success: false,
-			error: 'Could not find rxiv-maker root directory (no Makefile found). Please ensure you have the rxiv-maker repository cloned and accessible.'
-		};
-	}
-
-	// Convert manuscript path to relative path from rxiv-maker root
-	const relativePath = path.relative(rxivMakerRoot, manuscriptPath);
-
 	return {
 		success: true,
-		manuscriptPath: relativePath || '.',
-		rxivMakerRoot: rxivMakerRoot
+		manuscriptPath: manuscriptPath
 	};
 }
 
