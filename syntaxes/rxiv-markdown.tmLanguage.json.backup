@@ -1,0 +1,115 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rxiv-Markdown",
+  "scopeName": "source.rxiv-markdown",
+  "fileTypes": ["rxm"],
+  "patterns": [
+    {
+      "name": "comment.block.html",
+      "begin": "<!--",
+      "end": "-->",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.comment.begin.html"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.comment.end.html"}
+      },
+      "comment": "HTML-style comments"
+    },
+    {
+      "name": "entity.name.tag.citation.rxiv",
+      "match": "\\[(@[a-zA-Z0-9_.-]+(?:;\\s*@[a-zA-Z0-9_.-]+)*)\\]",
+      "captures": {
+        "1": {"name": "variable.other.constant.citation.rxiv"}
+      },
+      "comment": "Citations like [@key] or [@key1; @key2]"
+    },
+    {
+      "name": "entity.name.tag.citation.rxiv",
+      "match": "@[a-zA-Z0-9_.-]+",
+      "comment": "Individual citation keys like @key"
+    },
+    {
+      "name": "entity.name.tag.reference.rxiv",
+      "match": "@(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)",
+      "captures": {
+        "1": {"name": "keyword.other.supplementary.rxiv"},
+        "2": {"name": "entity.name.type.reference.rxiv"},
+        "4": {"name": "variable.other.constant.reference.rxiv"}
+      },
+      "comment": "Cross-references like @fig:label, @stable:label"
+    },
+    {
+      "name": "markup.heading.1.markdown",
+      "match": "^(#{1})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      }
+    },
+    {
+      "name": "markup.heading.2.markdown",
+      "match": "^(#{2})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      }
+    },
+    {
+      "name": "markup.heading.3.markdown",
+      "match": "^(#{3})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      }
+    },
+    {
+      "name": "meta.embedded.block.tex.rxiv",
+      "begin": "\\{\\{tex:",
+      "end": "\\}\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.tex.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.tex.embedded.rxiv",
+      "comment": "TeX code injection blocks",
+      "patterns": [
+        {
+          "name": "keyword.control.latex.rxiv",
+          "match": "\\\\[a-zA-Z@]+\\*?",
+          "comment": "LaTeX commands"
+        },
+        {
+          "name": "keyword.operator.table.latex.rxiv",
+          "match": "&",
+          "comment": "Table column separator"
+        },
+        {
+          "name": "keyword.control.table.latex.rxiv",
+          "match": "\\\\\\\\",
+          "comment": "Table row separator"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.block.python.rxiv",
+      "begin": "\\{\\{py:",
+      "end": "\\}\\}",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.embedded.begin.rxiv keyword.control.embedded.python.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.embedded.end.rxiv"}
+      },
+      "contentName": "source.python.embedded.rxiv",
+      "comment": "Python code execution blocks",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    }
+  ]
+}

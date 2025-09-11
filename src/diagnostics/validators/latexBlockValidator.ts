@@ -10,6 +10,8 @@ export class LaTeXBlockValidator implements Validator {
 		// Find LaTeX/TeX code blocks and inline expressions
 		let inTexBlock = false;
 		let blockStartLine = -1;
+		let blockContent = '';
+		let blockLines: string[] = [];
 		let environmentStack: Array<{name: string, line: number}> = [];
 
 		for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
@@ -24,25 +26,35 @@ export class LaTeXBlockValidator implements Validator {
 				// Start of TeX block
 				inTexBlock = true;
 				blockStartLine = lineNumber;
+				blockContent = '';
+				blockLines = [];
 				
 				// Check if there's LaTeX code on the same line as the opening {{tex:
 				const inlineCode = blockStartMatch[1].trim();
 				if (inlineCode && !inlineCode.endsWith('}}')) {
-					this.validateLaTeXSyntax(inlineCode, lineNumber, blockStartMatch.index!, environmentStack, diagnostics);
+					blockContent += inlineCode + '\n';
+					blockLines.push(inlineCode);
 				}
 			} else if (blockEndMatch && inTexBlock) {
-				// End of TeX block
+				// End of TeX block - validate the entire block content
 				inTexBlock = false;
-				blockStartLine = -1;
+				
+				if (blockContent.trim()) {
+					this.validateTexBlock(blockContent, blockStartLine, blockLines, environmentStack, diagnostics);
+				}
 				
 				// Check for unclosed environments at end of block
 				this.checkUnclosedenvironments(environmentStack, lineNumber, diagnostics);
 				environmentStack = [];
+				blockStartLine = -1;
+				blockContent = '';
+				blockLines = [];
 			} else if (inTexBlock && blockStartLine !== -1) {
-				// Inside TeX block - validate the line
+				// Inside TeX block - accumulate content
 				const latexCode = line.trim();
 				if (latexCode && !latexCode.includes('}}')) {
-					this.validateLaTeXSyntax(latexCode, lineNumber, 0, environmentStack, diagnostics);
+					blockContent += latexCode + '\n';
+					blockLines.push(latexCode);
 				}
 			}
 
@@ -78,6 +90,98 @@ export class LaTeXBlockValidator implements Validator {
 		}
 
 		return diagnostics;
+	}
+
+	private validateTexBlock(
+		blockContent: string,
+		blockStartLine: number,
+		blockLines: string[],
+		environmentStack: Array<{name: string, line: number}>,
+		diagnostics: vscode.Diagnostic[]
+	): void {
+		// Validate the entire block content for brace matching
+		const braceIssues = this.findBraceIssues(blockContent);
+		for (const issue of braceIssues) {
+			const diagnostic = new vscode.Diagnostic(
+				new vscode.Range(blockStartLine, 0, blockStartLine + blockLines.length, 0),
+				issue.message,
+				issue.severity
+			);
+			diagnostic.source = 'rxiv-markdown';
+			diagnostic.code = issue.code;
+			diagnostics.push(diagnostic);
+		}
+
+		// Validate each line for environments and other syntax
+		for (let i = 0; i < blockLines.length; i++) {
+			const line = blockLines[i];
+			const lineNumber = blockStartLine + i + (blockStartLine === 0 ? 0 : 1); // Adjust for block start
+			this.trackLaTeXEnvironments(line, lineNumber, environmentStack, diagnostics);
+		}
+	}
+
+	private findBraceIssues(content: string): Array<{
+		message: string;
+		severity: vscode.DiagnosticSeverity;
+		code: string;
+	}> {
+		const issues: Array<{
+			message: string;
+			severity: vscode.DiagnosticSeverity;
+			code: string;
+		}> = [];
+
+		// Check for unmatched braces across the entire block
+		let braceCount = 0;
+		let inString = false;
+		let stringChar = '';
+
+		for (let i = 0; i < content.length; i++) {
+			const char = content[i];
+			const prevChar = i > 0 ? content[i-1] : '';
+
+			// Handle string literals
+			if (inString) {
+				if (char === stringChar && prevChar !== '\\') {
+					inString = false;
+				}
+				continue;
+			}
+
+			if ((char === '"' || char === "'") && prevChar !== '\\') {
+				inString = true;
+				stringChar = char;
+				continue;
+			}
+
+			// Count braces (ignore escaped braces)
+			if (char === '{' && prevChar !== '\\') {
+				braceCount++;
+			} else if (char === '}' && prevChar !== '\\') {
+				braceCount--;
+			}
+
+			// Early detection of negative brace count
+			if (braceCount < 0) {
+				issues.push({
+					message: 'Unmatched closing brace in LaTeX code',
+					severity: vscode.DiagnosticSeverity.Error,
+					code: 'unmatched-closing-brace'
+				});
+				break;
+			}
+		}
+
+		// Check for unmatched opening braces
+		if (braceCount > 0) {
+			issues.push({
+				message: 'Unmatched opening brace in LaTeX code',
+				severity: vscode.DiagnosticSeverity.Error,
+				code: 'unmatched-opening-brace'
+			});
+		}
+
+		return issues;
 	}
 
 	private validateLaTeXSyntax(
@@ -222,35 +326,39 @@ export class LaTeXBlockValidator implements Validator {
 			length: number;
 		}> = [];
 
-		// Check for unmatched braces
-		let braceCount = 0;
-		let lastOpenBrace = -1;
-		for (let i = 0; i < code.length; i++) {
-			const char = code[i];
-			if (char === '{' && (i === 0 || code[i-1] !== '\\')) {
-				braceCount++;
-				if (braceCount === 1) { lastOpenBrace = i; }
-			} else if (char === '}' && (i === 0 || code[i-1] !== '\\')) {
-				braceCount--;
+		// Note: Brace matching is now handled by findBraceIssues for entire blocks
+		// Only check braces for inline TeX expressions here
+		const isInlineExpression = !code.includes('\n');
+		if (isInlineExpression) {
+			let braceCount = 0;
+			let lastOpenBrace = -1;
+			for (let i = 0; i < code.length; i++) {
+				const char = code[i];
+				if (char === '{' && (i === 0 || code[i-1] !== '\\')) {
+					braceCount++;
+					if (braceCount === 1) { lastOpenBrace = i; }
+				} else if (char === '}' && (i === 0 || code[i-1] !== '\\')) {
+					braceCount--;
+				}
 			}
-		}
 
-		if (braceCount > 0) {
-			issues.push({
-				message: 'Unmatched opening brace in LaTeX code',
-				severity: vscode.DiagnosticSeverity.Error,
-				code: 'unmatched-brace',
-				column: lastOpenBrace,
-				length: 1
-			});
-		} else if (braceCount < 0) {
-			issues.push({
-				message: 'Unmatched closing brace in LaTeX code',
-				severity: vscode.DiagnosticSeverity.Error,
-				code: 'unmatched-brace',
-				column: 0,
-				length: code.length
-			});
+			if (braceCount > 0) {
+				issues.push({
+					message: 'Unmatched opening brace in LaTeX code',
+					severity: vscode.DiagnosticSeverity.Error,
+					code: 'unmatched-brace',
+					column: lastOpenBrace,
+					length: 1
+				});
+			} else if (braceCount < 0) {
+				issues.push({
+					message: 'Unmatched closing brace in LaTeX code',
+					severity: vscode.DiagnosticSeverity.Error,
+					code: 'unmatched-brace',
+					column: 0,
+					length: code.length
+				});
+			}
 		}
 
 		// Check for common LaTeX command issues

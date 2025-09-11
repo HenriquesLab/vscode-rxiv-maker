@@ -4,6 +4,21 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2025-09-11
+
+### Fixed
+- **🐛 LaTeX Brace Matching Fix** - Resolved false positive "Unmatched opening brace in LaTeX code" errors
+  - **Block-level Validation**: LaTeX validator now processes entire TeX blocks instead of line-by-line validation
+  - **Multi-line Support**: Properly handles braces that span multiple lines in complex LaTeX structures
+  - **String Literal Handling**: Improved brace counting ignores braces inside quoted strings
+  - **Escaped Brace Support**: Correctly handles escaped braces (`\{` and `\}`)
+  - **Preserved Inline Validation**: Inline TeX expressions continue to be validated individually
+
+### Technical Improvements
+- **Enhanced Validator Architecture**: Added `validateTexBlock` method for comprehensive block validation
+- **Improved Error Detection**: Better handling of unmatched closing braces with early detection
+- **Maintained Compatibility**: All existing validation features preserved while fixing brace matching
+
 ## [0.2.6] - 2025-09-08
 
 ### Fixed
