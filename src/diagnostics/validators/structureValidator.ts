@@ -179,8 +179,11 @@ export class StructureValidator implements Validator {
 				diagnostics.push(diagnostic);
 			}
 
-			// Should have citations
-			const hasCitations = /@[a-zA-Z]/.test(text) && !text.match(/@(fig|table|eq|sfig|stable|snote):/);
+			// Should have citations - check for both bracketed [@citation] and single @citation formats
+			// Use more specific patterns to avoid false positives with cross-references
+			const hasBracketedCitations = /\[@[a-zA-Z0-9_-]+(?:;@[a-zA-Z0-9_-]+)*\]/.test(text);
+			const hasStandaloneCitations = /(?<![@\w])@[a-zA-Z0-9_-]+(?![:\w])/.test(text) && !text.match(/(?<![@\w])@(fig|table|eq|sfig|stable|snote)(?![:\w])/);
+			const hasCitations = hasBracketedCitations || hasStandaloneCitations;
 			if (!hasCitations) {
 				const diagnostic = new vscode.Diagnostic(
 					new vscode.Range(0, 0, 0, 0),
