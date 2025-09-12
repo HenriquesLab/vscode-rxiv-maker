@@ -4,6 +4,21 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.4] - 2025-09-12
+
+### Fixed
+- **🐛 Citation Detection Logic Fix** - Resolved incorrect validation that excluded files with cross-references
+  - **Improved Logic**: Fixed bug where presence of cross-references (`@fig:`, `@table:`, etc.) prevented citation detection
+  - **Better Patterns**: Enhanced regex patterns to distinguish between citations and cross-references
+  - **Bracketed Citations**: Improved detection of `[@citation]` and `[@ref1; @ref2]` formats
+  - **Standalone Citations**: Better handling of standalone `@citation` patterns while excluding cross-refs
+
+### Added
+- **✨ Markdown Formatting Support** - Added bold and italic text highlighting
+  - **Bold Text**: Added syntax highlighting for `**bold text**` patterns
+  - **Italic Text**: Added syntax highlighting for `*italic text*` patterns
+  - **Smart Patterns**: Regex patterns avoid conflicts between single and double asterisks
+
 ## [0.3.1] - 2025-09-11
 
 ### Fixed
