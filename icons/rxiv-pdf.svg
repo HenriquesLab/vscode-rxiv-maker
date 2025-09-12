@@ -1,0 +1,15 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Minimal background -->
+  <rect x="0" y="0" width="16" height="16" fill="currentColor" opacity="0.05" rx="2"/>
+  
+  <!-- "rx" on top line - HUGE -->
+  <text x="2" y="7" font-family="monospace" font-size="8" font-weight="900" text-anchor="middle" fill="#FF6B6B">r</text>
+  <text x="14" y="7" font-family="monospace" font-size="8" font-weight="900" text-anchor="middle" fill="#FF9F43">x</text>
+  
+  <!-- "iv" on bottom line - HUGE -->
+  <text x="2" y="15" font-family="monospace" font-size="8" font-weight="900" text-anchor="middle" fill="#54A0FF">i</text>
+  <text x="14" y="15" font-family="monospace" font-size="8" font-weight="900" text-anchor="middle" fill="#5ECC00">v</text>
+  
+  <!-- "PDF" in the middle - WHITE and medium -->
+  <text x="8" y="10.5" font-family="sans-serif" font-size="4.5" font-weight="bold" text-anchor="middle" fill="white">PDF</text>
+</svg>

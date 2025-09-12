@@ -52,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		pdfStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
 		pdfStatusBarItem.command = 'rxiv-maker.makePdf';
-		pdfStatusBarItem.text = '$(file-pdf) PDF';
+		pdfStatusBarItem.text = '📄 rxiv PDF';
 		pdfStatusBarItem.tooltip = 'Build PDF with rxiv-maker';
 		context.subscriptions.push(pdfStatusBarItem);
 	};

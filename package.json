@@ -2,7 +2,7 @@
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
   "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution, blindtext support, and comprehensive linting",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -266,7 +266,10 @@
         "command": "rxiv-maker.makePdf",
         "title": "Generate PDF",
         "category": "Rxiv-Maker",
-        "icon": "$(file-pdf)"
+        "icon": {
+          "light": "./icons/rxiv-pdf.svg",
+          "dark": "./icons/rxiv-pdf.svg"
+        }
       },
       {
         "command": "rxiv-maker.makeClean",
