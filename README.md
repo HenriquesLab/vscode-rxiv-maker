@@ -35,6 +35,24 @@ The platform bridges the gap between **easy writing** (Markdown) and **beautiful
 - **⚡ Smart Commands**: Insert Python blocks, blindtext, citations, and references with intelligent templates
 - **🏗️ Integrated Workflow**: Direct access to rxiv-maker build, validate, and clean commands
 
+### 🎨 Syntax Highlighting Demo
+
+![VS Code Extension Syntax Highlighting](assets/vscode-extension-screenshot.png)
+
+*Enhanced syntax highlighting demonstrates the extension's comprehensive support for scientific writing features including Python code blocks, mathematical notation, cross-references, citations, and LaTeX injection.*
+
+See [`example-syntax-showcase.rxm`](example-syntax-showcase.rxm) for a comprehensive demonstration of all syntax highlighting features. This file showcases:
+
+- **Text formatting**: Bold, italic, subscript, superscript
+- **Scientific notation**: Chemical formulas, mathematical expressions
+- **Cross-references**: Figures, tables, equations, supplementary materials
+- **Citations**: Multiple citation formats and bibliography integration
+- **Python code blocks**: Executable code with full syntax highlighting
+- **LaTeX injection**: Direct LaTeX commands and mathematical notation
+- **Advanced features**: Blindtext, comments, document control commands
+
+*Perfect for taking screenshots and demonstrating the extension's capabilities!*
+
 ## Key Benefits for VS Code Users
 
 - **Enhanced Productivity**: Write manuscripts with intelligent autocompletion and syntax highlighting
@@ -165,13 +183,22 @@ For full manuscript generation capabilities, see the [Rxiv-Maker documentation](
 
 ## Getting Started with Rxiv-Maker
 
-New to Rxiv-Maker? Choose your preferred setup:
+### 🌐 Documentation Hub
+**[📖 Website Documentation](https://rxiv-maker.henriqueslab.org/)** - Start here for complete tutorials and guides
+
+### Quick Setup Options
 
 | Setup Type | Best For | Requirements | Time |
 |-----------|----------|--------------|------|
-| **[Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** | Beginners | Google account | 2 min |
+| **[Website Tutorial](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** | New users | Basic setup | 5-10 min |
+| **[Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** | No installation | Google account | 2 min |
 | **[GitHub Actions](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/github-actions-guide.md)** | Team collaboration | GitHub account | 5 min |
-| **[Local Install](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/platforms/LOCAL_DEVELOPMENT.md)** | Full control | Python 3.11+, LaTeX | 10-30 min |
+| **[Docker Setup](https://github.com/HenriquesLab/docker-rxiv-maker)** | Containerized | Docker installed | 5 min |
+
+### 🚀 Essential Links
+- **[First Manuscript Tutorial](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)** - 5-minute walkthrough
+- **[User Guide](https://rxiv-maker.henriqueslab.org/guides/)** - Complete documentation
+- **[VS Code Features](https://marketplace.visualstudio.com/items?itemName=henriqueslab.rxiv-maker)** - This extension
 
 ## How to Cite
 
