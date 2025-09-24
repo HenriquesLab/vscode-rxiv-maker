@@ -2,7 +2,7 @@
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
   "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution, blindtext support, and comprehensive linting",
-  "version": "0.3.5",
+  "version": "0.3.7",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",

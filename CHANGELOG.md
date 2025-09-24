@@ -4,6 +4,18 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.7] - 2025-09-24
+
+### Fixed
+- Ensure the PDF build runs in the correct manuscript folder by managing a dedicated terminal per manuscript path (cwd)
+  - Prevents reusing a terminal from another workspace folder (e.g., mAIcrobebiorxivdraft) when building EXAMPLE_MANUSCRIPT
+  - Names terminals like `rxiv-maker: <folder>` for clarity
+  - Cleans up mapping when terminals close
+
+### Internal
+- Refactor terminal management in `src/extension.ts` to a Map keyed by cwd
+- No API changes
+
 ## [0.3.5] - 2025-09-12
 
 ### Fixed

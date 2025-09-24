@@ -368,29 +368,36 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// Shared terminal management
-	let rxivMakerTerminal: vscode.Terminal | undefined;
+	// Shared terminal management: maintain a terminal per manuscript path (cwd)
+	const terminalsByCwd = new Map<string, vscode.Terminal>();
 
 	const getRxivMakerTerminal = (cwd: string): vscode.Terminal => {
-		// Check if existing terminal is still alive
-		if (rxivMakerTerminal && rxivMakerTerminal.exitStatus === undefined) {
-			return rxivMakerTerminal;
+		// Reuse an existing live terminal for this cwd
+		const existing = terminalsByCwd.get(cwd);
+		if (existing && existing.exitStatus === undefined) {
+			return existing;
 		}
 
-		// Create new terminal
-		rxivMakerTerminal = vscode.window.createTerminal({
-			name: 'rxiv-maker',
-			cwd: cwd
+		// Create a new terminal scoped to this cwd
+		const terminalName = `rxiv-maker: ${path.basename(cwd) || cwd}`;
+		const term = vscode.window.createTerminal({
+			name: terminalName,
+			cwd
 		});
 
-		// Clean up reference when terminal is closed
-		vscode.window.onDidCloseTerminal((terminal) => {
-			if (terminal === rxivMakerTerminal) {
-				rxivMakerTerminal = undefined;
+		terminalsByCwd.set(cwd, term);
+
+		// Clean up mapping when the terminal is closed
+		vscode.window.onDidCloseTerminal((closed) => {
+			for (const [key, value] of terminalsByCwd.entries()) {
+				if (value === closed) {
+					terminalsByCwd.delete(key);
+					break;
+				}
 			}
 		});
 
-		return rxivMakerTerminal;
+		return term;
 	};
 
 	const makeValidateCommand = vscode.commands.registerCommand('rxiv-maker.makeValidate', async () => {
