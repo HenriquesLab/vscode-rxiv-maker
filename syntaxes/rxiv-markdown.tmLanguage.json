@@ -17,6 +17,32 @@
       "comment": "HTML-style comments"
     },
     {
+      "name": "markup.math.display.rxiv",
+      "begin": "\\$\\$",
+      "end": "\\$\\$",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.math.display.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.math.display.end.rxiv"}
+      },
+      "contentName": "string.other.math.display.rxiv",
+      "comment": "Display mathematics expressions with $$...$$"
+    },
+    {
+      "name": "markup.math.inline.rxiv",
+      "begin": "(?<!\\$)\\$(?!\\$)",
+      "end": "(?<!\\$)\\$(?!\\$)",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.math.inline.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.math.inline.end.rxiv"}
+      },
+      "contentName": "string.other.math.inline.rxiv",
+      "comment": "Inline mathematics expressions with $...$"
+    },
+    {
       "name": "entity.name.tag.citation.rxiv",
       "match": "\\[(@[a-zA-Z0-9_.-]+(?:;\\s*@[a-zA-Z0-9_.-]+)*)\\]",
       "captures": {
