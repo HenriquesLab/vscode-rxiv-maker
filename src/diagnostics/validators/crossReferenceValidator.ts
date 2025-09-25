@@ -172,27 +172,28 @@ export class CrossReferenceValidator implements Validator {
 	private async getManuscriptFiles(document: vscode.TextDocument): Promise<string[]> {
 		const searchPaths: string[] = [];
 
-		// 1. Try current document's directory first
-		const currentDir = path.dirname(document.fileName);
-		searchPaths.push(path.join(currentDir, '01_MAIN.md'));
-		searchPaths.push(path.join(currentDir, '02_SUPPLEMENTARY_INFO.md'));
-		searchPaths.push(path.join(currentDir, '01_MAIN.rxm'));
-		searchPaths.push(path.join(currentDir, '02_SUPPLEMENTARY_INFO.rxm'));
+		// Find the rxiv-maker project root for the current document
+		const projectRoot = await this.findRxivMakerProjectRoot(document.fileName);
 
-		// 2. Try workspace folders
-		if (vscode.workspace.workspaceFolders) {
-			for (const folder of vscode.workspace.workspaceFolders) {
-				const folderPath = folder.uri.fsPath;
-				const mainMd = path.join(folderPath, '01_MAIN.md');
-				const suppMd = path.join(folderPath, '02_SUPPLEMENTARY_INFO.md');
-				const mainRxm = path.join(folderPath, '01_MAIN.rxm');
-				const suppRxm = path.join(folderPath, '02_SUPPLEMENTARY_INFO.rxm');
+		if (projectRoot) {
+			// Look for manuscript files in the project root
+			const manuscriptFiles = [
+				path.join(projectRoot, '01_MAIN.md'),
+				path.join(projectRoot, '02_SUPPLEMENTARY_INFO.md'),
+				path.join(projectRoot, '01_MAIN.rxm'),
+				path.join(projectRoot, '02_SUPPLEMENTARY_INFO.rxm')
+			];
 
-				if (!searchPaths.includes(mainMd)) { searchPaths.push(mainMd); }
-				if (!searchPaths.includes(suppMd)) { searchPaths.push(suppMd); }
-				if (!searchPaths.includes(mainRxm)) { searchPaths.push(mainRxm); }
-				if (!searchPaths.includes(suppRxm)) { searchPaths.push(suppRxm); }
+			for (const filePath of manuscriptFiles) {
+				searchPaths.push(filePath);
 			}
+		} else {
+			// Fallback: look in current document's directory
+			const currentDir = path.dirname(document.fileName);
+			searchPaths.push(path.join(currentDir, '01_MAIN.md'));
+			searchPaths.push(path.join(currentDir, '02_SUPPLEMENTARY_INFO.md'));
+			searchPaths.push(path.join(currentDir, '01_MAIN.rxm'));
+			searchPaths.push(path.join(currentDir, '02_SUPPLEMENTARY_INFO.rxm'));
 		}
 
 		// Filter to only existing files
@@ -207,6 +208,40 @@ export class CrossReferenceValidator implements Validator {
 		}
 
 		return existingFiles;
+	}
+
+	private async findRxivMakerProjectRoot(filePath: string): Promise<string | null> {
+		// Search up the directory tree to find the rxiv-maker project root
+		let currentDir = path.dirname(filePath);
+		const root = path.parse(currentDir).root;
+
+		while (currentDir !== root) {
+			// Check if this directory contains rxiv-maker characteristic files
+			const configFile = path.join(currentDir, '00_CONFIG.yml');
+			const hasMainFile = await this.fileExists(path.join(currentDir, '01_MAIN.md')) ||
+							  await this.fileExists(path.join(currentDir, '01_MAIN.rxm'));
+
+			if (await this.fileExists(configFile) && hasMainFile) {
+				return currentDir;
+			}
+
+			const parentDir = path.dirname(currentDir);
+			if (parentDir === currentDir) {
+				break; // We've reached the root
+			}
+			currentDir = parentDir;
+		}
+
+		return null;
+	}
+
+	private async fileExists(filePath: string): Promise<boolean> {
+		try {
+			await fs.promises.access(filePath, fs.constants.F_OK);
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
 	private createLabelMap(labels: ReferenceLabel[]): Map<string, ReferenceLabel> {

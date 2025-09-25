@@ -4,6 +4,30 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.9] - 2025-09-25
+
+### Added
+- **✨ Inline Code Syntax Highlighting** - Added support for `code` inline code blocks
+  - **Backtick Support**: Added proper syntax highlighting for inline code using backticks
+  - **Markdown Compatibility**: Enhanced markdown compatibility with standard inline code patterns
+  - **Proper Scoping**: Uses standard TextMate scopes for better theme integration
+
+### Enhanced
+- **🔍 Improved Cross-Reference Detection** - Enhanced project structure awareness
+  - **Project Root Detection**: Cross-reference validator now searches from the rxiv-maker project root
+  - **Better File Discovery**: Automatically finds manuscript files by traversing up to find `00_CONFIG.yml`
+  - **Reliable Validation**: More consistent cross-reference validation across complex project structures
+  - **Fallback Support**: Gracefully falls back to current directory search when project root not found
+
+## [0.3.8] - 2025-09-24
+
+### Added
+- **✨ Mathematical Expression Syntax Highlighting** - Enhanced support for LaTeX-style math notation
+  - **Inline Math**: Added syntax highlighting for `$...$` expressions (e.g., `$E = mc^2$`, `$\alpha = \frac{\beta}{\gamma}$`)
+  - **Display Math**: Added syntax highlighting for `$$...$$` expressions for centered equations
+  - **Smart Detection**: Uses negative lookbehind/lookahead to properly distinguish between inline and display math
+  - **Proper Scoping**: Math expressions are highlighted with dedicated TextMate scopes for extensibility
+
 ## [0.3.7] - 2025-09-24
 
 ### Fixed

@@ -155,6 +155,16 @@
       ]
     },
     {
+      "name": "markup.inline.raw.string.markdown",
+      "match": "(`)((?:[^`])+)(`)",
+      "captures": {
+        "1": {"name": "punctuation.definition.raw.begin.markdown"},
+        "2": {"name": "markup.inline.raw.string.markdown"},
+        "3": {"name": "punctuation.definition.raw.end.markdown"}
+      },
+      "comment": "Inline code with `code`"
+    },
+    {
       "name": "markup.bold.markdown",
       "match": "(\\*\\*)((?:[^*]|\\*(?!\\*))+)(\\*\\*)",
       "captures": {
