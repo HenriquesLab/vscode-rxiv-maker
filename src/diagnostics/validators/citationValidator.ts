@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../index';
+import { DocumentContent, ContentParser } from '../contentParser';
 
 interface BibEntry {
 	key: string;
@@ -15,7 +16,7 @@ export class CitationValidator implements Validator {
 	private bibEntriesCache: Map<string, { entries: BibEntry[]; timestamp: number }> = new Map();
 	private readonly CACHE_DURATION = 5000; // 5 seconds
 
-	async validate(document: vscode.TextDocument): Promise<vscode.Diagnostic[]> {
+	async validate(document: vscode.TextDocument, content?: DocumentContent): Promise<vscode.Diagnostic[]> {
 		const diagnostics: vscode.Diagnostic[] = [];
 		const text = document.getText();
 		const lines = text.split('\n');
@@ -29,18 +30,23 @@ export class CitationValidator implements Validator {
 			let inCodeBlock = false;
 			for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
 				const line = lines[lineNumber];
-				
+
 				// Check for code block boundaries
 				if (line.trim().startsWith('```')) {
 					inCodeBlock = !inCodeBlock;
 					continue;
 				}
-				
+
 				// Skip validation inside code blocks
 				if (inCodeBlock) {
 					continue;
 				}
-				
+
+				// Skip validation inside LaTeX blocks
+				if (content && this.isLineInLatexBlock(lineNumber, content)) {
+					continue;
+				}
+
 				// Pattern 1: Bracketed multiple citations like [@citation1;@citation2], excluding escaped
 				const bracketedMatches = line.matchAll(/(?<!\\)\[(@[^\]]+)\]/g);
 				for (const match of bracketedMatches) {
@@ -48,7 +54,12 @@ export class CitationValidator implements Validator {
 					if (this.isPositionInCodeSpan(line, match.index!)) {
 						continue;
 					}
-					
+
+					// Skip if this match is inside a LaTeX block
+					if (content && this.isPositionInLatexBlock(lineNumber, match.index!, content)) {
+						continue;
+					}
+
 					const citations = match[1].match(/(?<!\\)@([a-zA-Z0-9_-]+)/g);
 					if (citations) {
 						for (const citation of citations) {
@@ -66,7 +77,12 @@ export class CitationValidator implements Validator {
 					if (this.isPositionInCodeSpan(line, match.index!)) {
 						continue;
 					}
-					
+
+					// Skip if this match is inside a LaTeX block
+					if (content && this.isPositionInLatexBlock(lineNumber, match.index!, content)) {
+						continue;
+					}
+
 					const key = match[1];
 					if (key && this.isValidCitationKey(key)) {
 						this.validateCitationKey(key, lineNumber, line, match.index!, bibKeys, diagnostics);
@@ -146,6 +162,16 @@ export class CitationValidator implements Validator {
 		}
 		
 		return false;
+	}
+
+	private isLineInLatexBlock(lineNumber: number, content: DocumentContent): boolean {
+		const lineStart = new vscode.Position(lineNumber, 0);
+		return ContentParser.isPositionInLatexBlock(lineStart, content);
+	}
+
+	private isPositionInLatexBlock(lineNumber: number, columnIndex: number, content: DocumentContent): boolean {
+		const position = new vscode.Position(lineNumber, columnIndex);
+		return ContentParser.isPositionInLatexBlock(position, content);
 	}
 
 	private async getBibEntries(document: vscode.TextDocument): Promise<BibEntry[]> {

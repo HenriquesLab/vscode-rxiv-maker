@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import { Validator } from '../index';
+import { DocumentContent } from '../contentParser';
 
 export class LaTeXBlockValidator implements Validator {
-	async validate(document: vscode.TextDocument): Promise<vscode.Diagnostic[]> {
+	async validate(document: vscode.TextDocument, content?: DocumentContent): Promise<vscode.Diagnostic[]> {
 		const diagnostics: vscode.Diagnostic[] = [];
 		const text = document.getText();
 		const lines = text.split('\n');

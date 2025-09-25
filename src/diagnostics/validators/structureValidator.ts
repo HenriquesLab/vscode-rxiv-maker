@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../index';
+import { DocumentContent, ContentParser } from '../contentParser';
 
 export class StructureValidator implements Validator {
-	async validate(document: vscode.TextDocument): Promise<vscode.Diagnostic[]> {
+	async validate(document: vscode.TextDocument, content?: DocumentContent): Promise<vscode.Diagnostic[]> {
 		const diagnostics: vscode.Diagnostic[] = [];
 		const text = document.getText();
 		const lines = text.split('\n');
@@ -13,10 +14,10 @@ export class StructureValidator implements Validator {
 		await this.validateDocumentStructure(document, diagnostics);
 		
 		// Validate heading structure
-		this.validateHeadingStructure(lines, document, diagnostics);
+		this.validateHeadingStructure(lines, document, content, diagnostics);
 		
 		// Check for required elements
-		this.checkRequiredElements(text, document.fileName, diagnostics);
+		this.checkRequiredElements(text, document.fileName, content, diagnostics);
 		
 		// Validate figure references and file existence
 		await this.validateFigureFiles(lines, document, diagnostics);
@@ -86,15 +87,19 @@ export class StructureValidator implements Validator {
 		}
 	}
 
-	private validateHeadingStructure(lines: string[], document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
+	private validateHeadingStructure(lines: string[], document: vscode.TextDocument, content: DocumentContent | undefined, diagnostics: vscode.Diagnostic[]): void {
 		let lastHeadingLevel = 0;
 		let hasTitle = false;
 
 		for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
 			const line = lines[lineNumber];
 			const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-			
+
 			if (headingMatch) {
+				// Skip headings inside LaTeX or Python blocks
+				if (content && this.isLineInCodeBlock(lineNumber, content)) {
+					continue;
+				}
 				const level = headingMatch[1].length;
 				const title = headingMatch[2].trim();
 				
@@ -159,7 +164,7 @@ export class StructureValidator implements Validator {
 		}
 	}
 
-	private checkRequiredElements(text: string, fileName: string, diagnostics: vscode.Diagnostic[]): void {
+	private checkRequiredElements(text: string, fileName: string, content: DocumentContent | undefined, diagnostics: vscode.Diagnostic[]): void {
 		const basename = path.basename(fileName);
 		
 		// Check main manuscript requirements
@@ -181,8 +186,15 @@ export class StructureValidator implements Validator {
 
 			// Should have citations - check for both bracketed [@citation] and single @citation formats
 			// Use more specific patterns to avoid false positives with cross-references
-			const hasBracketedCitations = /\[@[a-zA-Z0-9_-]+(?:;@[a-zA-Z0-9_-]+)*\]/.test(text);
-			const hasStandaloneCitations = /(?<![@\w])@[a-zA-Z0-9_-]+(?![:\w])/.test(text) && !text.match(/(?<![@\w])@(fig|table|eq|sfig|stable|snote)(?![:\w])/);
+			// Filter out LaTeX blocks when checking for citations
+			const textToCheck = content ? ContentParser.filterMarkdownContent(text, {
+				getText: () => text,
+				fileName: fileName,
+				languageId: 'rxiv-markdown'
+			} as vscode.TextDocument, content) : text;
+
+			const hasBracketedCitations = /\[@[a-zA-Z0-9_-]+(?:;@[a-zA-Z0-9_-]+)*\]/.test(textToCheck);
+			const hasStandaloneCitations = /(?<![@\w])@[a-zA-Z0-9_-]+(?![:\w])/.test(textToCheck) && !textToCheck.match(/(?<![@\w])@(fig|table|eq|sfig|stable|snote)(?![:\w])/);
 			const hasCitations = hasBracketedCitations || hasStandaloneCitations;
 			if (!hasCitations) {
 				const diagnostic = new vscode.Diagnostic(
@@ -412,5 +424,11 @@ export class StructureValidator implements Validator {
 				diagnostics.push(diagnostic);
 			}
 		}
+	}
+
+	private isLineInCodeBlock(lineNumber: number, content: DocumentContent): boolean {
+		const lineStart = new vscode.Position(lineNumber, 0);
+		return ContentParser.isPositionInLatexBlock(lineStart, content) ||
+			   ContentParser.isPositionInPythonBlock(lineStart, content);
 	}
 }

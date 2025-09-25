@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../index';
+import { DocumentContent, ContentParser } from '../contentParser';
 
 interface ReferenceLabel {
 	type: 'fig' | 'sfig' | 'table' | 'stable' | 'eq' | 'snote';
@@ -14,7 +15,7 @@ export class CrossReferenceValidator implements Validator {
 	private labelsCache: Map<string, { labels: ReferenceLabel[]; timestamp: number }> = new Map();
 	private readonly CACHE_DURATION = 5000; // 5 seconds
 
-	async validate(document: vscode.TextDocument): Promise<vscode.Diagnostic[]> {
+	async validate(document: vscode.TextDocument, content?: DocumentContent): Promise<vscode.Diagnostic[]> {
 		const diagnostics: vscode.Diagnostic[] = [];
 		const text = document.getText();
 		const lines = text.split('\n');
@@ -38,18 +39,23 @@ export class CrossReferenceValidator implements Validator {
 			let inCodeBlock = false;
 			for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
 				const line = lines[lineNumber];
-				
+
 				// Check for code block boundaries
 				if (line.trim().startsWith('```')) {
 					inCodeBlock = !inCodeBlock;
 					continue;
 				}
-				
+
 				// Skip validation inside code blocks
 				if (inCodeBlock) {
 					continue;
 				}
-				
+
+				// Skip validation inside LaTeX blocks
+				if (content && this.isLineInLatexBlock(lineNumber, content)) {
+					continue;
+				}
+
 				for (const [refType, pattern] of Object.entries(referencePatterns)) {
 					const matches = line.matchAll(pattern);
 					for (const match of matches) {
@@ -57,10 +63,15 @@ export class CrossReferenceValidator implements Validator {
 						if (this.isPositionInCodeSpan(line, match.index!)) {
 							continue;
 						}
-						
+
+						// Skip if this match is inside a LaTeX block
+						if (content && this.isPositionInLatexBlock(lineNumber, match.index!, content)) {
+							continue;
+						}
+
 						const label = match[1];
 						const fullRef = `${refType}:${label}`;
-						
+
 						if (!labelMap.has(fullRef)) {
 							const range = new vscode.Range(
 								lineNumber,
@@ -300,5 +311,15 @@ export class CrossReferenceValidator implements Validator {
 		}
 		
 		return false;
+	}
+
+	private isLineInLatexBlock(lineNumber: number, content: DocumentContent): boolean {
+		const lineStart = new vscode.Position(lineNumber, 0);
+		return ContentParser.isPositionInLatexBlock(lineStart, content);
+	}
+
+	private isPositionInLatexBlock(lineNumber: number, columnIndex: number, content: DocumentContent): boolean {
+		const position = new vscode.Position(lineNumber, columnIndex);
+		return ContentParser.isPositionInLatexBlock(position, content);
 	}
 }

@@ -1,0 +1,38 @@
+# Test Document for LaTeX Block Validation
+
+This is regular markdown content with a citation @testcitation that should be validated.
+
+Here is a cross-reference @fig:test-figure that should be validated.
+
+{{tex:
+\begin{stable}[h!]
+\centering
+\begin{longtabu} to \textwidth {|X[3,l]|X[3,l]|X[4,l]|}
+\hline
+\textbf{Column 1} & \textbf{Column 2} & \textbf{Column 3} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Column 1} & \textbf{Column 2} & \textbf{Column 3} \\
+\hline
+\endhead
+\hline
+Test data & With citations \cite{some-latex-citation} & And cross-refs \ref{fig:latex-figure} \\
+\hline
+More data & Another citation \cite{another-latex-ref} & Another ref \eqref{eq:some-equation} \\
+\hline
+\end{longtabu}
+\caption{\textbf{Test Table.} This table contains LaTeX citations and cross-references that should NOT be validated as markdown citations.}
+\label{stable:test-table}
+\end{stable}
+}}
+
+Back to regular markdown. Another citation @anothercitation and reference @table:some-table should be validated.
+
+{{py:
+# This is a Python block
+print("Citations like @somecite should not be validated here")
+result = calculate_something()
+}}
+
+Final markdown content with @finalcitation and @eq:final-equation.

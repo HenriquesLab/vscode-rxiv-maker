@@ -4,13 +4,14 @@ import { CrossReferenceValidator } from './validators/crossReferenceValidator';
 import { PythonBlockValidator } from './validators/pythonBlockValidator';
 import { LaTeXBlockValidator } from './validators/latexBlockValidator';
 import { StructureValidator } from './validators/structureValidator';
+import { ContentParser, DocumentContent } from './contentParser';
 
 export interface ValidationResult {
 	diagnostics: vscode.Diagnostic[];
 }
 
 export interface Validator {
-	validate(document: vscode.TextDocument): Promise<vscode.Diagnostic[]>;
+	validate(document: vscode.TextDocument, content?: DocumentContent): Promise<vscode.Diagnostic[]>;
 }
 
 export class RxivMarkdownDiagnosticsProvider {
@@ -95,9 +96,12 @@ export class RxivMarkdownDiagnosticsProvider {
 		try {
 			const allDiagnostics: vscode.Diagnostic[] = [];
 
-			// Run all validators in parallel
+			// Parse document to identify content regions
+			const documentContent = ContentParser.parseDocument(document);
+
+			// Run all validators in parallel with content awareness
 			const validationResults = await Promise.all(
-				this.validators.map(validator => validator.validate(document))
+				this.validators.map(validator => validator.validate(document, documentContent))
 			);
 
 			// Combine all diagnostics
