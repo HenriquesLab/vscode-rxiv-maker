@@ -4,6 +4,15 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.10] - 2025-09-25
+
+### Fixed
+- **🔧 Cross-Reference Validation** - Fixed issue with cross-references not being found between manuscript files
+  - **Dual Strategy Search**: Cross-reference validator now searches both project root and document directory
+  - **Improved File Discovery**: Fixed issue where `@snote:getting_started` and other cross-references weren't found in supplementary files
+  - **Robust Fallback**: Ensures cross-references work even when project root detection fails
+  - **Better Error Handling**: More reliable validation for multi-file manuscript projects
+
 ## [0.3.9] - 2025-09-25
 
 ### Added

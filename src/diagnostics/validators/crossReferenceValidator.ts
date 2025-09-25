@@ -182,8 +182,9 @@ export class CrossReferenceValidator implements Validator {
 
 	private async getManuscriptFiles(document: vscode.TextDocument): Promise<string[]> {
 		const searchPaths: string[] = [];
+		const documentDir = path.dirname(document.fileName);
 
-		// Find the rxiv-maker project root for the current document
+		// Strategy 1: Find the rxiv-maker project root for the current document
 		const projectRoot = await this.findRxivMakerProjectRoot(document.fileName);
 
 		if (projectRoot) {
@@ -198,13 +199,20 @@ export class CrossReferenceValidator implements Validator {
 			for (const filePath of manuscriptFiles) {
 				searchPaths.push(filePath);
 			}
-		} else {
-			// Fallback: look in current document's directory
-			const currentDir = path.dirname(document.fileName);
-			searchPaths.push(path.join(currentDir, '01_MAIN.md'));
-			searchPaths.push(path.join(currentDir, '02_SUPPLEMENTARY_INFO.md'));
-			searchPaths.push(path.join(currentDir, '01_MAIN.rxm'));
-			searchPaths.push(path.join(currentDir, '02_SUPPLEMENTARY_INFO.rxm'));
+		}
+
+		// Strategy 2: Always also look in the document's directory (in case project root detection failed)
+		const localFiles = [
+			path.join(documentDir, '01_MAIN.md'),
+			path.join(documentDir, '02_SUPPLEMENTARY_INFO.md'),
+			path.join(documentDir, '01_MAIN.rxm'),
+			path.join(documentDir, '02_SUPPLEMENTARY_INFO.rxm')
+		];
+
+		for (const filePath of localFiles) {
+			if (!searchPaths.includes(filePath)) {
+				searchPaths.push(filePath);
+			}
 		}
 
 		// Filter to only existing files
