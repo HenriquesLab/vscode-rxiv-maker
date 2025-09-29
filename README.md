@@ -210,7 +210,7 @@ If you use Rxiv-Maker or this VS Code extension in your research, please cite ou
 ```bibtex
 @misc{saraiva2025rxivmakerautomatedtemplateengine,
       title={Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications}, 
-      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+      author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques},
       year={2025},
       eprint={2508.00836},
       archivePrefix={arXiv},
