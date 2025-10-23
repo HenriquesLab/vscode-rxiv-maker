@@ -1,0 +1,51 @@
+# Build and development files
+.vscode/**
+.vscode-test/**
+src/**
+out/**
+node_modules/**
+*.vsix
+
+# TypeScript and build configuration
+tsconfig.json
+esbuild.js
+eslint.config.mjs
+
+# Git files
+.git/**
+.gitignore
+.gitattributes
+
+# Testing
+.vscode-test.mjs
+**/test/**
+**/.eslintrc.json
+
+# Development documentation
+vsc-extension-quickstart.md
+test-latex-validation.rxm
+CLAUDE.md
+.claude/**
+
+# GitHub
+.github/**
+
+# Source maps (only exclude in production)
+dist/**/*.map
+
+# Misc
+**/*.log
+**/.DS_Store
+**/desktop.ini
+**/*.swp
+**/*.swo
+**/._*
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Unnecessary markdown files (keep readme.md, changelog.md, LICENSE.txt)
+contributing.md
+CODE_OF_CONDUCT.md

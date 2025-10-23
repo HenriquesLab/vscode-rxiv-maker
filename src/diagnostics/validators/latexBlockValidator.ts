@@ -53,7 +53,7 @@ export class LaTeXBlockValidator implements Validator {
 			} else if (inTexBlock && blockStartLine !== -1) {
 				// Inside TeX block - accumulate content
 				const latexCode = line.trim();
-				if (latexCode && !latexCode.includes('}}')) {
+				if (latexCode) {
 					blockContent += latexCode + '\n';
 					blockLines.push(latexCode);
 				}
@@ -134,24 +134,22 @@ export class LaTeXBlockValidator implements Validator {
 
 		// Check for unmatched braces across the entire block
 		let braceCount = 0;
-		let inString = false;
-		let stringChar = '';
+		let inComment = false;
 
 		for (let i = 0; i < content.length; i++) {
 			const char = content[i];
 			const prevChar = i > 0 ? content[i-1] : '';
 
-			// Handle string literals
-			if (inString) {
-				if (char === stringChar && prevChar !== '\\') {
-					inString = false;
+			// Handle LaTeX comments (% until end of line)
+			if (inComment) {
+				if (char === '\n') {
+					inComment = false;
 				}
 				continue;
 			}
 
-			if ((char === '"' || char === "'") && prevChar !== '\\') {
-				inString = true;
-				stringChar = char;
+			if (char === '%' && prevChar !== '\\') {
+				inComment = true;
 				continue;
 			}
 
