@@ -4,6 +4,22 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.11] - 2025-10-23
+
+### Fixed
+- **🔧 LaTeX Validation** - Fixed false positive "Unmatched opening brace" errors in LaTeX blocks
+  - **Apostrophe Handling**: Removed inappropriate string literal handling that treated apostrophes as string delimiters
+  - **Accurate Brace Counting**: LaTeX validator now correctly counts braces in text containing quotes or apostrophes (e.g., "mAIcrobe's")
+  - **LaTeX Comment Support**: Added proper handling for LaTeX comments (`%` until end of line)
+  - **Better Validation**: More accurate syntax validation for complex LaTeX captions and text
+
+### Improved
+- **📦 Extension Packaging** - Optimized extension package size and distribution
+  - **75% Smaller**: Reduced package size from 5.75 MB to 1.41 MB
+  - **Fewer Files**: Reduced from 2,988 files to just 15 essential runtime files
+  - **Added .vscodeignore**: Properly excludes development files, source code, and node_modules
+  - **Faster Loading**: Leaner package improves extension loading and installation performance
+
 ## [0.3.10] - 2025-09-25
 
 ### Fixed
