@@ -13,6 +13,12 @@ import {
 } from '../utils/installDetector';
 import { getRxivMakerVersion, forceCheckForUpdates } from '../utils/versionChecker';
 
+// Command name constants to avoid typos
+const COMMANDS = {
+    INSTALL: 'rxiv-maker.installRxivMaker',
+    UPGRADE: 'rxiv-maker.upgrade'
+} as const;
+
 /**
  * Upgrade rxiv-maker to the latest version.
  *
@@ -30,8 +36,13 @@ export async function upgradeRxivMakerCommand(context: vscode.ExtensionContext):
         );
 
         if (install === 'Install') {
-            // Trigger the install command
-            vscode.commands.executeCommand('rxiv-maker.install');
+            // Verify command exists before executing
+            const commands = await vscode.commands.getCommands();
+            if (commands.includes(COMMANDS.INSTALL)) {
+                vscode.commands.executeCommand(COMMANDS.INSTALL);
+            } else {
+                vscode.window.showErrorMessage('Install command not available. Please reinstall the extension.');
+            }
         }
         return;
     }
