@@ -2,7 +2,7 @@
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
   "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution, blindtext support, and comprehensive linting",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -258,6 +258,16 @@
         "category": "Rxiv-Maker"
       },
       {
+        "command": "rxiv-maker.upgrade",
+        "title": "Upgrade rxiv-maker",
+        "category": "Rxiv-Maker"
+      },
+      {
+        "command": "rxiv-maker.showStatus",
+        "title": "Show rxiv-maker Status",
+        "category": "Rxiv-Maker"
+      },
+      {
         "command": "rxiv-maker.makeValidate",
         "title": "Validate manuscript",
         "category": "Rxiv-Maker"
@@ -383,6 +393,16 @@
           "type": "boolean",
           "default": true,
           "description": "Show PDF build button in status bar"
+        },
+        "rxiv-maker.checkForUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check for rxiv-maker Python package updates"
+        },
+        "rxiv-maker.updateCheckInterval": {
+          "type": "number",
+          "default": 24,
+          "description": "Hours between update checks (default: 24)"
         }
       }
     }
