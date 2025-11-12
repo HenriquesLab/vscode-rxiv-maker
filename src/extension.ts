@@ -4,6 +4,9 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import * as os from 'os';
 import { RxivMarkdownDiagnosticsProvider } from './diagnostics';
+import { upgradeRxivMakerCommand, showRxivMakerStatus } from './commands/upgradeRxivMaker';
+import { getRxivMakerVersion, checkForUpdates } from './utils/versionChecker';
+import { detectInstallMethod, getFriendlyInstallName, isRxivMakerInstalled } from './utils/installDetector';
 
 interface BibEntry {
 	key: string;
@@ -39,12 +42,15 @@ export function activate(context: vscode.ExtensionContext) {
 	// Status bar button for PDF generation
 	let pdfStatusBarItem: vscode.StatusBarItem;
 
+	// Status bar for rxiv-maker version and update status
+	let versionStatusBarItem: vscode.StatusBarItem;
+
 	// Function to create and update status bar item
 	const createStatusBarItem = () => {
 		if (pdfStatusBarItem) {
 			pdfStatusBarItem.dispose();
 		}
-		
+
 		const config = vscode.workspace.getConfiguration('rxiv-maker');
 		if (!config.get('showStatusBarButton', true)) {
 			return;
@@ -55,6 +61,55 @@ export function activate(context: vscode.ExtensionContext) {
 		pdfStatusBarItem.text = '📄 rxiv PDF';
 		pdfStatusBarItem.tooltip = 'Build PDF with rxiv-maker';
 		context.subscriptions.push(pdfStatusBarItem);
+	};
+
+	// Function to create and update version status bar item
+	const createVersionStatusBarItem = async () => {
+		if (versionStatusBarItem) {
+			versionStatusBarItem.dispose();
+		}
+
+		versionStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+		versionStatusBarItem.command = 'rxiv-maker.upgrade';
+		context.subscriptions.push(versionStatusBarItem);
+
+		// Update the status bar
+		await updateVersionStatusBar();
+
+		// Show the status bar
+		versionStatusBarItem.show();
+	};
+
+	// Function to update the version status bar
+	const updateVersionStatusBar = async () => {
+		if (!versionStatusBarItem) {
+			return;
+		}
+
+		const installed = await isRxivMakerInstalled();
+		if (!installed) {
+			versionStatusBarItem.text = '$(warning) rxiv-maker: Not installed';
+			versionStatusBarItem.tooltip = 'Click to install rxiv-maker';
+			versionStatusBarItem.command = 'rxiv-maker.installRxivMaker';
+			return;
+		}
+
+		const version = await getRxivMakerVersion();
+		const installMethod = await detectInstallMethod();
+		const installName = getFriendlyInstallName(installMethod);
+
+		// Check for updates
+		const versionInfo = await checkForUpdates(context);
+
+		if (versionInfo.updateAvailable) {
+			versionStatusBarItem.text = `$(arrow-up) rxiv-maker: v${version} → v${versionInfo.latest}`;
+			versionStatusBarItem.tooltip = `Update available! Click to upgrade\nInstalled via: ${installName}`;
+			versionStatusBarItem.command = 'rxiv-maker.upgrade';
+		} else {
+			versionStatusBarItem.text = `$(check) rxiv-maker: v${version}`;
+			versionStatusBarItem.tooltip = `Up to date\nInstalled via: ${installName}`;
+			versionStatusBarItem.command = 'rxiv-maker.showStatus';
+		}
 	};
 
 	// Function to update status bar visibility based on current file
@@ -102,8 +157,9 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	};
 
-	// Create status bar item
+	// Create status bar items
 	createStatusBarItem();
+	createVersionStatusBarItem();
 
 	// Update visibility when active editor changes
 	vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -515,6 +571,18 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	});
 
+	// Upgrade rxiv-maker command
+	const upgradeCommand = vscode.commands.registerCommand('rxiv-maker.upgrade', async () => {
+		await upgradeRxivMakerCommand(context);
+		// Update status bar after upgrade
+		await updateVersionStatusBar();
+	});
+
+	// Show rxiv-maker status command
+	const showStatusCommand = vscode.commands.registerCommand('rxiv-maker.showStatus', async () => {
+		await showRxivMakerStatus(context);
+	});
+
 	const makeAddBibliographyCommand = vscode.commands.registerCommand('rxiv-maker.makeAddBibliography', async () => {
 		const result = await findManuscriptFolder();
 		if (!result.success || !result.manuscriptPath) {
@@ -810,6 +878,8 @@ export function activate(context: vscode.ExtensionContext) {
 		insertTableReferenceCommand,
 		insertEquationReferenceCommand,
 		installRxivMakerCommand,
+		upgradeCommand,
+		showStatusCommand,
 		makeValidateCommand,
 		makePdfCommand,
 		makeCleanCommand,

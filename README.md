@@ -34,6 +34,8 @@ The platform bridges the gap between **easy writing** (Markdown) and **beautiful
 - **✅ YAML Validation**: Schema validation for `00_CONFIG.yml` configuration files
 - **⚡ Smart Commands**: Insert Python blocks, blindtext, citations, and references with intelligent templates
 - **🏗️ Integrated Workflow**: Direct access to rxiv-maker build, validate, and clean commands
+- **🔄 Smart Update Management**: Auto-detects rxiv-maker installation method (Homebrew, pipx, uv, pip) and shows appropriate upgrade commands
+- **📊 Status Bar Integration**: Shows rxiv-maker Python package version and update availability at a glance
 
 ### 🎨 Syntax Highlighting Demo
 
@@ -155,6 +157,8 @@ Access these commands through the Command Palette (`Ctrl+Shift+P`):
 - **`Rxiv-Maker: Build PDF`** - Generate PDF from manuscript
 - **`Rxiv-Maker: Clean`** - Clean build artifacts
 - **`Rxiv-Maker: Install rxiv-maker framework`** - Automated installation with dependency checking
+- **`Rxiv-Maker: Upgrade rxiv-maker`** - Upgrade rxiv-maker Python package to latest version (auto-detects install method)
+- **`Rxiv-Maker: Show rxiv-maker Status`** - Display rxiv-maker version and installation details
 
 ## Project Structure
 
@@ -180,6 +184,16 @@ your-manuscript/
 - **Project Files**: Standard rxiv-maker project structure
 
 For full manuscript generation capabilities, see the [Rxiv-Maker documentation](https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/user_guide.md).
+
+## Configuration
+
+The extension can be configured through VS Code settings (`Ctrl+,` or `Cmd+,`):
+
+- **`rxiv-maker.showStatusBarButton`** (boolean, default: `true`): Show PDF build button in status bar
+- **`rxiv-maker.checkForUpdates`** (boolean, default: `true`): Check for rxiv-maker Python package updates automatically
+- **`rxiv-maker.updateCheckInterval`** (number, default: `24`): Hours between update checks
+
+The extension automatically detects how rxiv-maker is installed (Homebrew, pipx, uv, pip, etc.) and shows the appropriate upgrade command when updates are available.
 
 ## Getting Started with Rxiv-Maker
 
