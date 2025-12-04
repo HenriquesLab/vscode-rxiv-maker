@@ -112,8 +112,14 @@ See [`example-syntax-showcase.rxm`](example-syntax-showcase.rxm) for a comprehen
 
 ## Installation
 
-1. Install from VS Code Marketplace: Search for "Rxiv-Maker"
-2. Or install from VSIX: Download the latest release and install manually
+### From Extension Marketplaces
+
+1. **VS Code Marketplace**: Search for "Rxiv-Maker" or visit [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker)
+2. **Open VSX Registry** (for VSCodium, Code-OSS, etc.): Visit [Open VSX](https://open-vsx.org/extension/HenriquesLab/rxiv-maker)
+
+### Manual Installation
+
+Download the latest `.vsix` file from [GitHub Releases](https://github.com/HenriquesLab/vscode-rxiv-maker/releases) and install manually
 
 ## Usage
 
