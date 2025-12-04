@@ -148,11 +148,13 @@ export class StructureValidator implements Validator {
 			}
 		}
 
-		// Check if document has a title (but skip for supplementary documents)
+		// Check if document has a title (but skip for main and supplementary documents)
+		// In rxiv-maker, the title for 01_MAIN.md comes from 00_CONFIG.yml, not as a heading
 		const fileName = path.basename(document.fileName);
+		const isMainManuscript = fileName === '01_MAIN.md' || fileName === '01_MAIN.rxm';
 		const isSupplementary = fileName === '02_SUPPLEMENTARY_INFO.md' || fileName === '02_SUPPLEMENTARY_INFO.rxm';
-		
-		if (!hasTitle && !isSupplementary) {
+
+		if (!hasTitle && !isMainManuscript && !isSupplementary) {
 			const diagnostic = new vscode.Diagnostic(
 				new vscode.Range(0, 0, 0, 0),
 				'Document should start with a main title (# Title)',

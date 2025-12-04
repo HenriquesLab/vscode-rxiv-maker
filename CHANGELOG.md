@@ -4,6 +4,14 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.14] - 2025-12-04
+
+### Fixed
+- **🔧 Structure Validation** - Removed false positive title requirement for main manuscript files
+  - **Config-based Title**: Fixed validator to recognize that `01_MAIN.md` title comes from `00_CONFIG.yml`
+  - **No More Warnings**: Removed incorrect "Document should start with a main title (# Title)" diagnostic
+  - **Spec Compliance**: Aligns with rxiv-maker specification where manuscript title is defined in config file
+
 ## [0.3.13] - 2025-12-04
 
 ### Added
