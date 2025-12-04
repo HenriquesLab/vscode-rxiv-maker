@@ -151,6 +151,20 @@ jobs:
             echo "✅ Successfully published to marketplace!"
           fi
 
+      - name: Publish to Open VSX Registry
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "⚠️  OVSX_PAT secret not found. Skipping Open VSX publication."
+            echo "To enable automatic Open VSX publishing, add your Personal Access Token as OVSX_PAT secret."
+            echo "Get your token at: https://open-vsx.org/user-settings/tokens"
+          else
+            echo "📦 Publishing to Open VSX Registry..."
+            npx ovsx publish rxiv-maker-${{ steps.version.outputs.version_number }}.vsix -p $OVSX_PAT
+            echo "✅ Successfully published to Open VSX!"
+          fi
+
       - name: Create summary
         env:
           GH_TOKEN: ${{ github.token }}
@@ -165,6 +179,7 @@ jobs:
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "- [GitHub Release]($RELEASE_URL)" >> $GITHUB_STEP_SUMMARY
           echo "- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Open VSX Registry](https://open-vsx.org/extension/HenriquesLab/rxiv-maker)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📋 Changelog" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
