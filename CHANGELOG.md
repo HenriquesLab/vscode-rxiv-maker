@@ -4,6 +4,15 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.13] - 2025-12-04
+
+### Added
+- **🌐 Open VSX Registry Support** - Extension now publishes to Open VSX Registry
+  - **Multi-Platform**: Available for VSCodium, Code-OSS, and other VS Code alternatives
+  - **Automated Publishing**: Release workflow automatically publishes to both VS Code Marketplace and Open VSX
+  - **Easy Installation**: Users can install from either marketplace
+  - **Documentation**: Updated README with Open VSX installation instructions
+
 ## [0.3.11] - 2025-10-23
 
 ### Fixed
