@@ -287,6 +287,20 @@
         "category": "Rxiv-Maker"
       },
       {
+        "command": "rxiv-maker.makeDocx",
+        "title": "Generate Word (DOCX)",
+        "category": "Rxiv-Maker",
+        "icon": {
+          "light": "./icons/rxiv-docx.svg",
+          "dark": "./icons/rxiv-docx.svg"
+        }
+      },
+      {
+        "command": "rxiv-maker.resolveInlineDois",
+        "title": "Update Citations (Resolve DOIs)",
+        "category": "Rxiv-Maker"
+      },
+      {
         "command": "rxiv-maker.makeAddBibliography",
         "title": "Add bibliography entry from DOI",
         "category": "Rxiv-Maker"
@@ -383,6 +397,11 @@
           "when": "resourceLangId == rxiv-markdown",
           "command": "rxiv-maker.makePdf",
           "group": "navigation@1"
+        },
+        {
+          "when": "resourceLangId == rxiv-markdown",
+          "command": "rxiv-maker.makeDocx",
+          "group": "navigation@2"
         }
       ]
     },

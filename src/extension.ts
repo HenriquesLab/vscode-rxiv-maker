@@ -480,6 +480,32 @@ export function activate(context: vscode.ExtensionContext) {
 		terminal.sendText(`rxiv pdf .`);
 	});
 
+	const makeDocxCommand = vscode.commands.registerCommand('rxiv-maker.makeDocx', async () => {
+		const result = await findManuscriptFolder();
+		if (!result.success || !result.manuscriptPath) {
+			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
+			return;
+		}
+
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
+		terminal.show();
+		terminal.sendText(`rxiv docx .`);
+	});
+
+	const resolveInlineDoisCommand = vscode.commands.registerCommand('rxiv-maker.resolveInlineDois', async () => {
+		const result = await findManuscriptFolder();
+		if (!result.success || !result.manuscriptPath) {
+			vscode.window.showErrorMessage(result.error || 'Could not determine manuscript folder');
+			return;
+		}
+
+		const terminal = getRxivMakerTerminal(result.manuscriptPath);
+		terminal.show();
+		// Use rxiv docx --resolve-dois as it explicitly enables inline resolution
+		// and is the most reliable way to trigger the update without modifying config.
+		terminal.sendText(`rxiv docx --resolve-dois .`);
+	});
+
 	const makeCleanCommand = vscode.commands.registerCommand('rxiv-maker.makeClean', async () => {
 		const result = await findManuscriptFolder();
 		if (!result.success || !result.manuscriptPath) {
@@ -645,7 +671,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (editor) {
 			const position = editor.selection.active;
 			const selection = editor.selection;
-			
+
 			if (selection.isEmpty) {
 				// Insert template with cursor placeholder
 				const snippet = new vscode.SnippetString('{{py:\n$1\n}}');
@@ -665,7 +691,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (editor) {
 			const position = editor.selection.active;
 			const selection = editor.selection;
-			
+
 			if (selection.isEmpty) {
 				// Insert template with cursor placeholder
 				const snippet = new vscode.SnippetString('{py: $1}');
@@ -685,7 +711,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const editor = vscode.window.activeTextEditor;
 		if (editor) {
 			const position = editor.selection.active;
-			
+
 			// Show common modules as suggestions
 			const commonModules = [
 				{ label: 'datetime', detail: 'Date and time operations' },
@@ -712,7 +738,7 @@ export function activate(context: vscode.ExtensionContext) {
 					prompt: 'Enter module name to import',
 					placeHolder: 'e.g., datetime'
 				});
-				
+
 				if (customModule) {
 					const snippet = new vscode.SnippetString(`{py:import ${customModule}}`);
 					await editor.insertSnippet(snippet, position);
@@ -761,7 +787,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const editor = vscode.window.activeTextEditor;
 		if (editor) {
 			const position = editor.selection.active;
-			
+
 			// Show common format types as suggestions
 			const formatTypes = [
 				{ label: 'number,2', detail: 'Format number with 2 decimal places' },
@@ -811,7 +837,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (editor) {
 			const position = editor.selection.active;
 			const selection = editor.selection;
-			
+
 			if (selection.isEmpty) {
 				// Insert template with cursor placeholder
 				const snippet = new vscode.SnippetString('{{tex:\n$1\n}}');
@@ -831,7 +857,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (editor) {
 			const position = editor.selection.active;
 			const selection = editor.selection;
-			
+
 			if (selection.isEmpty) {
 				// Insert template with cursor placeholder
 				const snippet = new vscode.SnippetString('{{tex: $1}}');
@@ -945,7 +971,7 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 		// Also support partial patterns like: @f, @sf, @fig, @sfig, @t, @st, @table, @stable, @e, @eq, @sn, @snote
 		const referenceMatch = beforeCursor.match(/@(s?)(fig|table|eq|snote)(:?)(.*)$/);
 		const partialMatch = beforeCursor.match(/@(s?)(f|fig|t|table|stable|e|eq|sn|snote)$/);
-		
+
 		if (!referenceMatch && !partialMatch) {
 			return [];
 		}
@@ -970,7 +996,7 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 				const item = new vscode.CompletionItem(ref.label, vscode.CompletionItemKind.Reference);
 				item.detail = `${ref.supplementary ? 'Supplementary ' : ''}${ref.type.charAt(0).toUpperCase() + ref.type.slice(1)}`;
 				item.documentation = new vscode.MarkdownString(`Line ${ref.line + 1}`);
-				
+
 				if (hasColon) {
 					item.insertText = ref.label;
 				} else {
@@ -982,14 +1008,14 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 						position
 					);
 				}
-				
+
 				return item;
 			});
 		} else if (partialMatch) {
 			// Partial pattern matching (e.g., @f -> show @fig: and @sfig: options)
 			const isSupplementary = partialMatch[1] === 's';
 			const partialType = partialMatch[2];
-			
+
 			// Map partial types to full types
 			const typeMap: Record<string, string[]> = {
 				'f': ['fig'],
@@ -1002,15 +1028,15 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 				'sn': ['snote'],
 				'snote': ['snote']
 			};
-			
+
 			const possibleTypes = typeMap[partialType] || [];
-			
+
 			for (const refType of possibleTypes) {
 				const filteredRefs = references.filter(ref =>
 					ref.type === refType &&
 					(isSupplementary ? ref.supplementary : !ref.supplementary)
 				);
-				
+
 				if (filteredRefs.length > 0) {
 					// Add a completion item for the reference type
 					const typeItem = new vscode.CompletionItem(
@@ -1313,4 +1339,4 @@ async function findManuscriptFolder(): Promise<ManuscriptFolderResult> {
 	};
 }
 
-export function deactivate() {}
+export function deactivate() { }
