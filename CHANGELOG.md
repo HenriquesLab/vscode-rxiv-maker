@@ -4,6 +4,14 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.15] - 2025-12-09
+
+### Added
+- **✨ DOCX Generation Support** - Added UI commands for generating DOCX files
+  - **Generate Word (DOCX)**: New command and status bar integration for `rxiv docx`
+  - **Resolve Inline DOIs**: New command to resolve citation DOIs inline
+  - **Token Icons**: Added icons for DOCX and PDF generation actions
+
 ## [0.3.14] - 2025-12-04
 
 ### Fixed
