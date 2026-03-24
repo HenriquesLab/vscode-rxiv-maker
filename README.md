@@ -228,14 +228,13 @@ If you use Rxiv-Maker or this VS Code extension in your research, please cite ou
 
 **BibTeX:**
 ```bibtex
-@misc{saraiva2025rxivmakerautomatedtemplateengine,
-      title={Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications}, 
-      author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques},
-      year={2025},
-      eprint={2508.00836},
-      archivePrefix={arXiv},
-      primaryClass={cs.DL},
-      url={https://arxiv.org/abs/2508.00836}, 
+@misc{saraiva_2025_rxivmaker,
+  title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+  author={Bruno M. Saraiva and Ant\'{o}nio D. Brito and Guillaume Jaquemet and Ricardo Henriques},
+  year={2025},
+  eprint={2508.00836},
+  archivePrefix={arXiv},
+  url={https://arxiv.org/abs/2508.00836}
 }
 ```
 
