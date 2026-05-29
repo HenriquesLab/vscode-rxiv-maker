@@ -51,11 +51,6 @@
       "comment": "Citations like [@key] or [@key1; @key2]"
     },
     {
-      "name": "entity.name.tag.citation.rxiv",
-      "match": "@[a-zA-Z0-9_.-]+",
-      "comment": "Individual citation keys like @key"
-    },
-    {
       "name": "entity.name.tag.reference.rxiv",
       "match": "@(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)",
       "captures": {
@@ -64,6 +59,11 @@
         "4": {"name": "variable.other.constant.reference.rxiv"}
       },
       "comment": "Cross-references like @fig:label, @stable:label"
+    },
+    {
+      "name": "entity.name.tag.citation.rxiv",
+      "match": "@[a-zA-Z0-9_.-]+",
+      "comment": "Individual citation keys like @key"
     },
     {
       "name": "entity.name.tag.label-definition.rxiv",

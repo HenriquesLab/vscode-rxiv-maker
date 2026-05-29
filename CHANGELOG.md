@@ -4,6 +4,14 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.16] - 2026-05-29
+
+### Added
+- **🎨 Cross-reference colouring** - Cross-references and label definitions (`@fig:label`, `@sfig:label`, `@stable:label`, `@snote:label`, `{#fig:label}`) are now colour-coded via `editor.tokenColorCustomizations` contributed in `configurationDefaults`: the type, the `@`/`:` punctuation, and the supplementary `s` share one hue while the label uses another, so the token reads coherently. The supplementary `s` (in `@stable`/`@sfig`/`@seq`) no longer renders differently from `@snote`. Also reorders the grammar so the cross-reference rule precedes the generic citation rule, which previously shadowed `@type:label` uses (matching `@type` as a citation and leaving the label unscoped).
+
+### Fixed
+- **🔧 Apply contributed token colours** - Moved the `contributes.tokenColors` rules into `editor.tokenColorCustomizations` under `configurationDefaults`. `contributes.tokenColors` is not a supported VS Code contribution point and had no effect, so the intended colours for `<newpage>`, blindtext placeholders, and embedded Python/TeX blocks were never applied; they now render as authored.
+
 ## [0.3.15] - 2025-12-09
 
 ### Added
