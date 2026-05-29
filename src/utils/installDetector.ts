@@ -7,8 +7,19 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as vscode from 'vscode';
 
 const execAsync = promisify(exec);
+
+// Output channel for logging
+let outputChannel: vscode.OutputChannel | null = null;
+
+function getOutputChannel(): vscode.OutputChannel {
+    if (!outputChannel) {
+        outputChannel = vscode.window.createOutputChannel('Rxiv-Maker');
+    }
+    return outputChannel;
+}
 
 export type InstallMethod = 'homebrew' | 'pipx' | 'uv' | 'pip-user' | 'pip' | 'dev' | 'unknown';
 
@@ -20,7 +31,10 @@ export type InstallMethod = 'homebrew' | 'pipx' | 'uv' | 'pip-user' | 'pip' | 'd
 export async function detectInstallMethod(): Promise<InstallMethod> {
     try {
         // Get the path to rxiv executable
-        const { stdout: whichOutput } = await execAsync('which rxiv 2>/dev/null || where rxiv 2>nul');
+        // Use platform-specific command to avoid shell compatibility issues
+        const isWindows = process.platform === 'win32';
+        const cmd = isWindows ? 'where rxiv 2>nul' : 'which rxiv 2>/dev/null';
+        const { stdout: whichOutput } = await execAsync(cmd);
         const executablePath = whichOutput.trim();
 
         if (!executablePath) {
@@ -37,8 +51,8 @@ export async function detectInstallMethod(): Promise<InstallMethod> {
 
         for (const prefix of homebrewPrefixes) {
             if (executablePath.startsWith(prefix)) {
-                // Additional verification: check if Cellar path exists
-                if (executablePath.includes('/Cellar/') || executablePath.includes('/opt/')) {
+                // Additional verification: check if Cellar or opt/homebrew path exists
+                if (executablePath.includes('/Cellar/') || executablePath.includes('/opt/homebrew/')) {
                     return 'homebrew';
                 }
             }
@@ -80,7 +94,8 @@ export async function detectInstallMethod(): Promise<InstallMethod> {
 
         return 'unknown';
     } catch (error) {
-        console.error('Error detecting install method:', error);
+        const output = getOutputChannel();
+        output.appendLine(`Error detecting install method: ${error}`);
         return 'unknown';
     }
 }
@@ -130,7 +145,9 @@ export function getFriendlyInstallName(installMethod: InstallMethod): string {
  */
 export async function isRxivMakerInstalled(): Promise<boolean> {
     try {
-        const { stdout } = await execAsync('rxiv --version 2>/dev/null || rxiv.exe --version 2>nul');
+        const isWindows = process.platform === 'win32';
+        const cmd = isWindows ? 'rxiv.exe --version 2>nul' : 'rxiv --version 2>/dev/null';
+        const { stdout } = await execAsync(cmd);
         return stdout.trim().length > 0;
     } catch (error) {
         return false;
