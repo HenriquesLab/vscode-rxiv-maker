@@ -1,3 +1,7 @@
 node_modules
 *.vsix
 CLAUDE.md
+
+# Test runner downloads and compiled test output
+.vscode-test/
+out/
