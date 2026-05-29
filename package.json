@@ -2,7 +2,7 @@
   "name": "rxiv-maker",
   "displayName": "Rxiv-Maker",
   "description": "Enhanced toolkit for scientific manuscript authoring with rxiv-maker, including Python code execution, blindtext support, and comprehensive linting",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "publisher": "HenriquesLab",
   "icon": "icon.png",
   "license": "MIT",
@@ -90,8 +90,8 @@
           },
           {
             "scope": [
-              "markup.subscript",
-              "markup.superscript"
+              "markup.subscript.rxiv",
+              "markup.superscript.rxiv"
             ],
             "settings": {
               "foreground": "#A0A0A0"
@@ -237,7 +237,6 @@
               "foreground": "#D4D4D4"
             }
           }
-    
         ]
       }
     },
