@@ -7,6 +7,12 @@ import * as os from 'os';
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
 
+	// Several tests below exercise the rxiv-maker EXAMPLE_MANUSCRIPT, which lives
+	// in the separate rxiv-maker repository rather than in this extension repo.
+	// When that fixture is absent (e.g. CI for this repo, or a fresh clone) the
+	// dependent tests skip rather than hard-fail. Set RXIV_MAKER_EXAMPLE_PATH to
+	// run them locally against a checkout of the manuscript.
+
 	/**
 	 * Helper function to find the EXAMPLE_MANUSCRIPT directory dynamically
 	 */
@@ -50,7 +56,12 @@ suite('Extension Test Suite', () => {
 		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
 	});
 
-	test('Extension should load commands', async () => {
+	test('Extension should load commands', async function () {
+		// Activating the extension here relies on opening an EXAMPLE_MANUSCRIPT
+		// document; skip when that fixture is unavailable.
+		if (!findExampleManuscriptPath()) {
+			this.skip();
+		}
 		// First, ensure the extension is activated by opening a document that should trigger it
 		const exampleManuscriptPath = getExampleManuscriptPath();
 		const mainPath = path.join(exampleManuscriptPath, '01_MAIN.md');
@@ -75,7 +86,10 @@ suite('Extension Test Suite', () => {
 	suite('EXAMPLE_MANUSCRIPT Tests', () => {
 		let exampleManuscriptPath: string;
 
-		suiteSetup(() => {
+		suiteSetup(function () {
+			if (!findExampleManuscriptPath()) {
+				this.skip();
+			}
 			exampleManuscriptPath = getExampleManuscriptPath();
 		});
 
