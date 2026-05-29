@@ -165,6 +165,16 @@
       "comment": "Inline code with `code`"
     },
     {
+      "name": "markup.subscript.rxiv",
+      "match": "(?<!~)~([^~\\s]+)~(?!~)",
+      "comment": "Subscript text with ~text~ (e.g. H~2~O); single tilde, no spaces, avoids ~~strikethrough~~"
+    },
+    {
+      "name": "markup.superscript.rxiv",
+      "match": "\\^([^\\^\\s]+)\\^",
+      "comment": "Superscript text with ^text^ (e.g. E=mc^2^)"
+    },
+    {
       "name": "markup.bold.markdown",
       "match": "(\\*\\*)((?:[^*]|\\*(?!\\*))+)(\\*\\*)",
       "captures": {

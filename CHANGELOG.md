@@ -4,6 +4,11 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.17] - 2026-05-29
+
+### Fixed
+- **🔧 Subscript/superscript scope leak** - The token colour rule targeted the generic `markup.subscript` / `markup.superscript` TextMate scopes, which other grammars (standard Markdown, AsciiDoc, reStructuredText) also emit. Because `editor.tokenColorCustomizations` is contributed globally, this greyed out subscript/superscript text in every file type, not just rxiv documents. The scopes are now namespaced to `markup.subscript.rxiv` / `markup.superscript.rxiv`, and the grammar gained matching rules for `~subscript~` and `^superscript^`, so the colouring is both scoped to rxiv files and actually applied (the previous rule matched nothing the grammar emitted).
+
 ## [0.3.16] - 2026-05-29
 
 ### Added
