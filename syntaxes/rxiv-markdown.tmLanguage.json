@@ -166,12 +166,20 @@
     },
     {
       "name": "markup.subscript.rxiv",
-      "match": "(?<!~)~([^~\\s]+)~(?!~)",
+      "match": "(?<!~)(~)([^~\\s]+)(~)(?!~)",
+      "captures": {
+        "1": {"name": "punctuation.definition.subscript.begin.rxiv"},
+        "3": {"name": "punctuation.definition.subscript.end.rxiv"}
+      },
       "comment": "Subscript text with ~text~ (e.g. H~2~O); single tilde, no spaces, avoids ~~strikethrough~~"
     },
     {
       "name": "markup.superscript.rxiv",
-      "match": "\\^([^\\^\\s]+)\\^",
+      "match": "(\\^)([^\\^\\s]+)(\\^)",
+      "captures": {
+        "1": {"name": "punctuation.definition.superscript.begin.rxiv"},
+        "3": {"name": "punctuation.definition.superscript.end.rxiv"}
+      },
       "comment": "Superscript text with ^text^ (e.g. E=mc^2^)"
     },
     {
