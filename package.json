@@ -76,7 +76,157 @@
             "settings": {
               "foreground": "#CE9178"
             }
+          },
+          {
+            "scope": [
+              "markup.subscript",
+              "markup.superscript"
+            ],
+            "settings": {
+              "foreground": "#A0A0A0"
+            }
+          },
+          {
+            "scope": "keyword.control.newpage.rxiv",
+            "settings": {
+              "foreground": "#569CD6"
+            }
+          },
+          {
+            "scope": "keyword.control.placeholder.blindtext.rxiv",
+            "settings": {
+              "foreground": "#C586C0",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "entity.name.function.blindtext.rxiv",
+            "settings": {
+              "foreground": "#DCDCAA"
+            }
+          },
+          {
+            "scope": "keyword.control.embedded.python.rxiv",
+            "settings": {
+              "foreground": "#4EC9B0",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "keyword.control.embedded.tex.rxiv",
+            "settings": {
+              "foreground": "#FF7F50",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "source.tex.embedded.rxiv",
+            "settings": {
+              "foreground": "#D4D4D4"
+            }
+          },
+          {
+            "scope": "punctuation.definition.embedded.begin.rxiv",
+            "settings": {
+              "foreground": "#4EC9B0"
+            }
+          },
+          {
+            "scope": "punctuation.definition.embedded.end.rxiv",
+            "settings": {
+              "foreground": "#4EC9B0"
+            }
+          },
+          {
+            "scope": "source.python.embedded.rxiv",
+            "settings": {
+              "foreground": "#D4D4D4"
+            }
+          },
+          {
+            "scope": "keyword.control.import.python.rxiv",
+            "settings": {
+              "foreground": "#C586C0",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "entity.name.type.module.python.rxiv",
+            "settings": {
+              "foreground": "#4FC1FF"
+            }
+          },
+          {
+            "scope": "keyword.control.variable.set.python.rxiv",
+            "settings": {
+              "foreground": "#9CDCFE",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "keyword.control.variable.get.python.rxiv",
+            "settings": {
+              "foreground": "#DCDCAA",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "keyword.control.variable.global.python.rxiv",
+            "settings": {
+              "foreground": "#FF6B6B",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "variable.other.readwrite.python.rxiv",
+            "settings": {
+              "foreground": "#9CDCFE"
+            }
+          },
+          {
+            "scope": "variable.other.readwrite.global.python.rxiv",
+            "settings": {
+              "foreground": "#FF8C94"
+            }
+          },
+          {
+            "scope": "keyword.operator.assignment.python.rxiv",
+            "settings": {
+              "foreground": "#D4D4D4"
+            }
+          },
+          {
+            "scope": "string.quoted.context.name.python.rxiv",
+            "settings": {
+              "foreground": "#CE9178"
+            }
+          },
+          {
+            "scope": "string.quoted.format.spec.python.rxiv",
+            "settings": {
+              "foreground": "#D7BA7D"
+            }
+          },
+          {
+            "scope": "keyword.control.conditional.python.rxiv",
+            "settings": {
+              "foreground": "#C586C0",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "string.quoted.double.conditional.python.rxiv",
+            "settings": {
+              "foreground": "#98C379"
+            }
+          },
+          {
+            "scope": "punctuation.separator.conditional.python.rxiv",
+            "settings": {
+              "foreground": "#D4D4D4"
+            }
           }
+    
         ]
       }
     },
@@ -85,157 +235,6 @@
         "language": "rxiv-markdown",
         "scopeName": "source.rxiv-markdown",
         "path": "./syntaxes/rxiv-markdown.tmLanguage.json"
-      }
-    ],
-    "tokenColors": [
-      {
-        "scope": [
-          "markup.subscript",
-          "markup.superscript"
-        ],
-        "settings": {
-          "foreground": "#A0A0A0"
-        }
-      },
-      {
-        "scope": "keyword.control.newpage.rxiv",
-        "settings": {
-          "foreground": "#569CD6"
-        }
-      },
-      {
-        "scope": "keyword.control.placeholder.blindtext.rxiv",
-        "settings": {
-          "foreground": "#C586C0",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "entity.name.function.blindtext.rxiv",
-        "settings": {
-          "foreground": "#DCDCAA"
-        }
-      },
-      {
-        "scope": "keyword.control.embedded.python.rxiv",
-        "settings": {
-          "foreground": "#4EC9B0",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "keyword.control.embedded.tex.rxiv",
-        "settings": {
-          "foreground": "#FF7F50",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "source.tex.embedded.rxiv",
-        "settings": {
-          "foreground": "#D4D4D4"
-        }
-      },
-      {
-        "scope": "punctuation.definition.embedded.begin.rxiv",
-        "settings": {
-          "foreground": "#4EC9B0"
-        }
-      },
-      {
-        "scope": "punctuation.definition.embedded.end.rxiv",
-        "settings": {
-          "foreground": "#4EC9B0"
-        }
-      },
-      {
-        "scope": "source.python.embedded.rxiv",
-        "settings": {
-          "foreground": "#D4D4D4"
-        }
-      },
-      {
-        "scope": "keyword.control.import.python.rxiv",
-        "settings": {
-          "foreground": "#C586C0",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "entity.name.type.module.python.rxiv",
-        "settings": {
-          "foreground": "#4FC1FF"
-        }
-      },
-      {
-        "scope": "keyword.control.variable.set.python.rxiv",
-        "settings": {
-          "foreground": "#9CDCFE",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "keyword.control.variable.get.python.rxiv",
-        "settings": {
-          "foreground": "#DCDCAA",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "keyword.control.variable.global.python.rxiv",
-        "settings": {
-          "foreground": "#FF6B6B",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "variable.other.readwrite.python.rxiv",
-        "settings": {
-          "foreground": "#9CDCFE"
-        }
-      },
-      {
-        "scope": "variable.other.readwrite.global.python.rxiv",
-        "settings": {
-          "foreground": "#FF8C94"
-        }
-      },
-      {
-        "scope": "keyword.operator.assignment.python.rxiv",
-        "settings": {
-          "foreground": "#D4D4D4"
-        }
-      },
-      {
-        "scope": "string.quoted.context.name.python.rxiv",
-        "settings": {
-          "foreground": "#CE9178"
-        }
-      },
-      {
-        "scope": "string.quoted.format.spec.python.rxiv",
-        "settings": {
-          "foreground": "#D7BA7D"
-        }
-      },
-      {
-        "scope": "keyword.control.conditional.python.rxiv",
-        "settings": {
-          "foreground": "#C586C0",
-          "fontStyle": "bold"
-        }
-      },
-      {
-        "scope": "string.quoted.double.conditional.python.rxiv",
-        "settings": {
-          "foreground": "#98C379"
-        }
-      },
-      {
-        "scope": "punctuation.separator.conditional.python.rxiv",
-        "settings": {
-          "foreground": "#D4D4D4"
-        }
       }
     ],
     "jsonValidation": [
