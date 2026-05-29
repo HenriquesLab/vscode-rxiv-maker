@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/), and this 
 ## [Unreleased]
 
 ### Added
-- **🎨 Cross-reference label colouring** - The label after the colon in cross-references and label definitions (e.g. `blabla` in `@fig:blabla`, `@snote:blabla`, `{#fig:blabla}`) is now colour-coded. The grammar already scoped it (`variable.other.constant.reference.rxiv` / `…label.rxiv`); this adds an `editor.tokenColorCustomizations` rule via `contributes.configurationDefaults` so it renders distinctly regardless of the active theme.
+- **🎨 Cross-reference label colouring** - The label after the colon in cross-references and label definitions (e.g. `blabla` in `@fig:blabla`, `@snote:blabla`, `{#fig:blabla}`) is now colour-coded. The grammar already scoped it (`variable.other.constant.reference.rxiv` / `…label.rxiv`); this adds an `editor.tokenColorCustomizations` rule via `contributes.configurationDefaults` so it renders distinctly regardless of the active theme. Also reorders the grammar so the cross-reference rule precedes the generic citation rule, which previously shadowed `@type:label` uses (matching `@type` as a citation and leaving the label unscoped).
 
 ## [0.3.15] - 2025-12-09
 
