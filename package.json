@@ -65,6 +65,19 @@
     "configurationDefaults": {
       "[rxiv-markdown]": {
         "editor.wordWrap": "on"
+      },
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": [
+              "variable.other.constant.reference.rxiv",
+              "variable.other.constant.label.rxiv"
+            ],
+            "settings": {
+              "foreground": "#CE9178"
+            }
+          }
+        ]
       }
     },
     "grammars": [

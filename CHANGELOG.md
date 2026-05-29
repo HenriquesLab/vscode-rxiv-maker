@@ -4,6 +4,11 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **🎨 Cross-reference label colouring** - The label after the colon in cross-references and label definitions (e.g. `blabla` in `@fig:blabla`, `@snote:blabla`, `{#fig:blabla}`) is now colour-coded. The grammar already scoped it (`variable.other.constant.reference.rxiv` / `…label.rxiv`); this adds an `editor.tokenColorCustomizations` rule via `contributes.configurationDefaults` so it renders distinctly regardless of the active theme.
+
 ## [0.3.15] - 2025-12-09
 
 ### Added
