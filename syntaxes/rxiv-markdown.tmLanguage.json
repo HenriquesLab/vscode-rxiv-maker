@@ -52,13 +52,13 @@
     },
     {
       "name": "entity.name.tag.reference.rxiv",
-      "match": "@(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)",
+      "match": "@(s?)((fig|table|eq|snote|svideo)):([a-zA-Z0-9_-]+)",
       "captures": {
         "1": {"name": "keyword.other.supplementary.rxiv"},
         "2": {"name": "entity.name.type.reference.rxiv"},
         "4": {"name": "variable.other.constant.reference.rxiv"}
       },
-      "comment": "Cross-references like @fig:label, @stable:label"
+      "comment": "Cross-references like @fig:label, @stable:label, @svideo:label"
     },
     {
       "name": "entity.name.tag.citation.rxiv",
@@ -67,7 +67,7 @@
     },
     {
       "name": "entity.name.tag.label-definition.rxiv",
-      "match": "\\{#(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)([^}]*)\\}",
+      "match": "\\{#(s?)((fig|table|eq|snote|svideo)):([a-zA-Z0-9_-]+)([^}]*)\\}",
       "captures": {
         "0": {"name": "meta.label-definition.rxiv"},
         "1": {"name": "keyword.other.supplementary.rxiv"},

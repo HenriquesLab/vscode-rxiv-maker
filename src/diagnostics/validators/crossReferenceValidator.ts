@@ -5,7 +5,7 @@ import { Validator } from '../index';
 import { DocumentContent, ContentParser } from '../contentParser';
 
 interface ReferenceLabel {
-	type: 'fig' | 'sfig' | 'table' | 'stable' | 'eq' | 'snote';
+	type: 'fig' | 'sfig' | 'table' | 'stable' | 'eq' | 'snote' | 'svideo';
 	label: string;
 	line: number;
 	file: string;
@@ -32,7 +32,8 @@ export class CrossReferenceValidator implements Validator {
 				'table': /(?<!\\)@table:([a-zA-Z0-9_-]+)/g,
 				'stable': /(?<!\\)@stable:([a-zA-Z0-9_-]+)/g,
 				'eq': /(?<!\\)@eq:([a-zA-Z0-9_-]+)/g,
-				'snote': /(?<!\\)@snote:([a-zA-Z0-9_-]+)/g
+				'snote': /(?<!\\)@snote:([a-zA-Z0-9_-]+)/g,
+				'svideo': /(?<!\\)@svideo:([a-zA-Z0-9_-]+)/g
 			};
 
 			// Find all cross-references in the document
@@ -157,7 +158,8 @@ export class CrossReferenceValidator implements Validator {
 			'table': /\{#table:([a-zA-Z0-9_:-]+)([^}]*)\}/g,
 			'stable': /\{#stable:([a-zA-Z0-9_:-]+)([^}]*)\}/g,
 			'eq': /\$\$.*?\$\$\s*\{[^}]*#eq:([a-zA-Z0-9_:-]+)[^}]*\}/g,
-			'snote': /\{#snote:([a-zA-Z0-9_:-]+)\}/g
+			'snote': /\{#snote:([a-zA-Z0-9_:-]+)\}/g,
+			'svideo': /\{#svideo:([a-zA-Z0-9_:-]+)([^}]*)\}/g
 		};
 
 		for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
@@ -168,7 +170,7 @@ export class CrossReferenceValidator implements Validator {
 				for (const match of matches) {
 					const label = match[1];
 					labels.push({
-						type: labelType as 'fig' | 'sfig' | 'table' | 'stable' | 'eq' | 'snote',
+						type: labelType as 'fig' | 'sfig' | 'table' | 'stable' | 'eq' | 'snote' | 'svideo',
 						label,
 						line: lineNumber,
 						file: filePath

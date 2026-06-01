@@ -196,7 +196,7 @@ export class StructureValidator implements Validator {
 			} as vscode.TextDocument, content) : text;
 
 			const hasBracketedCitations = /\[@[a-zA-Z0-9_-]+(?:;@[a-zA-Z0-9_-]+)*\]/.test(textToCheck);
-			const hasStandaloneCitations = /(?<![@\w])@[a-zA-Z0-9_-]+(?![:\w])/.test(textToCheck) && !textToCheck.match(/(?<![@\w])@(fig|table|eq|sfig|stable|snote)(?![:\w])/);
+			const hasStandaloneCitations = /(?<![@\w])@[a-zA-Z0-9_-]+(?![:\w])/.test(textToCheck) && !textToCheck.match(/(?<![@\w])@(fig|table|eq|sfig|stable|snote|svideo)(?![:\w])/);
 			const hasCitations = hasBracketedCitations || hasStandaloneCitations;
 			if (!hasCitations) {
 				const diagnostic = new vscode.Diagnostic(
@@ -284,7 +284,7 @@ export class StructureValidator implements Validator {
 		
 		// Find all defined labels in current document
 		const definedLabels = new Set<string>();
-		const labelRegex = /\{#(s?(?:fig|table|eq|snote)):([a-zA-Z0-9_-]+)[^}]*\}/g;
+		const labelRegex = /\{#(s?(?:fig|table|eq|snote|svideo)):([a-zA-Z0-9_-]+)[^}]*\}/g;
 		let match;
 		while ((match = labelRegex.exec(text)) !== null) {
 			const prefix = match[1];
@@ -362,7 +362,7 @@ export class StructureValidator implements Validator {
 				try {
 					const content = await fs.promises.readFile(filePath, 'utf8');
 					// Regex that matches all reference patterns
-					const refRegex = /@(stable|sfig|fig|table|eq|snote):([a-zA-Z0-9_-]+)/g;
+					const refRegex = /@(stable|sfig|fig|table|eq|snote|svideo):([a-zA-Z0-9_-]+)/g;
 					let match;
 					while ((match = refRegex.exec(content)) !== null) {
 						const prefix = match[1];
@@ -377,7 +377,7 @@ export class StructureValidator implements Validator {
 		} catch {
 			// Fall back to checking only current document if directory read fails
 			const text = document.getText();
-			const refRegex = /@(stable|sfig|fig|table|eq|snote):([a-zA-Z0-9_-]+)/g;
+			const refRegex = /@(stable|sfig|fig|table|eq|snote|svideo):([a-zA-Z0-9_-]+)/g;
 			let match;
 			while ((match = refRegex.exec(text)) !== null) {
 				const prefix = match[1];

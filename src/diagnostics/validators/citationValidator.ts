@@ -71,7 +71,7 @@ export class CitationValidator implements Validator {
 				}
 
 				// Pattern 2: Single citations @key (but exclude cross-references and escaped citations)
-				const singleMatches = line.matchAll(/(?<!\\)@(?!fig:|eq:|table:|tbl:|sfig:|stable:|snote:)([a-zA-Z0-9_-]+)/g);
+				const singleMatches = line.matchAll(/(?<!\\)@(?!fig:|eq:|table:|tbl:|sfig:|stable:|snote:|svideo:)([a-zA-Z0-9_-]+)/g);
 				for (const match of singleMatches) {
 					// Skip if this match is inside a code span
 					if (this.isPositionInCodeSpan(line, match.index!)) {
