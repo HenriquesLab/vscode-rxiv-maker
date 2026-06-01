@@ -30,7 +30,7 @@ The platform bridges the gap between **easy writing** (Markdown) and **beautiful
 - **🐍 Python Code Execution**: Full syntax highlighting for embedded Python code blocks and expressions
 - **📝 Blindtext Support**: Intelligent support for LaTeX blindtext placeholder commands
 - **💡 Citation Completion**: IntelliSense for bibliography entries from `03_REFERENCES.bib`
-- **🔗 Cross-reference Completion**: Autocompletion for `@fig:`, `@table:`, `@eq:`, `@snote:` references
+- **🔗 Cross-reference Completion**: Autocompletion for `@fig:`, `@table:`, `@eq:`, `@snote:`, `@svideo:` references
 - **✅ YAML Validation**: Schema validation for `00_CONFIG.yml` configuration files
 - **⚡ Smart Commands**: Insert Python blocks, blindtext, citations, and references with intelligent templates
 - **🏗️ Integrated Workflow**: Direct access to rxiv-maker build, validate, and clean commands
@@ -95,6 +95,7 @@ See [`example-syntax-showcase.rxm`](example-syntax-showcase.rxm) for a comprehen
 | `@stable:label` | `\ref{stable:label}` | Supplementary table cross-reference |
 | `@eq:label` | `\eqref{eq:label}` | Equation cross-reference |
 | `@snote:label` | `\ref{snote:label}` | Supplement note cross-reference |
+| `@svideo:label` | `\ref{svideo:label}` | Supplementary video cross-reference |
 | **Tables and Figures** | | |
 | Markdown table | `\begin{table}...\end{table}` | Table with automatic formatting |
 | Image with caption | `\begin{figure}...\end{figure}` | Figure with separate caption |

@@ -4,6 +4,11 @@ All notable changes to the "rxiv-maker" VS Code extension will be documented in 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **🎬 Supplementary video cross-references (`svideo`)** - Added first-class support for the `svideo` cross-reference type introduced in rxiv-maker 1.20.0, mirroring the existing `snote` handling. `@svideo:label` references and `{#svideo:label url="..."}` label definitions now receive the same syntax highlighting (TextMate grammar), autocompletion (`@sv`/`@svideo` partial and full triggers, plus label suggestions), undefined-reference/duplicate-label diagnostics, and structure/citation validation as the other cross-reference types. `@svideo:` is recognised as a cross-reference (not flagged as an unknown citation), and the README cross-reference table documents it (`@svideo:label` → `\ref{svideo:label}`).
+
 ## [0.3.17] - 2026-05-29
 
 ### Fixed

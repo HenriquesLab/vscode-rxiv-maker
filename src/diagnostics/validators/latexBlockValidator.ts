@@ -448,7 +448,7 @@ export class LaTeXBlockValidator implements Validator {
 
 		// Check for invalid label formats
 		if (command === 'label') {
-			if (!content.match(/^(fig|table|eq|sfig|stable|snote):[a-zA-Z0-9_-]+$/)) {
+			if (!content.match(/^(fig|table|eq|sfig|stable|snote|svideo):[a-zA-Z0-9_-]+$/)) {
 				const diagnostic = new vscode.Diagnostic(
 					new vscode.Range(lineNumber, startIndex, lineNumber, startIndex + `\\label{${content}}`.length),
 					`Invalid label format '${content}'. Expected format: type:name (e.g., fig:my-figure)`,

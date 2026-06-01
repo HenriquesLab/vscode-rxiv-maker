@@ -17,7 +17,7 @@ interface BibEntry {
 }
 
 interface ReferenceLabel {
-	type: 'fig' | 'table' | 'eq' | 'snote';
+	type: 'fig' | 'table' | 'eq' | 'snote' | 'svideo';
 	label: string;
 	line: number;
 	supplementary?: boolean;
@@ -967,10 +967,10 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 		const beforeCursor = lineText.substring(0, position.character);
 
 		// Enhanced pattern matching for better trigger detection
-		// Support patterns like: @fig:, @sfig:, @table:, @stable:, @eq:, @snote:
-		// Also support partial patterns like: @f, @sf, @fig, @sfig, @t, @st, @table, @stable, @e, @eq, @sn, @snote
-		const referenceMatch = beforeCursor.match(/@(s?)(fig|table|eq|snote)(:?)(.*)$/);
-		const partialMatch = beforeCursor.match(/@(s?)(f|fig|t|table|stable|e|eq|sn|snote)$/);
+		// Support patterns like: @fig:, @sfig:, @table:, @stable:, @eq:, @snote:, @svideo:
+		// Also support partial patterns like: @f, @sf, @fig, @sfig, @t, @st, @table, @stable, @e, @eq, @sn, @snote, @sv, @svideo
+		const referenceMatch = beforeCursor.match(/@(s?)(fig|table|eq|snote|svideo)(:?)(.*)$/);
+		const partialMatch = beforeCursor.match(/@(s?)(f|fig|t|table|stable|e|eq|sn|snote|sv|svideo)$/);
 
 		if (!referenceMatch && !partialMatch) {
 			return [];
@@ -982,7 +982,7 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 		if (referenceMatch) {
 			// Complete reference pattern (e.g., @fig:, @table:)
 			const isSupplementary = referenceMatch[1] === 's';
-			const referenceType = referenceMatch[2] as 'fig' | 'table' | 'eq' | 'snote';
+			const referenceType = referenceMatch[2] as 'fig' | 'table' | 'eq' | 'snote' | 'svideo';
 			const hasColon = referenceMatch[3] === ':';
 			const labelPart = referenceMatch[4];
 
@@ -1026,7 +1026,9 @@ class ReferenceCompletionProvider implements vscode.CompletionItemProvider {
 				'e': ['eq'],
 				'eq': ['eq'],
 				'sn': ['snote'],
-				'snote': ['snote']
+				'snote': ['snote'],
+				'sv': ['svideo'],
+				'svideo': ['svideo']
 			};
 
 			const possibleTypes = typeMap[partialType] || [];
@@ -1181,12 +1183,12 @@ async function getDocumentReferences(): Promise<ReferenceLabel[]> {
 
 			for (let i = 0; i < lines.length; i++) {
 				const text = lines[i];
-				const labelRegex = /\{#(s?)((fig|table|eq|snote)):([a-zA-Z0-9_-]+)(?:\s[^}]*)?\}/g;
+				const labelRegex = /\{#(s?)((fig|table|eq|snote|svideo)):([a-zA-Z0-9_-]+)(?:\s[^}]*)?\}/g;
 				let match;
 
 				while ((match = labelRegex.exec(text)) !== null) {
 					const supplementary = match[1] === 's' || isSupplementary;
-					const type = match[2] as 'fig' | 'table' | 'eq' | 'snote';
+					const type = match[2] as 'fig' | 'table' | 'eq' | 'snote' | 'svideo';
 					const label = match[4];
 
 					references.push({
