@@ -1,4 +1,5 @@
-[![DOI](https://img.shields.io/badge/DOI-10.48550%2FarXiv.2508.00836-blue)](https://doi.org/10.48550/arXiv.2508.00836)
+[![DOI: 10.1242/jcs.265183](https://img.shields.io/badge/DOI-10.1242%2Fjcs.265183-blue)](https://doi.org/10.1242/jcs.265183)
+[![arXiv](https://img.shields.io/badge/arXiv-2508.00836-b31b1b.svg)](https://arxiv.org/abs/2508.00836)
 [![License](https://img.shields.io/github/license/henriqueslab/vscode-rxiv-maker?color=Green)](https://github.com/henriqueslab/vscode-rxiv-maker/blob/main/LICENSE)
 [![Contributors](https://img.shields.io/github/contributors-anon/henriqueslab/vscode-rxiv-maker)](https://github.com/henriqueslab/vscode-rxiv-maker/graphs/contributors)
 [![GitHub stars](https://img.shields.io/github/stars/henriqueslab/vscode-rxiv-maker?style=social)](https://github.com/HenriquesLab/vscode-rxiv-maker/stargazers)
@@ -223,25 +224,27 @@ The extension automatically detects how rxiv-maker is installed (Homebrew, pipx,
 
 ## How to Cite
 
-<a href="https://arxiv.org/abs/2508.00836"><img src="https://github.com/HenriquesLab/rxiv-maker/raw/main/docs/screenshots/preprint.png" align="right" width="300" style="margin-left: 20px; margin-bottom: 20px;" alt="Rxiv-Maker Preprint"/></a>
+<a href="https://doi.org/10.1242/jcs.265183"><img src="https://github.com/HenriquesLab/rxiv-maker/raw/main/docs/screenshots/preprint.png" align="right" width="300" style="margin-left: 20px; margin-bottom: 20px;" alt="Rxiv-Maker Publication"/></a>
 
-If you use Rxiv-Maker or this VS Code extension in your research, please cite our work:
+If you use Rxiv-Maker or this VS Code extension in your research, please cite our paper:
 
 **BibTeX:**
 ```bibtex
-@misc{saraiva_2025_rxivmaker,
-  title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
-  author={Bruno M. Saraiva and Ant\'{o}nio D. Brito and Guillaume Jaquemet and Ricardo Henriques},
-  year={2025},
-  eprint={2508.00836},
-  archivePrefix={arXiv},
-  url={https://arxiv.org/abs/2508.00836}
+@article{saraiva_2025_rxivmaker,
+  title={Rxiv-Maker: An automated template engine for streamlined scientific publications},
+  author={Bruno M. Saraiva and Rita Carlota and Ant\'{o}nio D. Brito and Iv\'{a}n Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
+  journal={Journal of Cell Science},
+  year={2026},
+  doi={10.1242/jcs.265183},
+  url={https://doi.org/10.1242/jcs.265183}
 }
 ```
 
 **APA Style:**
-Saraiva, B. M., Jacquemet, G., & Henriques, R. (2025). Rxiv-Maker: an automated template engine for streamlined scientific publications. *Arxiv*. 
-https://doi.org/10.48550/arXiv.2508.00836
+Saraiva, B. M., Carlota, R., Brito, A. D., Hidalgo-Cenalmor, I., Jacquemet, G., & Henriques, R. (2026). Rxiv-Maker: An automated template engine for streamlined scientific publications. *Journal of Cell Science*, jcs.265183. https://doi.org/10.1242/jcs.265183
+
+- **Journal Article**: [10.1242/jcs.265183](https://doi.org/10.1242/jcs.265183) (*Journal of Cell Science*)
+- **Preprint**: [10.48550/arXiv.2508.00836](https://doi.org/10.48550/arXiv.2508.00836) (arXiv)
 
 ## Related Projects
 
