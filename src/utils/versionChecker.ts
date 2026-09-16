@@ -12,6 +12,16 @@ import { detectInstallMethod, type InstallMethod } from './installDetector';
 
 const execAsync = promisify(exec);
 
+// Output channel for logging
+let outputChannel: vscode.OutputChannel | null = null;
+
+function getOutputChannel(): vscode.OutputChannel {
+    if (!outputChannel) {
+        outputChannel = vscode.window.createOutputChannel('Rxiv-Maker');
+    }
+    return outputChannel;
+}
+
 interface VersionInfo {
     current: string | null;
     latest: string | null;
@@ -32,9 +42,12 @@ interface CacheData {
  */
 export async function getRxivMakerVersion(): Promise<string | null> {
     try {
-        const { stdout } = await execAsync('rxiv --version 2>/dev/null || rxiv.exe --version 2>nul');
-        // Parse output like "rxiv-maker version 1.8.8"
-        const match = stdout.trim().match(/(\d+\.\d+\.\d+)/);
+        const isWindows = process.platform === 'win32';
+        const cmd = isWindows ? 'rxiv.exe --version 2>nul' : 'rxiv --version 2>/dev/null';
+        const { stdout } = await execAsync(cmd);
+        // Parse output like "rxiv-maker version 1.8.8" or "rxiv-maker version 1.8.8-beta1"
+        // Support semantic versioning with optional pre-release identifiers
+        const match = stdout.trim().match(/(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)/);
         return match ? match[1] : null;
     } catch (error) {
         return null;
@@ -81,8 +94,9 @@ export async function checkHomebrewOutdated(): Promise<{ current: string; latest
 export async function fetchLatestVersion(): Promise<string | null> {
     return new Promise((resolve) => {
         const url = 'https://pypi.org/pypi/rxiv-maker/json';
+        const output = getOutputChannel();
 
-        https.get(url, (res) => {
+        const req = https.get(url, { timeout: 10000 }, (res) => {
             let data = '';
 
             res.on('data', (chunk) => {
@@ -94,12 +108,20 @@ export async function fetchLatestVersion(): Promise<string | null> {
                     const json = JSON.parse(data);
                     resolve(json.info.version);
                 } catch (error) {
-                    console.error('Error parsing PyPI response:', error);
+                    output.appendLine(`Error parsing PyPI response: ${error}`);
                     resolve(null);
                 }
             });
-        }).on('error', (error) => {
-            console.error('Error fetching latest version:', error);
+        });
+
+        req.on('timeout', () => {
+            output.appendLine('PyPI request timed out after 10 seconds');
+            req.destroy();
+            resolve(null);
+        });
+
+        req.on('error', (error) => {
+            output.appendLine(`Error fetching latest version from PyPI: ${error}`);
             resolve(null);
         });
     });
